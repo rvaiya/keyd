@@ -1,0 +1,7 @@
+*.swp
+*.swn
+*.swo
+*.out
+tags
+bin/
+*.gch

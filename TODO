@@ -1,0 +1,4 @@
+Make layers inheritable.
+Add configurable time based double tap detection.
+Document and publish.
+Simplify code and special key naming schemes (use a parser and don't manually implement each of HXTXDX).
