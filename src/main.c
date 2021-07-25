@@ -43,6 +43,7 @@
 #define UINPUT_DEVICE_NAME "keyd virtual keyboard"
 #define MAX_KEYBOARDS 256
 #define LOCK_FILE "/var/lock/keyd.lock"
+#define LOG_FILE "/var/log/keyd.log" //Only used when running as a daemon.
 
 static int ufd = -1;
 
@@ -642,6 +643,24 @@ static void exit_signal_handler(int sig)
 	exit(0);
 }
 
+void daemonize()
+{
+	int fd = open(LOG_FILE, O_APPEND|O_WRONLY);
+
+	warn("Daemonizing.");
+	warn("Log output will be stored in %s", LOG_FILE);
+
+	if(fork()) exit(0);
+	if(fork()) exit(0);
+
+	close(0);
+	close(1);
+	close(2);
+
+	dup2(fd, 1);
+	dup2(fd, 2);
+}
+
 int main(int argc, char *argv[])
 {
 	if(argc > 1 && !strcmp(argv[1], "-m"))
@@ -659,6 +678,10 @@ int main(int argc, char *argv[])
 	signal(SIGINT, exit_signal_handler);
 	signal(SIGTERM, exit_signal_handler);
 
+	if(argc > 1 && !strcmp(argv[1], "-d"))
+		daemonize();
+
+	warn("Starting keyd.");
 	config_generate();
 	ufd = create_uinput_fd();
 

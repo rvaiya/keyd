@@ -15,24 +15,22 @@ keyd [-m] [-l]
 
  **-l**: List all valid key names.
 
+ **-d**: Fork and run in the background.
+
 # OVERVIEW
 
-keyd is intended to be run as a system wide daemon via systemd. If run
-directly it will run in the foreground and print diagnostic information to
-stderr.
-
-Control can be exercised using the standard systemd mechanisms. E.G:
-
- - journalctl -fu keyd # Print diagnostic information.
- - systemctl restart keyd # Restart the daemon to effect configuration reload.
+keyd is intended to be run as system wide daemon managed by systemd. The
+default behaviour is to run the forground and print to stderr but it can also
+be run as a standalone daemon if -d is supplied, in which case log output will
+be stored in /var/log/keyd.log. 
 
 # CONFIGURATION
 
 All configuration files are stored in /etc/keyd. The name of each file should
 correspond to the device name (see `-m`) to which it is to be applied followed
 by .cfg (e.g /etc/keyd/Magic\ Keyboard.cfg). Configuration files are loaded
-upon initialization, thus restarting the daemon is necessary for changes
-to take effect.
+upon initialization thus restarting the daemon is necessary for changes
+to take effect (e.g sudo systemctl restart keyd).
 
 If no configuration file exists for a given keyboard and default.cfg is present, it is used.
 
