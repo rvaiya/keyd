@@ -282,7 +282,7 @@ static void parse_layer_names()
 	}
 }
 
-int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs)
+static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs)
 {
 	int openparen = 0;
 
@@ -344,7 +344,7 @@ int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs)
 	return 0;
 }
 
-int parse_val(const char *_s, struct key_descriptor *desc)
+static int parse_val(const char *_s, struct key_descriptor *desc)
 {
 	uint16_t code;
 	uint8_t mods;

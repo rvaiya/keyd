@@ -48,7 +48,13 @@ esc = capslock
 
 3. Run `sudo systemctl restart keyd` 
 
-4. See the [man page](man.md) for a comprehensive list of all config options.
+4. See the [man page](man.md) for a comprehensive list of config options.
+
+*Note*: It is possible to render your machine unusable with a bad config file.
+Before proceeding ensure you have some way of killing keyd if things go wrong
+(e.g ssh). It is recommended that you avoid experimenting in default.cfg (see
+the man page for keyboard specific configuraiton) so you can plug in another
+keyboard which is unaffected by the changes.
 
 # Sample Config File
 
@@ -56,13 +62,17 @@ esc = capslock
 
 	esc = layer_on_hold(escape_layer, esc)
 
+	# Creates an escape layer which is activated by pressing the escape key.
+
 	[escape_layer]
 
+	# Esc+1 changes the letter layout to dvorak. 
 	1 = layer_toggle(dvorak)
+
+	# Esc+2 changes the letter layout back to the default. 
 	2 = layer_toggle(default)
 
-	# Creates a dvorak layer which inherits from the default layer. Without
-	# explicitly inheriting from another layer unmapped keys would be ignored.
+	# Creates a dvorak layer which inherits from the main layer (see the section on layer inheritance in the man page).
 
 	[dvorak:default]
 
