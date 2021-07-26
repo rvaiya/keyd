@@ -9,8 +9,6 @@ clean:
 	-rm -rf bin
 install:
 	-mkdir /etc/keyd
-	-install -m755 keyd.service /etc/systemd/system/
+	-install -m755 keyd.service /usr/lib/systemd/system
 	-install -m755 bin/keyd /usr/bin
 	-install -m644 keyd.1.gz /usr/share/man/man1/
-	-systemctl enable keyd
-	-systemctl start keyd

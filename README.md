@@ -31,6 +31,7 @@ Some of the more interesting ones include:
     cd keyd
     sudo apt-get install libudev-dev # Debian specific install the corresponding package on your distribution
     make && sudo make install
+    sudo systemctl enable keyd && sudo systemctl start keyd
 
 # Quickstart
 
@@ -46,7 +47,7 @@ capslock = mods_on_hold(C, esc)
 esc = capslock
 ```
 
-3. Run `sudo systemctl restart keyd` 
+3. Run `sudo systemctl restart keyd` to reload the config file.
 
 4. See the [man page](man.md) for a comprehensive list of config options.
 
