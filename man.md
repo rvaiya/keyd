@@ -28,9 +28,9 @@ be stored in /var/log/keyd.log.
 
 All configuration files are stored in /etc/keyd. The name of each file should
 correspond to the device name to which it is to be applied followed
-by .cfg (e.g /etc/keyd/Magic\ Keyboard.cfg). Configuration files are loaded
-upon initialization, thus restarting the daemon is necessary for changes
-to take effect (e.g sudo systemctl restart keyd).
+by .cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded
+upon initialization and can be reified by reloading keyd
+(e.g sudo systemctl restart keyd).
 
 The monitor flag (-m) can be used to obtain device and key names like so:
 
@@ -74,12 +74,11 @@ Each configuration file consists of one or more layers. Each layer is a keymap
 unto itself and can be activated by a key mapped to the appropriate
 action (see ACTIONS).
 
-By default layers do not have a parent, that is, unmapped keys will have no
-effect. The default layer is called 'default' and is used for mappings which
+The default layer is called 'default' and is used for mappings which
 are not explicitly assigned to a layer.
 
 For example the following configuration creates a new layer called 'symbols' which
-is activated while the caps lock key is depressed.
+is activated by the capslock key on the default layer.
 
 	capslock = layer(symbols)
 
@@ -90,13 +89,12 @@ is activated while the caps lock key is depressed.
 
 Pressing capslock+f thus produces a tilde.
 
-By default unmapped keys inside of a layer do nothing, however
-a layer may optionally have a parent from which mappings are
-drawn for keys which are not explicitly mapped. A parent
-is specified by appending `:<parent layer>` to the layer 
-name. This is particularly useful for custom letter layouts
-like dvorak which remap a subset of keys but otherwise
-leave the default mappings in tact.
+A layer may optionally have a parent from which mappings are drawn for keys
+which are not explicitly mapped. By default layers do not have a parent, that
+is, unmapped keys will have no effect. A parent is specified by appending
+`:<parent layer>` to the layer name. This is particularly useful for custom
+letter layouts like dvorak which remap a subset of keys but otherwise leave the
+default mappings in tact. 
 
 ## ACTIONS
 
