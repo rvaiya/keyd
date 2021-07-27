@@ -45,6 +45,12 @@
 #define LOCK_FILE "/var/lock/keyd.lock"
 #define LOG_FILE "/var/log/keyd.log" //Only used when running as a daemon.
 
+#ifdef DEBUG
+	#define dbg(...) warn(__VA_ARGS__)
+#else
+	#define dbg(...)
+#endif
+
 static int ufd = -1;
 
 static struct udev *udev;
@@ -62,7 +68,6 @@ struct keyboard {
 };
 
 static struct keyboard *keyboards = NULL;
-static int debug_flag = 0;
 
 static void warn(char *fmt, ...)
 {
@@ -83,18 +88,6 @@ static void die(char *fmt, ...)
 	va_end(args);
 	fprintf(stderr, "\n");
 	exit(-1);
-}
-
-static void dbg(char *fmt, ...)
-{
-	if(debug_flag) {
-		va_list args; 
-		va_start(args, fmt);
-
-		vfprintf(stderr, fmt, args);
-		va_end(args);
-		fprintf(stderr, "\n");
-	}
 }
 
 static int is_keyboard(struct udev_device *dev) 
@@ -637,7 +630,7 @@ static void lock()
 
 static void exit_signal_handler(int sig)
 {
-	warn("%s received, cleaning up and termianting...", sig == SIGINT ? "SIGINT" : "SIGTERM");
+	warn("%s received, cleaning up and terminating...", sig == SIGINT ? "SIGINT" : "SIGTERM");
 
 	cleanup();
 	exit(0);
@@ -663,14 +656,19 @@ void daemonize()
 
 int main(int argc, char *argv[])
 {
-	if(argc > 1 && !strcmp(argv[1], "-m"))
-		return monitor_loop();
-	if(argc > 1 && !strcmp(argv[1], "-l")) {
-		size_t i;
-		for(i = 0; i < sizeof(keycode_strings)/sizeof(keycode_strings[0]);i++)
-			if(keycode_strings[i])
-				printf("%s\n", keycode_strings[i]);
-		return 0;
+	if(argc > 1) {
+		if(!strcmp(argv[1], "-v")) {
+			fprintf(stderr, "keyd version: %s (%s)\n", VERSION, GIT_COMMIT_HASH);
+			return 0;
+		} else if(!strcmp(argv[1], "-m")) {
+			return monitor_loop();
+		} else if(!strcmp(argv[1], "-l")) {
+			size_t i;
+			for(i = 0; i < sizeof(keycode_strings)/sizeof(keycode_strings[0]);i++)
+				if(keycode_strings[i])
+					printf("%s\n", keycode_strings[i]);
+			return 0;
+		}
 	}
 
 	lock();

@@ -1,14 +1,21 @@
-.PHONY: clean all utils
+.PHONY: all clean debug install
 
-all: clean utils
+VERSION=0.0.1
+GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
+CFLAGS=-DVERSION=\"$(VERSION)\" -DGIT_COMMIT_HASH=\"$(GIT_HASH)\" -ludev 
+
+all:
 	-mkdir bin
-	gcc -DGIT_COMMIT_HASH=\"$(shell git rev-parse HEAD)\" -DDEBUG -g -Wno-unused-parameter -Wall -Wextra -ludev src/*.c -o bin/keyd
+	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd
+debug:
+	-mkdir bin
+	$(CC) $(CFLAGS) -Wall -Wextra -DDEBUG -g  src/*.c -o bin/keyd
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:
 	-rm -rf bin
 install:
 	-mkdir /etc/keyd
-	-install -m755 keyd.service /usr/lib/systemd/system
-	-install -m755 bin/keyd /usr/bin
-	-install -m644 keyd.1.gz /usr/share/man/man1/
+	install -m755 keyd.service /usr/lib/systemd/system
+	install -m755 bin/keyd /usr/bin
+	install -m644 keyd.1.gz /usr/share/man/man1/
