@@ -27,12 +27,22 @@ be stored in /var/log/keyd.log.
 # CONFIGURATION
 
 All configuration files are stored in /etc/keyd. The name of each file should
-correspond to the device name (see `-m`) to which it is to be applied followed
+correspond to the device name to which it is to be applied followed
 by .cfg (e.g /etc/keyd/Magic\ Keyboard.cfg). Configuration files are loaded
-upon initialization thus restarting the daemon is necessary for changes
+upon initialization, thus restarting the daemon is necessary for changes
 to take effect (e.g sudo systemctl restart keyd).
 
-If no configuration file exists for a given keyboard and default.cfg is present, it is used.
+The monitor flag (-m) can be used to obtain device and key names like so:
+
+```
+# sudo systemctl stop keyd
+# sudo keyd -m
+
+Magic Keyboard: capslock down
+Magic Keyboard: capslock up
+```
+
+If no configuration file exists for a given keyboard 'default.cfg' is used as a fallback (if present).
 
 Each line in a configuration file consists of a mapping of the following form:
 
