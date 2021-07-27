@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <limits.h>
 #include "config.h"
 #include "keys.h"
 
