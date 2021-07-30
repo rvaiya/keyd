@@ -143,7 +143,7 @@ anything that is as flexible as keyd.
 ## What about [kmonad](https://github.com/kmonad/kmonad)?
 
 keyd was written several years ago to allow me to easily experiment with
-different layouts on his growing keyboard collection. At the time kmonad did
+different layouts on my growing keyboard collection. At the time kmonad did
 not exist and custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware) (which inspired keyd) was the
 only way to get comparable features. I became aware of kmonad after having
 published keyd. While kmonad is a fine project with similar goals, it takes
