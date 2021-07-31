@@ -244,6 +244,8 @@ static void send_mods(uint16_t mods, int pressed)
 		send_key(KEY_LEFTMETA, pressed);
 	if(mods & MOD_ALT)
 		send_key(KEY_LEFTALT, pressed);
+	if(mods & MOD_ALT_GR)
+		send_key(KEY_RIGHTALT, pressed);
 }
 
 static void send_keyseq(uint32_t keyseq, int pressed)

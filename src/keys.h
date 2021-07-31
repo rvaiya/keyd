@@ -41,6 +41,7 @@
 #define MOD_SHIFT 0x4
 #define MOD_SUPER 0x2
 #define MOD_ALT 0x1
+#define MOD_ALT_GR 0x10
 
 static const char *keycode_strings[] = {
 	[KEY_ESC] = "esc",

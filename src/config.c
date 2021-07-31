@@ -71,6 +71,11 @@ static const char *modseq_to_string(uint8_t mods) {
 		i+=2;
 	}
 
+	if(mods & MOD_ALT_GR) {
+		strcpy(s+i, "-I");
+		i+=2;
+	}
+
 	if(i)
 		return s+1;
 	else
@@ -105,6 +110,11 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 		i+=2;
 	}
 
+	if(mods & MOD_ALT_GR) {
+		strcpy(s+i, "I-");
+		i+=2;
+	}
+
 	if(key)
 		strcpy(s+i, keycode_strings[code]);
 	else
@@ -130,6 +140,9 @@ static int parse_mods(const char *s, uint8_t *mods)
 			break;
 		case 'S':
 			*mods |= MOD_SHIFT;
+			break;
+		case 'I':
+			*mods |= MOD_ALT_GR;
 			break;
 		default:
 			return -1;
@@ -169,6 +182,9 @@ static int parse_keyseq(const char *s, uint16_t *keycode, uint8_t *mods) {
 			break;
 		case 'S':
 			*mods |= MOD_SHIFT;
+			break;
+		case 'I':
+			*mods |= MOD_ALT_GR;
 			break;
 		default:
 			return -1;
