@@ -1,5 +1,8 @@
 .PHONY: all clean debug install
 
+DESTDIR=
+PREFIX=/usr
+
 VERSION=0.0.1
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
 CFLAGS=-DVERSION=\"$(VERSION)\" -DGIT_COMMIT_HASH=\"$(GIT_HASH)\"
@@ -16,10 +19,10 @@ clean:
 	-rm -rf bin
 install:
 	-mkdir -p $(DESTDIR)/etc/keyd
-	-mkdir -p $(DESTDIR)/usr/lib/systemd/system
-	-mkdir -p $(DESTDIR)/usr/bin
-	-mkdir -p $(DESTDIR)/usr/share/man/man1
+	-mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system
+	-mkdir -p $(DESTDIR)$(PREFIX)/bin
+	-mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
 
-	install -m755 keyd.service $(DESTDIR)/usr/lib/systemd/system
-	install -m755 bin/keyd $(DESTDIR)/usr/bin
-	install -m644 keyd.1.gz $(DESTDIR)/usr/share/man/man1
+	install -m755 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
+	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
+	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
