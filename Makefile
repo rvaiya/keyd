@@ -15,7 +15,11 @@ man:
 clean:
 	-rm -rf bin
 install:
-	-mkdir /etc/keyd
-	install -Dm755 keyd.service $(DESTDIR)/lib/systemd/system
-	install -Dm755 bin/keyd $(DESTDIR)/bin/keyd
-	install -Dm644 keyd.1.gz $(DESTDIR)/share/man/man1/keyd.1.gz
+	-mkdir -p $(DESTDIR)/etc/keyd
+	-mkdir -p $(DESTDIR)/usr/lib/systemd/system
+	-mkdir -p $(DESTDIR)/usr/bin
+	-mkdir -p $(DESTDIR)/usr/share/man/man1
+
+	install -m755 keyd.service $(DESTDIR)/usr/lib/systemd/system
+	install -m755 bin/keyd $(DESTDIR)/usr/bin
+	install -m644 keyd.1.gz $(DESTDIR)/usr/share/man/man1

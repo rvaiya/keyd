@@ -49,7 +49,7 @@ Some of the more interesting ones include:
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
-    make && sudo make DESTDIR=/usr install
+    make && sudo make install
     sudo systemctl enable keyd && sudo systemctl start keyd
 
 # Quickstart
