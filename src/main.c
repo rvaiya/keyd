@@ -24,7 +24,6 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <linux/limits.h>
 #include <sys/file.h>
 #include <dirent.h>
 #include <assert.h>
