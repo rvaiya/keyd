@@ -26,7 +26,8 @@ be stored in /var/log/keyd.log.
 
 # CONFIGURATION
 
-All configuration files are stored in /etc/keyd. The name of each file should
+All configuration files are stored in /etc/keyd. Optionally, one can override
+this by setting `KEYD_CONFIG_DIR`. The name of each file should
 correspond to the device name to which it is to be applied followed
 by .cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded
 upon initialization and can be reified by reloading keyd

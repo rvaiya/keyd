@@ -560,10 +560,26 @@ void config_free()
 	};
 }
 
+char* get_config_dir()
+{
+	char *keyd_config;
+
+	keyd_config = getenv("KEYD_CONFIG_DIR");
+	if (keyd_config) {
+		DIR *config_dir = opendir(keyd_config);
+		if (config_dir) {
+			return config_dir;
+		}
+	}
+
+	return CONFIG_DIR;
+}
+
 void config_generate()
 {
 	struct dirent *ent;
-	DIR *dh = opendir(CONFIG_DIR);
+	char *config_dir = get_config_dir();
+	DIR *dh = opendir(config_dir);
 
 	if(!dh) {
 		perror("opendir");
@@ -599,4 +615,5 @@ void config_generate()
 	}
 
 	closedir(dh);
+	free(config_dir);
 }
