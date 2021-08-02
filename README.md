@@ -162,3 +162,7 @@ on github. keyd has a minimalist (but sane) design philosophy which
 intentionally omits certain features (e.g unicode/execing arbitrary executables
 as root). Things which already exist in custom keyboard firmware like QMK are
 good candidates for inclusion.
+
+# Contributing
+
+See [CONTRIBUTING].
