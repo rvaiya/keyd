@@ -171,14 +171,10 @@ static int create_uinput_fd()
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
-	for(i = 1;i < KEY_CNT;i++) {
-		if((i >= 0x2c0 && i <= 0x2e7) ||  //Mouse button ranges.
-		   (i > 248 && i <= 0x151))
-			continue;
-
-		ioctl(fd, UI_SET_KEYBIT, i);
+	for(i = 0;i < sizeof keycode_strings/sizeof keycode_strings[0];i++) {
+		if(keycode_strings[i])
+			ioctl(fd, UI_SET_KEYBIT, i);
 	}
-
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
