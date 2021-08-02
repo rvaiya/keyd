@@ -23,6 +23,6 @@ install:
 	-mkdir -p $(DESTDIR)$(PREFIX)/bin
 	-mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
 
-	install -m755 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
+	install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
