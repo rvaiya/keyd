@@ -250,7 +250,7 @@ static void send_mods(uint16_t mods, int pressed)
 
 static void send_keyseq(uint32_t keyseq, int pressed)
 {
-	uint8_t mods = keyseq >> 16;
+	uint16_t mods = keyseq >> 16;
 	uint16_t code = keyseq;
 
 	send_mods(mods, pressed);

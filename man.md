@@ -60,7 +60,7 @@ and each modifier is one of:
 \    **M** - Meta/Super\
 \    **A** - Alt\
 \    **S** - Shift\
-\    **I** - AltGr (ISO_Level3_Shift)
+\    **G** - AltGr
 
 In addition to simple key mappings keyd can remap keys to actions which
 can conditionally send keystrokes or transform the state of the keymap. 

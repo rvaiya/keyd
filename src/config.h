@@ -48,7 +48,7 @@ struct key_descriptor
 	enum action action;
 	union {
 		uint32_t keyseq;
-		uint8_t mods;
+		uint16_t mods;
 		uint8_t layer;
 	} arg, arg2;
 };

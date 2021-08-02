@@ -47,7 +47,7 @@ static char path[PATH_MAX];
 
 #define err(fmt, ...) fprintf(stderr, "%s: ERROR on line %d: "fmt"\n", path, lnum, ##__VA_ARGS__)
 
-static const char *modseq_to_string(uint8_t mods) {
+static const char *modseq_to_string(uint16_t mods) {
 	static char s[32];
 	int i = 0;
 	s[0] = '\0';
@@ -72,7 +72,7 @@ static const char *modseq_to_string(uint8_t mods) {
 	}
 
 	if(mods & MOD_ALT_GR) {
-		strcpy(s+i, "-I");
+		strcpy(s+i, "-G");
 		i+=2;
 	}
 
@@ -86,7 +86,7 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	int i = 0;
 	static char s[256];
 
-	uint8_t mods = keyseq >> 16;
+	uint16_t mods = keyseq >> 16;
 	uint16_t code = keyseq & 0x00FF;
 
 	const char *key = keycode_strings[code];
@@ -111,7 +111,7 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	}
 
 	if(mods & MOD_ALT_GR) {
-		strcpy(s+i, "I-");
+		strcpy(s+i, "G-");
 		i+=2;
 	}
 
@@ -123,7 +123,7 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	return s;
 }
 
-static int parse_mods(const char *s, uint8_t *mods) 
+static int parse_mods(const char *s, uint16_t *mods) 
 {
 	*mods = 0;
 
@@ -141,7 +141,7 @@ static int parse_mods(const char *s, uint8_t *mods)
 		case 'S':
 			*mods |= MOD_SHIFT;
 			break;
-		case 'I':
+		case 'G':
 			*mods |= MOD_ALT_GR;
 			break;
 		default:
@@ -162,7 +162,7 @@ static int parse_mods(const char *s, uint8_t *mods)
 	return 0;
 }
 
-static int parse_keyseq(const char *s, uint16_t *keycode, uint8_t *mods) {
+static int parse_keyseq(const char *s, uint16_t *keycode, uint16_t *mods) {
 	const char *c = s;
 	size_t i;
 
@@ -183,7 +183,7 @@ static int parse_keyseq(const char *s, uint16_t *keycode, uint8_t *mods) {
 		case 'S':
 			*mods |= MOD_SHIFT;
 			break;
-		case 'I':
+		case 'G':
 			*mods |= MOD_ALT_GR;
 			break;
 		default:
@@ -364,7 +364,7 @@ static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs
 static int parse_val(const char *_s, struct key_descriptor *desc)
 {
 	uint16_t code;
-	uint8_t mods;
+	uint16_t mods;
 
 	char *s = strdup(_s);
 	char *fn;
@@ -522,7 +522,7 @@ static void parse(struct keyboard_config *cfg)
 			char *key, *val;
 
 			uint16_t code;
-			uint8_t mods;
+			uint16_t mods;
 
 			if(parse_kvp(s, &key, &val)) {
 				err("Invalid key value pair.");
