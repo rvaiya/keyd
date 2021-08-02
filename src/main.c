@@ -187,6 +187,37 @@ static int create_uinput_fd()
 	return fd;
 }
 
+static syn()
+{
+	static struct input_event ev = {
+		.type = EV_SYN,
+		.code = 0,
+		.value = 0,
+	};
+
+	write(ufd, &ev, sizeof(ev));
+}
+
+static void send_repetitions()
+{
+	size_t i;
+	struct input_event ev = {
+		.type = EV_KEY,
+		.value = 2,
+		.time.tv_sec = 0,
+		.time.tv_usec = 0
+	};
+
+	//Inefficient, but still reasonably fast (<100us)
+	for(i = 0; i < sizeof keystate / sizeof keystate[0];i++) {
+		if(keystate[i]) {
+			ev.code = i;
+			write(ufd, &ev, sizeof(ev));
+			syn();
+		}
+	}
+}
+
 static void send_key(uint16_t code, int is_pressed)
 {
 	keystate[code] = is_pressed;
@@ -200,11 +231,7 @@ static void send_key(uint16_t code, int is_pressed)
 
 	write(ufd, &ev, sizeof(ev));
 
-	ev.type = EV_SYN;
-	ev.code = 0;
-	ev.value = 0;
-
-	write(ufd, &ev, sizeof(ev));
+	syn();
 }
 
 static void send_mods(uint16_t mods, int pressed)
@@ -244,15 +271,20 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	int pressed = ev->value;
 	uint32_t keypressed = 0;
 
-
 	if(current_kbd != kbd) { //Reset state when switching keyboards.
 		main_layer = 0;
 		layer = 0;
 		current_kbd = kbd;
 	}
 
-	if(ev->type != EV_KEY || pressed == 2)
+	if(ev->type != EV_KEY)
 		return;
+
+	//Wayland and X both ignore repeat events but VTs seem to require them.
+	if(pressed == 2) {
+		send_repetitions();
+		return;
+	}
 
 	//Ensure that key descriptors are consistent accross key up/down event pairs.
 	//This is necessary to accomodate layer changes midkey.

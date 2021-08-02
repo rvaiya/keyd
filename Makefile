@@ -12,7 +12,7 @@ all:
 	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev
 debug:
 	-mkdir bin
-	$(CC) $(CFLAGS) -Wall -Wextra -DDEBUG -g  src/*.c -o bin/keyd
+	$(CC) $(CFLAGS) -Wall -Wextra -pedantic -DDEBUG -g  src/*.c -o bin/keyd -ludev
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:
