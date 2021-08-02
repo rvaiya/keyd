@@ -615,7 +615,7 @@ static void lock()
 	int fd;
 
 	if((fd=open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
-		perror("open");
+		perror("flock open");
 		exit(1);
 	}
 

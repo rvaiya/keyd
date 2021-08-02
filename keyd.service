@@ -1,11 +1,11 @@
-[Install]
-WantedBy=sysinit.target
-
 [Unit]
 Description=key remapping daemon
-DefaultDependencies=no
-After=local-fs-pre.target
+Requires=local-fs.target
+After=local-fs.target
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/keyd 
+
+[Install]
+WantedBy=sysinit.target
