@@ -187,7 +187,7 @@ static int create_uinput_fd()
 	return fd;
 }
 
-static syn()
+static void syn()
 {
 	static struct input_event ev = {
 		.type = EV_SYN,
