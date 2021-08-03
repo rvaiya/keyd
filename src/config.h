@@ -53,10 +53,14 @@ struct key_descriptor
 	} arg, arg2;
 };
 
+struct layer {
+	struct key_descriptor keymap[KEY_CNT];
+};
+
 struct keyboard_config {
 	char name[256];
 
-	struct key_descriptor layers[MAX_LAYERS][KEY_CNT];
+	struct layer layers[MAX_LAYERS];
 	struct keyboard_config *next;
 };
 

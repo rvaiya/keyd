@@ -61,8 +61,10 @@ struct keyboard {
 	int fd;
 	char devnode[256];
 
-	struct keyboard_config *cfg;
+	uint8_t main_layer;
+	uint8_t active_layer;
 
+	struct keyboard_config *cfg;
 	struct keyboard *next;
 };
 
@@ -259,27 +261,46 @@ static void send_keyseq(uint32_t keyseq, int pressed)
 	send_key(code, pressed);
 }
 
+static struct key_descriptor *get_descriptor(struct keyboard *kbd,
+					     uint16_t code,
+					     uint8_t ispressed,
+					     uint8_t *tapped)
+{
+	static struct key_descriptor *pressed[KEY_CNT] = {0};
+	static uint16_t last = 0;
+
+	struct key_descriptor *desc;
+
+	*tapped = !ispressed && last == code;
+	last = code;
+
+	//Ensure that key descriptors are consistent accross key up/down event pairs.
+	//This is necessary to accomodate layer changes midkey.
+	if(!ispressed) {
+		assert(pressed[code]);
+		desc = pressed[code];
+
+		pressed[code] = NULL;
+		return desc;
+	}
+
+	desc = &kbd->cfg->layers[kbd->active_layer].keymap[code];
+	pressed[code] = desc;
+	return desc;
+}
+
 //Where the magic happens
 static void process_event(struct keyboard *kbd, struct input_event *ev)
 {
-	static struct keyboard *current_kbd = NULL;
 	static uint16_t oneshotmods = 0;
-	static struct key_descriptor *last_pressed = NULL;
-	static uint8_t layer = 0;
-	static uint8_t main_layer = 0;
-	static struct key_descriptor *pressed_keys[KEY_CNT];
+	static struct key_descriptor *desc, *last_pressed = NULL;
 	static uint8_t oneshotlayer = 0;
+	static uint8_t tapped;
 
-	struct key_descriptor *desc;
-	int code = ev->code;
-	int pressed = ev->value;
+
+	uint16_t code = ev->code;
+	uint8_t pressed = ev->value;
 	uint32_t keypressed = 0;
-
-	if(current_kbd != kbd) { //Reset state when switching keyboards.
-		main_layer = 0;
-		layer = 0;
-		current_kbd = kbd;
-	}
 
 	if(ev->type != EV_KEY)
 		return;
@@ -290,20 +311,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		return;
 	}
 
-	//Ensure that key descriptors are consistent accross key up/down event pairs.
-	//This is necessary to accomodate layer changes midkey.
-	if(pressed_keys[code]) 
-		desc = pressed_keys[code];
-	else
-		desc = &kbd->cfg->layers[layer][code];
-
-	if(pressed)
-		pressed_keys[code] = desc;
-	else
-		pressed_keys[code] = NULL;
+	desc = get_descriptor(kbd, code, pressed, &tapped);
 
 	if(oneshotlayer) {
-		layer = main_layer;
+		kbd->active_layer = kbd->main_layer;
 		oneshotlayer = 0;
 	}
 
@@ -318,30 +329,28 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		break;
 	case ACTION_LAYER:
 		if(pressed)
-			layer = desc->arg.layer;
+			kbd->active_layer = desc->arg.layer;
 		else
-			layer = main_layer;
+			kbd->active_layer = kbd->main_layer;
 		break;
 	case ACTION_LAYER_ONESHOT:
-		if(pressed) {
-			layer = desc->arg.layer;
-		} else {
-			if(last_pressed == desc) //If tapped
-				oneshotlayer++;
-			else
-				layer = main_layer;
-		}
+		if(pressed)
+			kbd->active_layer = desc->arg.layer;
+		else if(tapped)
+			oneshotlayer++;
+		else
+			kbd->active_layer = kbd->main_layer;
 		break;
 	case ACTION_LAYER_TOGGLE:
 		if(pressed) {
-			main_layer = desc->arg.layer;
-			layer = main_layer;
+			kbd->main_layer = desc->arg.layer;
+			kbd->active_layer = kbd->main_layer;
 		}
 		break;
 	case ACTION_ONESHOT:
 		if(pressed)
 			send_mods(desc->arg.mods, 1);
-		else if(last_pressed == desc) //If no key has been interposed make the modifiers transient
+		else if(tapped) //If no key has been interposed make the modifiers transient
 			oneshotmods |= desc->arg.mods;
 		else //otherwise treat as a normal modifier.
 			send_mods(desc->arg.mods, 0);
@@ -352,7 +361,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			send_mods(desc->arg.mods, 1);
 		else {
 			send_mods(desc->arg.mods, 0);
-			if(last_pressed == desc) {
+			if(tapped) {
 				send_keyseq(desc->arg2.keyseq, 1);
 				send_keyseq(desc->arg2.keyseq, 0);
 				keypressed = desc->arg2.keyseq;
@@ -361,10 +370,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		break;
 	case ACTION_DOUBLE_LAYER:
 		if(pressed) {
-			layer = desc->arg.layer;
+			kbd->active_layer = desc->arg.layer;
 		} else {
-			layer = main_layer;
-			if(last_pressed == desc) {
+			kbd->active_layer = kbd->main_layer;
+			if(tapped) {
 				send_keyseq(desc->arg2.keyseq, 1);
 				send_keyseq(desc->arg2.keyseq, 0);
 				keypressed = desc->arg2.keyseq;
@@ -405,7 +414,7 @@ static const char *evdev_device_name(const char *devnode)
 }
 
 //Block on the given keyboard nodes until no keys are depressed.
-void await_keyboard_neutrality(char **devs, int n)
+static void await_keyboard_neutrality(char **devs, int n)
 {
 	int fds[MAX_KEYBOARDS];
 	int maxfd = 0;
@@ -506,6 +515,8 @@ static int manage_keyboard(const char *devnode)
 	kbd = malloc(sizeof(struct keyboard));
 	kbd->fd = fd;
 	kbd->cfg = cfg;
+	kbd->main_layer = 0;
+	kbd->active_layer = 0;
 
 	strcpy(kbd->devnode, devnode);
 
@@ -719,8 +730,10 @@ static void lock()
 		exit(1);
 	}
 
-	if(flock(fd, LOCK_EX | LOCK_NB) == -1)
-		die("Another instance of keyd is already running.");
+	if(flock(fd, LOCK_EX | LOCK_NB) == -1) {
+		warn("Another instance of keyd is already running.");
+		exit(-1);
+	}
 }
 
 
@@ -732,7 +745,7 @@ static void exit_signal_handler(int sig)
 	exit(0);
 }
 
-void daemonize()
+static void daemonize()
 {
 	int fd = open(LOG_FILE, O_APPEND|O_WRONLY);
 
@@ -775,7 +788,7 @@ int main(int argc, char *argv[])
 	if(argc > 1 && !strcmp(argv[1], "-d"))
 		daemonize();
 
-	warn("Starting keyd.");
+	warn("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	config_generate();
 	ufd = create_uinput_fd();
 

@@ -496,7 +496,7 @@ static void parse(struct keyboard_config *cfg)
 	}
 
 	int current_layer = 0;
-	struct key_descriptor *layer = cfg->layers[0];
+	struct layer *layer = &cfg->layers[0];
 
 	lnum = 0;
 
@@ -516,7 +516,7 @@ static void parse(struct keyboard_config *cfg)
 			continue;
 
 		if(s[0] == '[' && s[len-1] == ']') {
-			layer = cfg->layers[++current_layer];
+			layer = &cfg->layers[++current_layer];
 		} else if(layer) {
 			struct key_descriptor desc;
 			char *key, *val;
@@ -542,7 +542,7 @@ static void parse(struct keyboard_config *cfg)
 			if(parse_val(val, &desc))
 				goto next;
 
-			layer[code] = desc;
+			layer->keymap[code] = desc;
 		}
 
 next:
@@ -558,8 +558,8 @@ next:
 		int p = parents[i];
 		if(p != -1) {
 			for(j = 0;j < KEY_CNT;j++) {
-				if(cfg->layers[i][j].action == ACTION_DEFAULT)
-					cfg->layers[i][j] = cfg->layers[p][j];
+				if(cfg->layers[i].keymap[j].action == ACTION_DEFAULT)
+					cfg->layers[i].keymap[j] = cfg->layers[p].keymap[j];
 			}
 		}
 	}
@@ -600,7 +600,7 @@ void config_generate()
 		cfg = calloc(1, sizeof(struct keyboard_config));
 
 		for(i = 0;i < KEY_CNT;i++) {
-			struct key_descriptor *desc = &cfg->layers[0][i];
+			struct key_descriptor *desc = &cfg->layers[0].keymap[i];
 			desc->action = ACTION_KEYSEQ;
 			desc->arg.keyseq = i;
 		}
