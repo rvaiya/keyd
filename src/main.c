@@ -45,7 +45,7 @@
 #define LOG_FILE "/var/log/keyd.log" //Only used when running as a daemon.
 
 #ifdef DEBUG
-	#define dbg(...) warn(__VA_ARGS__)
+	#define dbg(fmt, ...) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
 	#define dbg(...)
 #endif
@@ -78,7 +78,7 @@ static void warn(char *fmt, ...)
 	fprintf(stderr, "\n");
 }
 
-static void die(char *fmt, ...)
+static void _die(char *fmt, ...)
 {
 	va_list args; 
 	va_start(args, fmt);
@@ -88,6 +88,8 @@ static void die(char *fmt, ...)
 	fprintf(stderr, "\n");
 	exit(-1);
 }
+
+#define die(fmt, ...) _die("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 
 static int is_keyboard(struct udev_device *dev) 
 {
@@ -402,6 +404,70 @@ static const char *evdev_device_name(const char *devnode)
 	return name;
 }
 
+//Block on the given keyboard nodes until no keys are depressed.
+void await_keyboard_neutrality(char **devs, int n)
+{
+	int fds[MAX_KEYBOARDS];
+	int maxfd = 0;
+	int i;
+
+	dbg("Awaiting keyboard neutrality.");
+	for(i = 0;i < n;i++) {
+		if((fds[i] = open(devs[i], O_RDONLY | O_NONBLOCK)) < 0)
+			die("open");
+
+		if(fds[i] > maxfd)
+			maxfd = fds[i];
+	}
+
+	//There is a race condition here since it is possible for a key down
+	//event to be generated before keyd is launched, in that case we hope a
+	//repeat event is generated within the first 300ms. If we miss the
+	//keydown event and the repeat event is not generated within the first
+	//300ms it is possible for this to yield a false positive. In practice
+	//this seems to work fine. Given the stateless nature of evdev I am not 
+	//aware of a better way to achieve this.
+
+	while(1) {
+		struct timeval tv = {
+			.tv_usec = 300000
+		};
+
+		struct input_event ev;
+		int i;
+		fd_set fdset;
+
+		FD_ZERO(&fdset);
+		for(i = 0;i < n;i++)
+			FD_SET(fds[i], &fdset);
+
+		select(maxfd+1, &fdset, NULL, NULL, &tv);
+
+		for(i = 0;i < n;i++) {
+			if(FD_ISSET(fds[i], &fdset)) {
+				while(read(fds[i], &ev, sizeof ev) > 0) {
+					if(ev.type == EV_KEY) {
+						keystate[ev.code] = ev.value;
+						dbg("keystate[%d]: %d", ev.code, ev.value);
+					}
+				}
+			}
+		}
+
+		for(i = 0;i < KEY_CNT;i++)
+			if(keystate[i])
+				break;
+
+		if(i == KEY_CNT)
+			break;
+	}
+
+	for(i = 0;i < n;i++)
+		close(fds[i]);
+
+	dbg("Keyboard neutrality achieved");
+}
+
 static int manage_keyboard(const char *devnode)
 {
 	int fd;
@@ -555,12 +621,13 @@ static void main_loop()
 	struct keyboard *kbd;
 	int monfd;
 
-	int i, sz;
+	int i, n;
 	char *devs[MAX_KEYBOARDS];
 
-	get_keyboard_nodes(devs, &sz);
+	get_keyboard_nodes(devs, &n);
+	await_keyboard_neutrality(devs, n);
 
-	for(i = 0;i < sz;i++) {
+	for(i = 0;i < n;i++) {
 		manage_keyboard(devs[i]);
 		free(devs[i]);
 	}
