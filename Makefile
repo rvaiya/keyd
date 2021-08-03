@@ -1,4 +1,4 @@
-.PHONY: all clean debug install
+.PHONY: all clean debug install uninstall
 
 DESTDIR=
 PREFIX=/usr
@@ -26,3 +26,8 @@ install:
 	install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
+		bin/keyd $(DESTDIR)$(PREFIX)/bin/keyd \
+		$(DESTDIR)$(PREFIX)/share/man/man1/keyd.1.gz
+
