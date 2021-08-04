@@ -320,7 +320,14 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 
 	switch(desc->action) {
 		uint32_t keyseq;
+		uint16_t key;
 
+	case ACTION_KEY:
+		key = desc->arg.key;
+		send_key(key, pressed);
+		keypressed = key;
+
+		break;
 	case ACTION_KEYSEQ:
 		keyseq = desc->arg.keyseq;
 		send_keyseq(keyseq, pressed);

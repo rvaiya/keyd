@@ -601,8 +601,8 @@ void config_generate()
 
 		for(i = 0;i < KEY_CNT;i++) {
 			struct key_descriptor *desc = &cfg->layers[0].keymap[i];
-			desc->action = ACTION_KEYSEQ;
-			desc->arg.keyseq = i;
+			desc->action = ACTION_KEY;
+			desc->arg.key = i;
 		}
 
 		strcpy(cfg->name, ent->d_name);

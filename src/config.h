@@ -36,6 +36,7 @@ enum action {
 	ACTION_DEFAULT,
 	ACTION_DOUBLE_MODIFIER,
 	ACTION_DOUBLE_LAYER,
+	ACTION_KEY,
 	ACTION_KEYSEQ,
 	ACTION_LAYER_TOGGLE,
 	ACTION_LAYER_ONESHOT,
@@ -48,6 +49,7 @@ struct key_descriptor
 	enum action action;
 	union {
 		uint32_t keyseq;
+		uint16_t key;
 		uint16_t mods;
 		uint8_t layer;
 	} arg, arg2;
