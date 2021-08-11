@@ -14,7 +14,11 @@ debug:
 	-mkdir bin
 	$(CC) $(CFLAGS) -Wall -Wextra -pedantic -DDEBUG -g  src/*.c -o bin/keyd -ludev
 man:
-	pandoc -s -t man man.md | gzip > keyd.1.gz
+	-if which lowdown 1> /dev/null ; then \
+		sed "/^%%/d" man.md > _  && lowdown -s -Tman -M'author:Raheman Vaiya' -M'section:1' -M'title:keyd' _ | gzip > keyd.1.gz ; rm -- _ ; \
+	else \
+		pandoc -s -t man man.md | gzip > keyd.1.gz ;\
+	fi
 clean:
 	-rm -rf bin
 install:
