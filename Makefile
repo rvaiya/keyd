@@ -15,7 +15,7 @@ debug:
 	$(CC) $(CFLAGS) -Wall -Wextra -pedantic -DDEBUG -g  src/*.c -o bin/keyd -ludev
 man:
 	-if which lowdown 1> /dev/null ; then \
-		sed "/^%%/d" man.md > _  && lowdown -s -Tman -M'author:Raheman Vaiya' -M'section:1' -M'title:keyd' _ | gzip > keyd.1.gz ; rm -- _ ; \
+		sed "/^%%/d" man.md |  lowdown -s -Tman -M'author:Raheman Vaiya' -M'section:1' -M'title:keyd' | gzip > keyd.1.gz ; \
 	else \
 		pandoc -s -t man man.md | gzip > keyd.1.gz ;\
 	fi
