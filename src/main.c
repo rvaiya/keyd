@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <linux/uinput.h>
+#include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include "keys.h"
@@ -61,8 +62,14 @@ struct keyboard {
 	int fd;
 	char devnode[256];
 
-	uint8_t main_layer;
-	uint8_t active_layer;
+	uint8_t active_layers[MAX_LAYERS];
+	uint16_t mods; //The active modifier set
+
+	//The layer to which modifiers are applied,
+	//this may be distinct from the main layout
+	int modlayout;
+
+	int layout;
 
 	struct keyboard_config *cfg;
 	struct keyboard *next;
@@ -72,7 +79,7 @@ static struct keyboard *keyboards = NULL;
 
 static void warn(char *fmt, ...)
 {
-	va_list args; 
+	va_list args;
 	va_start(args, fmt);
 
 	vfprintf(stderr, fmt, args);
@@ -82,7 +89,7 @@ static void warn(char *fmt, ...)
 
 static void _die(char *fmt, ...)
 {
-	va_list args; 
+	va_list args;
 	va_start(args, fmt);
 
 	vfprintf(stderr, fmt, args);
@@ -93,7 +100,7 @@ static void _die(char *fmt, ...)
 
 #define die(fmt, ...) _die("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 
-static int is_keyboard(struct udev_device *dev) 
+static int is_keyboard(struct udev_device *dev)
 {
 	int is_keyboard = 0;
 
@@ -118,7 +125,7 @@ static int is_keyboard(struct udev_device *dev)
 	return is_keyboard;
 }
 
-static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz) 
+static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 {
 	struct udev *udev;
 	struct udev_enumerate *enumerate;
@@ -160,7 +167,7 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	udev_unref(udev);
 }
 
-static int create_uinput_fd() 
+static int create_uinput_fd()
 {
 	size_t i;
 	struct uinput_setup usetup;
@@ -238,69 +245,99 @@ static void send_key(uint16_t code, int is_pressed)
 	syn();
 }
 
-static void send_mods(uint16_t mods, int pressed)
+static void setmods(uint16_t mods)
 {
-	if(mods & MOD_CTRL)
-		send_key(KEY_LEFTCTRL, pressed);
-	if(mods & MOD_SHIFT)
-		send_key(KEY_LEFTSHIFT, pressed);
-	if(mods & MOD_SUPER)
-		send_key(KEY_LEFTMETA, pressed);
-	if(mods & MOD_ALT)
-		send_key(KEY_LEFTALT, pressed);
-	if(mods & MOD_ALT_GR)
-		send_key(KEY_RIGHTALT, pressed);
+	if(!!(mods & MOD_CTRL) != keystate[KEY_LEFTCTRL])
+		send_key(KEY_LEFTCTRL, !keystate[KEY_LEFTCTRL]);
+	if(!!(mods & MOD_SHIFT) != keystate[KEY_LEFTSHIFT])
+		send_key(KEY_LEFTSHIFT, !keystate[KEY_LEFTSHIFT]);
+	if(!!(mods & MOD_SUPER) != keystate[KEY_LEFTMETA])
+		send_key(KEY_LEFTMETA, !keystate[KEY_LEFTMETA]);
+	if(!!(mods & MOD_ALT) != keystate[KEY_LEFTALT])
+		send_key(KEY_LEFTALT, !keystate[KEY_LEFTALT]);
+	if(!!(mods & MOD_ALT_GR) != keystate[KEY_RIGHTALT])
+		send_key(KEY_RIGHTALT, !keystate[KEY_RIGHTALT]);
 }
 
-static void send_keyseq(uint32_t keyseq, int pressed)
+static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, uint16_t *modsp)
 {
-	uint16_t mods = keyseq >> 16;
-	uint16_t code = keyseq;
+	struct key_descriptor *desc = NULL;
+	int active_layers = 0;
+	uint16_t mods = 0;
+	size_t i;
 
-	send_mods(mods, pressed);
-	send_key(code, pressed);
-}
+	for(i = 0;i < kbd->cfg->nlayers;i++) {
+		if(kbd->active_layers[i]) {
+			struct layer *layer = kbd->cfg->layers[i];
+			struct key_descriptor *d = &layer->keymap[code];
 
-static struct key_descriptor *get_descriptor(struct keyboard *kbd,
-					     uint16_t code,
-					     uint8_t ispressed,
-					     uint8_t *tapped)
-{
-	static struct key_descriptor *pressed[KEY_CNT] = {0};
-	static uint16_t last = 0;
+			if(!desc && d->action != ACTION_UNDEFINED)
+				desc = d;
+			else
+				mods |= layer->mods;
 
-	struct key_descriptor *desc;
-
-	*tapped = !ispressed && last == code;
-	last = code;
-
-	//Ensure that key descriptors are consistent accross key up/down event pairs.
-	//This is necessary to accomodate layer changes midkey.
-	if(!ispressed) {
-		assert(pressed[code]);
-		desc = pressed[code];
-
-		pressed[code] = NULL;
-		return desc;
+			active_layers++;
+		}
 	}
 
-	desc = &kbd->cfg->layers[kbd->active_layer].keymap[code];
-	pressed[code] = desc;
+	if(!desc) {
+		if(mods) {
+			//If the shift key is the only modifier active, we probably
+			//want to use the key layout.
+			if(mods == MOD_SHIFT || mods == MOD_ALT_GR)
+				desc = &kbd->cfg->layers[kbd->layout]->keymap[code];
+			else
+				desc = &kbd->cfg->layers[kbd->modlayout]->keymap[code];
+		} else if(active_layers)
+			return NULL;
+		else
+			desc = &kbd->cfg->layers[kbd->layout]->keymap[code];
+	}
+
+	*modsp = mods;
 	return desc;
+}
+
+static void reify_layer_mods(struct keyboard *kbd)
+{
+	uint16_t mods = 0;
+	size_t i;
+
+	for(i = 0;i < kbd->cfg->nlayers;i++) {
+		struct layer *layer = kbd->cfg->layers[i];
+		if(kbd->active_layers[i])
+			mods |= layer->mods;
+	}
+
+	setmods(mods);
+}
+
+static uint64_t get_time()
+{
+	struct timespec tv;
+	clock_gettime(CLOCK_MONOTONIC, &tv);
+	return (tv.tv_sec*1E9)+tv.tv_nsec;
 }
 
 //Where the magic happens
 static void process_event(struct keyboard *kbd, struct input_event *ev)
 {
-	static uint16_t oneshotmods = 0;
-	static struct key_descriptor *desc, *last_pressed = NULL;
-	static uint8_t oneshotlayer = 0;
-	static uint8_t tapped;
-
-
+	size_t i;
 	uint16_t code = ev->code;
 	uint8_t pressed = ev->value;
-	uint32_t keypressed = 0;
+
+	struct key_descriptor *d;
+
+	static struct key_descriptor *lastd = NULL;
+	static uint8_t oneshot_layers[MAX_LAYERS] = {0};
+	static uint64_t pressed_timestamps[KEY_CNT] = {0};
+	static uint64_t last_keyseq_timestamp = 0;
+	uint16_t mods = 0;
+
+	//Cache the descriptor to ensure consistency upon up/down event pairs since layers can change midkey.
+
+	static struct key_descriptor *dcache[KEY_CNT] ={0};
+	static uint16_t mcache[KEY_CNT] ={0};
 
 	if(ev->type != EV_KEY)
 		return;
@@ -311,94 +348,108 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		return;
 	}
 
-	desc = get_descriptor(kbd, code, pressed, &tapped);
+	if(!pressed) {
+		d = dcache[code];
+		mods = mcache[code];
 
-	if(oneshotlayer) {
-		kbd->active_layer = kbd->main_layer;
-		oneshotlayer = 0;
+		dcache[code] = NULL;
+		mcache[code] = 0;
+	} else {
+		pressed_timestamps[code] = get_time();
+		d = kbd_lookup_descriptor(kbd, code, &mods);
+
+		dcache[code] = d;
+		mcache[code] = mods;
 	}
 
-	switch(desc->action) {
+	if(!d)
+		return;
+
+	switch(d->action) {
+		int layer;
 		uint32_t keyseq;
-		uint16_t key;
 
-	case ACTION_KEY:
-		key = desc->arg.key;
-		send_key(key, pressed);
-		keypressed = key;
+	case ACTION_OVERLOAD:
+		keyseq = d->arg.keyseq;
+		layer = d->arg2.layer;
 
-		break;
-	case ACTION_KEYSEQ:
-		keyseq = desc->arg.keyseq;
-		send_keyseq(keyseq, pressed);
-		keypressed = keyseq;
-
-		break;
-	case ACTION_LAYER:
-		if(pressed)
-			kbd->active_layer = desc->arg.layer;
-		else
-			kbd->active_layer = kbd->main_layer;
-		break;
-	case ACTION_LAYER_ONESHOT:
-		if(pressed)
-			kbd->active_layer = desc->arg.layer;
-		else if(tapped)
-			oneshotlayer++;
-		else
-			kbd->active_layer = kbd->main_layer;
-		break;
-	case ACTION_LAYER_TOGGLE:
 		if(pressed) {
-			kbd->main_layer = desc->arg.layer;
-			kbd->active_layer = kbd->main_layer;
+			kbd->active_layers[layer] = 1;
+		} else {
+			kbd->active_layers[layer] = 0;
+
+			if(lastd == d) { //If tapped
+				uint16_t key = keyseq & 0xFF;
+				mods |= keyseq >> 16;
+
+				setmods(mods);
+				send_key(key, 1);
+				send_key(key, 0);
+
+				goto keyseq_cleanup;
+			}
 		}
+
+		reify_layer_mods(kbd);
+		break;
+	case ACTION_LAYOUT:
+		kbd->layout = d->arg.layer;
+		kbd->modlayout = d->arg2.layer;
+
+		dbg("layer: %d, modlayout: %d", kbd->layout, kbd->modlayout);
 		break;
 	case ACTION_ONESHOT:
 		if(pressed)
-			send_mods(desc->arg.mods, 1);
-		else if(tapped) //If no key has been interposed make the modifiers transient
-			oneshotmods |= desc->arg.mods;
-		else //otherwise treat as a normal modifier.
-			send_mods(desc->arg.mods, 0);
+			kbd->active_layers[d->arg.layer] = 1;
+		else if(pressed_timestamps[code] < last_keyseq_timestamp)
+			kbd->active_layers[d->arg.layer] = 0;
+		else //Tapped
+			oneshot_layers[d->arg.layer] = 1;
 
+		reify_layer_mods(kbd);
 		break;
-	case ACTION_DOUBLE_MODIFIER:
+	case ACTION_LAYER:
 		if(pressed)
-			send_mods(desc->arg.mods, 1);
-		else {
-			send_mods(desc->arg.mods, 0);
-			if(tapped) {
-				send_keyseq(desc->arg2.keyseq, 1);
-				send_keyseq(desc->arg2.keyseq, 0);
-				keypressed = desc->arg2.keyseq;
-			}
-		}
+			kbd->active_layers[d->arg.layer] = 1;
+		else
+			kbd->active_layers[d->arg.layer] = 0;
+
+		reify_layer_mods(kbd);
 		break;
-	case ACTION_DOUBLE_LAYER:
+	case ACTION_KEYSEQ:
+		mods |= d->arg.keyseq >> 16;
 		if(pressed) {
-			kbd->active_layer = desc->arg.layer;
+			setmods(mods);
+			send_key(d->arg.keyseq & 0xFF, 1);
+
 		} else {
-			kbd->active_layer = kbd->main_layer;
-			if(tapped) {
-				send_keyseq(desc->arg2.keyseq, 1);
-				send_keyseq(desc->arg2.keyseq, 0);
-				keypressed = desc->arg2.keyseq;
-			}
+			reify_layer_mods(kbd);
+			send_key(d->arg.keyseq & 0xFF, 0);
 		}
+
+		goto keyseq_cleanup;
 		break;
-	default:
-		dbg("Ignoring action %d generated by %d", desc->action, code);
+	case ACTION_UNDEFINED:
+		goto keyseq_cleanup;
 		break;
 	}
 
-	if(keypressed && !ISMOD(keypressed & 0xFFFF)) {
-		send_mods(oneshotmods, 0);
-		oneshotmods = 0;
-	}
+	lastd = d;
+	return;
+
+keyseq_cleanup:
+	lastd = d;
 
 	if(pressed)
-		last_pressed = desc;
+		last_keyseq_timestamp = get_time();
+
+	//Clear active oneshot layers.
+	for(i = 0;i < kbd->cfg->nlayers;i++) {
+		if(oneshot_layers[i]) {
+			kbd->active_layers[i] = 0;
+			oneshot_layers[i] = 0;
+		}
+	}
 }
 
 static const char *evdev_device_name(const char *devnode)
@@ -441,7 +492,7 @@ static void await_keyboard_neutrality(char **devs, int n)
 	//repeat event is generated within the first 300ms. If we miss the
 	//keydown event and the repeat event is not generated within the first
 	//300ms it is possible for this to yield a false positive. In practice
-	//this seems to work fine. Given the stateless nature of evdev I am not 
+	//this seems to work fine. Given the stateless nature of evdev I am not
 	//aware of a better way to achieve this.
 
 	while(1) {
@@ -519,17 +570,17 @@ static int manage_keyboard(const char *devnode)
 		exit(1);
 	}
 
-	kbd = malloc(sizeof(struct keyboard));
+	kbd = calloc(1, sizeof(struct keyboard));
 	kbd->fd = fd;
 	kbd->cfg = cfg;
-	kbd->main_layer = 0;
-	kbd->active_layer = 0;
+	kbd->modlayout = kbd->cfg->default_modlayout;
+	kbd->layout = kbd->cfg->default_layout;
 
 	strcpy(kbd->devnode, devnode);
 
 	//Grab the keyboard.
 	if(ioctl(fd, EVIOCGRAB, (void *)1) < 0) {
-		perror("EVIOCGRAB"); 
+		perror("EVIOCGRAB");
 		exit(-1);
 	}
 
@@ -552,7 +603,7 @@ static int destroy_keyboard(const char *devnode)
 
 			//Attempt to ungrab the the keyboard (assuming it still exists)
 			if(ioctl(kbd->fd, EVIOCGRAB, (void *)1) < 0) {
-				perror("EVIOCGRAB"); 
+				perror("EVIOCGRAB");
 			}
 
 			close(kbd->fd);
@@ -567,7 +618,7 @@ static int destroy_keyboard(const char *devnode)
 	return 0;
 }
 
-static void evdev_monitor_loop(int *fds, int sz) 
+static void evdev_monitor_loop(int *fds, int sz)
 {
 	struct input_event ev;
 	fd_set fdset;
@@ -610,7 +661,7 @@ static void evdev_monitor_loop(int *fds, int sz)
 	}
 }
 
-static int monitor_loop() 
+static int monitor_loop()
 {
 	char *devnodes[256];
 	int sz, i;
@@ -634,7 +685,7 @@ static int monitor_loop()
 	return 0;
 }
 
-static void main_loop() 
+static void main_loop()
 {
 	struct keyboard *kbd;
 	int monfd;
@@ -661,8 +712,7 @@ static void main_loop()
 
 	monfd = udev_monitor_get_fd(udevmon);
 
-	int exit = 0;
-	while(!exit) {
+	while(1) {
 		int maxfd;
 		fd_set fds;
 		struct udev_device *dev;

@@ -6,6 +6,10 @@ result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
 
+# UPDATE
+
+*Version 0.1.0 has just been released and includes some breaking changes. Please see the [changelog](CHANGELOG.md) for details.*
+
 # Features
 
 keyd has several unique features many of which are traditionally only 
@@ -60,7 +64,7 @@ Some of the more interesting ones include:
 
 ```
 # Turns capslock into an escape key when pressed and a control key when held.
-capslock = mods_on_hold(C, esc)
+capslock = overload(C, esc)
 
 # Remaps the escape key to capslock
 esc = capslock
@@ -76,58 +80,37 @@ Before proceeding ensure you have some way of killing keyd if things go wrong
 the man page for keyboard specific configuraiton) so you can plug in another
 keyboard which is unaffected by the changes.
 
-# Sample Config File
+# Sample Config
 
-	# Maps escape to the escape layer when held and the escape key when pressed
+    leftshift = oneshot(S)
+    capslock = overload(symbols, esc)
 
-	esc = layer_on_hold(escape_layer, esc)
+    [symbols]
 
-	# Creates an escape layer which is activated by pressing the escape key.
+    d = S-grave
+    f = slash
+    ...
 
-	[escape_layer]
+# Recommended config
 
-	# Esc+1 changes the letter layout to dvorak. 
-	1 = layer_toggle(dvorak)
+Many users will probably not be interested in taking full advantage of keyd.
+For those who seek simple quality of life improvements I can recommend the
+following config:
 
-	# Esc+2 changes the letter layout back to the default. 
-	2 = layer_toggle(default)
+    leftshift = oneshot(S)
+    leftalt = oneshot(A)
+    rightalt = oneshot(G)
+    rightshift = oneshot(A)
+    leftmeta = oneshot(M)
+    rightmeta = oneshot(M)
 
-	# Creates a dvorak layer which inherits from the main layer (see the section on layer inheritance in the man page).
+    capslock = overload(esc, C)
+    insert = S-insert
 
-	[dvorak:default]
-
-	q = apostrophe
-	w = comma
-	e = dot
-	r = p
-	t = y
-	y = f
-	u = g
-	i = c
-	o = r
-	p = l
-
-	a = a
-	s = o
-	d = e
-	f = u
-	g = i
-	h = d
-	j = h
-	k = t
-	l = n
-	semicolon = s
-
-	z = semicolon
-	x = q
-	c = j
-	v = k
-	b = x
-	n = b
-	m = m
-	comma = w
-	dot = v
-	slash = z
+This remaps all modifiers to 'oneshot' keys and overloads the capslock key to
+function as both escape (when tapped) and control (when held). Thus to produce
+the letter A you can now simply tap shift and then a instead of having to hold
+it. Finally it remaps insert to S-insert (paste on X11).
 
 # FAQS
 
@@ -143,11 +126,12 @@ anything that is as flexible as keyd.
 ## What about [kmonad](https://github.com/kmonad/kmonad)?
 
 keyd was written several years ago to allow me to easily experiment with
-different layouts on my growing keyboard collection. At the time kmonad did
-not exist and custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware) (which inspired keyd) was the
-only way to get comparable features. I became aware of kmonad after having
-published keyd. While kmonad is a fine project with similar goals, it takes
-a different approach and has a different design philosophy.
+different layouts on my growing keyboard collection. At the time kmonad did not
+exist and custom keyboard firmware like
+[QMK](https://github.com/qmk/qmk_firmware) (which inspired keyd) was the only
+way to get comparable features. I became aware of kmonad after having published
+keyd. While kmonad is a fine project with similar goals, it takes a different
+approach and has a different design philosophy.
 
 Notably keyd was written entirely in C with performance and simplicitly in
 mind and will likely never be as configurable as kmonad (which is extensible
@@ -165,4 +149,4 @@ good candidates for inclusion.
 
 # Contributing
 
-See [CONTRIBUTING].
+See [CONTRIBUTING](CONTRIBUTING.md).

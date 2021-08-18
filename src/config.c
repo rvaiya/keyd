@@ -38,16 +38,26 @@
 
 struct keyboard_config *configs = NULL;
 
-static char layers[MAX_LAYERS][MAX_LAYER_NAME_LEN]; //Layer names
-static size_t nlayers;
-static int parents[MAX_LAYERS];
+struct layer_table_ent {
+	char name[256];
+	char pname[256];
+
+	uint8_t modsonly;
+	struct layer *layer;
+} layer_table[MAX_LAYERS];
+
+int nlayers = 0;
 
 static int lnum = 0;
 static char path[PATH_MAX];
 
+static int lookup_layer(const char *name);
+static int parse_modset(const char *s, uint16_t *mods);
+
 #define err(fmt, ...) fprintf(stderr, "%s: ERROR on line %d: "fmt"\n", path, lnum, ##__VA_ARGS__)
 
-static const char *modseq_to_string(uint16_t mods) {
+static const char *modseq_to_string(uint16_t mods)
+{
 	static char s[32];
 	int i = 0;
 	s[0] = '\0';
@@ -55,7 +65,7 @@ static const char *modseq_to_string(uint16_t mods) {
 	if(mods & MOD_CTRL) {
 		strcpy(s+i, "-C");
 		i+=2;
-	} 
+	}
 	if(mods & MOD_SHIFT) {
 		strcpy(s+i, "-S");
 		i+=2;
@@ -64,7 +74,7 @@ static const char *modseq_to_string(uint16_t mods) {
 	if(mods & MOD_SUPER) {
 		strcpy(s+i, "-M");
 		i+=2;
-	} 
+	}
 
 	if(mods & MOD_ALT) {
 		strcpy(s+i, "-A");
@@ -82,7 +92,8 @@ static const char *modseq_to_string(uint16_t mods) {
 		return s;
 }
 
-static const char *keyseq_to_string(uint32_t keyseq) {
+const char *keyseq_to_string(uint32_t keyseq)
+{
 	int i = 0;
 	static char s[256];
 
@@ -94,7 +105,7 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	if(mods & MOD_CTRL) {
 		strcpy(s+i, "C-");
 		i+=2;
-	} 
+	}
 	if(mods & MOD_SHIFT) {
 		strcpy(s+i, "S-");
 		i+=2;
@@ -103,7 +114,7 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	if(mods & MOD_SUPER) {
 		strcpy(s+i, "M-");
 		i+=2;
-	} 
+	}
 
 	if(mods & MOD_ALT) {
 		strcpy(s+i, "A-");
@@ -123,7 +134,103 @@ static const char *keyseq_to_string(uint32_t keyseq) {
 	return s;
 }
 
-static int parse_mods(const char *s, uint16_t *mods) 
+//Returns the position in the layer table
+static struct layer_table_ent *create_layer(const char *name, const char *pname, uint16_t mods)
+{
+	struct layer_table_ent *ent = &layer_table[nlayers];
+
+	ent->layer = calloc(1, sizeof(struct layer));
+	ent->layer->keymap = calloc(KEY_CNT, sizeof(struct key_descriptor));
+
+	ent->modsonly = 0;
+	ent->layer->mods = mods;
+
+	strcpy(ent->pname, pname);
+	strcpy(ent->name, name);
+
+	nlayers++;
+	assert(nlayers <= MAX_LAYERS);
+	return ent;
+}
+
+static struct layer_table_ent *create_mod_layer(uint16_t mods)
+{
+	struct layer_table_ent *ent = create_layer("", "", mods);
+	ent->modsonly = 1;
+
+	return ent;
+}
+
+static void keyseq_to_desc(uint32_t seq, struct key_descriptor *desc)
+{
+	desc->action = ACTION_KEYSEQ;
+	desc->arg.keyseq = seq;
+
+	//To facilitate simplification of modifier handling convert
+	//all traditional modifier keys to their internal layer
+	//representations.
+
+	switch(seq) {
+	case KEY_LEFTCTRL:
+		desc->action = ACTION_LAYER;
+		desc->arg.layer = lookup_layer("C");
+		break;
+	case KEY_LEFTALT:
+		desc->action = ACTION_LAYER;
+		desc->arg.layer = lookup_layer("A");
+		break;
+	case KEY_LEFTSHIFT:
+		desc->action = ACTION_LAYER;
+		desc->arg.layer = lookup_layer("S");
+		break;
+	case KEY_LEFTMETA:
+		desc->action = ACTION_LAYER;
+		desc->arg.layer = lookup_layer("M");
+		break;
+	}
+}
+
+static  struct layer_table_ent *create_main_layer()
+{
+	int i;
+	struct layer_table_ent *ent = create_layer("main", "", 0);
+
+	for(i = 0;i < KEY_CNT;i++)
+		keyseq_to_desc(i, &ent->layer->keymap[i]);
+
+	return ent;
+}
+
+//Returns the index in the layer table or -1.
+static int lookup_layer(const char *name)
+{
+	int i;
+	uint16_t mods;
+
+	for(i = 0;i < nlayers;i++) {
+		if(!strcmp(layer_table[i].name, name))
+			return i;
+	}
+
+	if(!parse_modset(name, &mods)) {
+		//Check if a dedicated mod layer already exists.
+		for(i = 0;i < nlayers;i++) {
+			struct layer_table_ent *ent = &layer_table[i];
+			if(ent->modsonly && ent->layer->mods == mods)
+				return i;
+		}
+
+		//Autovivify mod layers which don't exist.
+
+		create_mod_layer(mods);
+		return nlayers-1;
+	}
+
+	return -1;
+}
+
+
+static int parse_modset(const char *s, uint16_t *mods)
 {
 	*mods = 0;
 
@@ -151,10 +258,8 @@ static int parse_mods(const char *s, uint16_t *mods)
 
 		if(s[1] == 0)
 			return 0;
-		else if(s[1] != '-') {
-			err("%s is not a valid modifier set", s);
+		else if(s[1] != '-')
 			return -1;
-		}
 
 		s+=2;
 	}
@@ -162,32 +267,59 @@ static int parse_mods(const char *s, uint16_t *mods)
 	return 0;
 }
 
-static int parse_keyseq(const char *s, uint16_t *keycode, uint16_t *mods) {
+static int parse_layer_heading(const char *s, char name[256], char parent[256])
+{
+	size_t len = strlen(s);
+	char *c;
+
+	name[0] = 0;
+	parent[0] = 0;
+
+	if(s[0] != '[' || s[len-1] != ']')
+		return -1;
+
+	c = strchr(s, ':');
+	if(c) {
+		int sz = c-(s+1);
+		memcpy(name, s+1, sz);
+		name[sz] = 0;
+
+		sz = len-2-sz-1;
+		memcpy(parent, c+1, sz);
+		parent[sz] = 0;
+	} else {
+		int sz = len-2;
+		memcpy(name, s+1, sz);
+		name[sz] = 0;
+	}
+
+	return 0;
+}
+
+static uint32_t parse_keyseq(const char *s) {
 	const char *c = s;
 	size_t i;
-
-	*mods = 0;
-	*keycode = 0;
+	uint32_t mods = 0;
 
 	while(*c && c[1] == '-') {
 		switch(*c) {
 		case 'C':
-			*mods |= MOD_CTRL;
+			mods |= MOD_CTRL;
 			break;
 		case 'M':
-			*mods |= MOD_SUPER;
+			mods |= MOD_SUPER;
 			break;
 		case 'A':
-			*mods |= MOD_ALT;
+			mods |= MOD_ALT;
 			break;
 		case 'S':
-			*mods |= MOD_SHIFT;
+			mods |= MOD_SHIFT;
 			break;
 		case 'G':
-			*mods |= MOD_ALT_GR;
+			mods |= MOD_ALT_GR;
 			break;
 		default:
-			return -1;
+			return 0;
 			break;
 		}
 
@@ -196,12 +328,11 @@ static int parse_keyseq(const char *s, uint16_t *keycode, uint16_t *mods) {
 
 	for(i = 0;i < sizeof keycode_strings / sizeof keycode_strings[0];i++) {
 		if(keycode_strings[i] && !strcmp(keycode_strings[i], c)) {
-			*keycode |= i;
-			return 0;
+			return (mods << 16) | i;
 		}
 	}
 
-	return -1;
+	return 0;
 }
 
 static int parse_kvp(char *s, char **_k, char **_v)
@@ -231,74 +362,6 @@ static int parse_kvp(char *s, char **_k, char **_v)
 	return 0;
 }
 
-static void parse_layer_names()
-{
-	size_t i;
-	char *line = NULL;
-	size_t n;
-	ssize_t len;
-	char strparents[MAX_LAYERS][MAX_LAYER_NAME_LEN] = {0};
-
-	FILE *fh = fopen(path, "r");
-	if(!fh) {
-		fprintf(stderr, "ERROR: Failed to open %s\n", path);
-		perror("fopen");
-		exit(-1);
-	}
-
-
-	nlayers = 0;
-	strcpy(layers[nlayers++], "default");
-	while((len=getline(&line, &n, fh)) != -1) {
-		char *s = line;
-
-		while(len && isspace(s[0])) {
-			s++;
-			len--;
-		}
-
-		if(len > 2 && s[0] == '[' && s[len-2] == ']') {
-			const char *name = s+1;
-			size_t idx = nlayers;
-			char *c;
-
-			s[len-2] = '\0';
-
-			if((c=strchr(name, ':'))) {
-				const char *parent = c+1;
-				*c = '\0';
-
-				strcpy(strparents[idx], parent);
-			}
-
-			strcpy(layers[idx], name);
-			nlayers++;
-		}
-
-		free(line);
-		line = NULL;
-		n = 0;
-	}
-
-	free(line);
-	fclose(fh);
-
-	for(i = 0;i < nlayers;i++) {
-		size_t j;
-
-		parents[i] = -1;
-
-		for(j = 0;j < nlayers;j++) {
-			if(!strcmp(layers[j], strparents[i])) {
-				parents[i] = j;
-			}
-		}
-		if(strparents[i][0] != 0 && parents[i] == -1) {
-			err("%s is not a valid parent layer", strparents[i]);
-		}
-	}
-}
-
 static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs)
 {
 	int openparen = 0;
@@ -313,13 +376,11 @@ static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs
 			*s = '\0';
 			s++;
 
-			while(*s && isspace(*s)) 
+			while(*s && isspace(*s))
 				s++;
 
-			if(!*s) {
-				err("Missing closing parenthesis.");
+			if(!*s)
 				return -1;
-			}
 
 			if(*s == ')') { //No args
 				*s = '\0';
@@ -332,13 +393,11 @@ static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs
 		case ',':
 			*s = '\0';
 			s++;
-			while(*s && isspace(*s)) 
+			while(*s && isspace(*s))
 				s++;
 
-			if(!*s) {
-				err("Missing closing parenthesis.");
+			if(!*s)
 				return -1;
-			}
 
 			args[(*nargs)++] = s;
 			break;
@@ -347,122 +406,102 @@ static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS], size_t *nargs
 		s++;
 	}
 
-	if(*s != ')') {
-		if(openparen)
-			err("Missing closing parenthesis.");
-		else
-			err("Invalid function or key sequence.");
-
+	if(*s != ')')
 		return -1;
-	}
 
 	*s = '\0';
 
 	return 0;
 }
 
-static int parse_val(const char *_s, struct key_descriptor *desc)
+static int parse_descriptor(const char *_s, struct key_descriptor *desc)
 {
-	uint16_t code;
-	uint16_t mods;
+	uint32_t seq;
 
 	char *s = strdup(_s);
 	char *fn;
 	char *args[MAX_ARGS];
 	size_t nargs;
 
-	if(!parse_keyseq(s, &code, &mods)) {
-		desc->action = ACTION_KEYSEQ;
-		desc->arg.keyseq = ((uint32_t)mods << 16) | (uint32_t)code;
+	if((seq=parse_keyseq(s))) {
+		keyseq_to_desc(seq, desc);
 
 		goto cleanup;
-	} 
+	}
 
-	if(parse_fn(s, &fn, args, &nargs))
+	if(parse_fn(s, &fn, args, &nargs)) {
+		err("%s is not a valid key sequence or action.", s);
 		goto fail;
+	}
 
-	if(!strcmp(fn, "oneshot_layer") && nargs == 1) {
-		size_t i;
+	if(!strcmp(fn, "layer") && nargs == 1) {
+		int idx = lookup_layer(args[0]);
 
-		for(i = 0;i < nlayers;i++)
-			if(!strcmp(args[0], layers[i])) {
-				desc->action = ACTION_LAYER_ONESHOT;
-				desc->arg.layer = i;
-
-				goto cleanup;
-			}
-
-		err("%s is not a valid layer name.", args[0]);
-		goto fail;
-	} else if(!strcmp(fn, "layer") && nargs == 1) {
-		size_t i;
-
-		for(i = 0;i < nlayers;i++)
-			if(!strcmp(args[0], layers[i])) {
-				desc->action = ACTION_LAYER;
-				desc->arg.layer = i;
-
-				goto cleanup;
-			}
-
-		err("%s is not a valid layer name.", args[0]);
-		goto fail;
-	} else if(!strcmp(fn, "layer_toggle") && nargs == 1) {
-		size_t i;
-
-		for(i = 0;i < nlayers;i++)
-			if(!strcmp(args[0], layers[i])) {
-				desc->action = ACTION_LAYER_TOGGLE;
-				desc->arg.layer = i;
-
-				goto cleanup;
-			}
-
-		err("%s is not a valid layer name.", args[0]);
-		goto fail;
-	} else if(!strcmp(fn, "oneshot") && nargs == 1) {
-		if(parse_mods(args[0], &mods))
+		if(idx < 0) {
+			err("%s is not a valid layer.", args[0]);
 			goto fail;
+		}
+
+		desc->action = ACTION_LAYER;
+		desc->arg.layer = idx;
+
+		goto cleanup;
+	} else if(!strcmp(fn, "layout") && nargs > 0) {
+		int idx;
+
+		if((idx = lookup_layer(args[0])) < 0) {
+			err("%s is not a valid layer.", args[0]);
+			goto fail;
+		}
+
+		desc->action = ACTION_LAYOUT;
+		desc->arg.layer = idx;
+
+		if(nargs == 1) {
+			desc->arg2.layer = idx;
+		} else {
+			if((idx = lookup_layer(args[1])) < 0) {
+				err("%s is not a valid layer.", args[1]);
+				goto fail;
+			}
+
+			desc->action = ACTION_LAYOUT;
+			desc->arg2.layer = idx;
+		}
+
+
+		goto cleanup;
+	} else if(!strcmp(fn, "oneshot") && nargs == 1) {
+		int idx;
+
+		if((idx = lookup_layer(args[0])) < 0) {
+
+			err("%s is not a valid layer.", args[0]);
+			goto fail;
+		}
 
 		desc->action = ACTION_ONESHOT;
-		desc->arg.mods = mods;
+		desc->arg.layer = idx;
 
-	} else if(!strcmp(fn, "layer_on_hold") && nargs == 2) {
-		size_t i;
+		goto cleanup;
+	}  else if(!strcmp(fn, "overload") && nargs == 2) {
+		int idx;
 
-		desc->action = ACTION_DOUBLE_LAYER;
-
-		if(parse_keyseq(args[1], &code, &mods)) {
-			err("%s is not a vaid keysequence.", args[1]);
+		if((idx = lookup_layer(args[0])) < 0) {
+			err("%s is not a valid layer.", args[0]);
 			goto fail;
 		}
 
-		desc->arg2.keyseq = ((uint32_t)mods << 16) | (uint32_t)code;
-
-		for(i = 0;i < nlayers;i++)
-			if(!strcmp(args[0], layers[i])) {
-				desc->arg.layer = i;
-				goto cleanup;
-			}
-
-
-		err("%s is not a valid layer.", args[0]);
-		goto fail;
-	} else if(!strcmp(fn, "mods_on_hold") && nargs == 2) {
-		desc->action = ACTION_DOUBLE_MODIFIER;
-
-		if(parse_mods(args[0], &mods)) 
-			goto fail;
-
-		desc->arg.mods = mods;
-
-		if(parse_keyseq(args[1], &code, &mods)) {
-			err("%s is not a vaid keysequence.", args[1]);
+		if(!(seq=parse_keyseq(args[1]))) {
+			err("%s is not a valid key sequence.", args[1]);
 			goto fail;
 		}
 
-		desc->arg2.keyseq = ((uint32_t)mods << 16) | (uint32_t)code;
+		desc->action = ACTION_OVERLOAD;
+		desc->arg.keyseq = seq;
+		desc->arg2.layer = idx;
 
+		goto cleanup;
 	} else {
 		err("%s is not a valid action or key.", _s);
 		goto fail;
@@ -478,16 +517,11 @@ fail:
 	return -1;
 }
 
-static void parse(struct keyboard_config *cfg)
+static void build_layer_table()
 {
-	size_t i, j;
-	char *line = NULL;
-	size_t n = 0;
 	ssize_t len;
-
-	lnum = 0;
-	parse_layer_names();
-
+	char *line = NULL;
+	size_t line_sz = 0;
 	FILE *fh = fopen(path, "r");
 
 	if(!fh) {
@@ -495,12 +529,144 @@ static void parse(struct keyboard_config *cfg)
 		exit(-1);
 	}
 
-	int current_layer = 0;
-	struct layer *layer = &cfg->layers[0];
+	lnum = 0;
+	nlayers = 0;
+
+	create_main_layer();
+	while((len=getline(&line, &line_sz, fh)) != -1) {
+		char name[256];
+		char pname[256];
+
+		lnum++;
+		if(line[len-1] == '\n')
+			line[--len] = 0;
+
+		if(!parse_layer_heading(line, name, pname)) {
+			uint16_t mods;
+
+			if(!parse_modset(pname, &mods))
+				create_layer(name, "", mods);
+			else
+				create_layer(name, pname, 0);
+		}
+	}
+
+	free(line);
+	fclose(fh);
+}
+
+static int parse_layer_entry(char *s, uint16_t *code, struct key_descriptor *desc)
+{
+			uint32_t seq;
+			char *k, *v;
+
+			if(parse_kvp(s, &k, &v)) {
+				err("Invalid key value pair.");
+				return -1;
+			}
+
+			if(!(seq = parse_keyseq(k))) {
+				err("'%s' is not a valid key.", k);
+				return -1;
+			}
+
+			if((seq >> 16) != 0) {
+				err("key cannot contain modifiers.");
+				return -1;
+			}
+
+			if(parse_descriptor(v, desc))
+				return -1;
+
+			*code = seq & 0xFF;
+			return 0;
+}
+
+void post_process_config(struct keyboard_config *cfg,
+			 const char *layout_name,
+			 const char *modlayout_name)
+{
+	cfg->default_layout = -1;
+	cfg->default_modlayout = -1;
+
+	int i;
+	for(i = 0;i < nlayers;i++) {
+		struct layer_table_ent *ent = &layer_table[i];
+
+		if(!strcmp(ent->name, layout_name))
+			cfg->default_layout = i;
+
+		if(!strcmp(ent->name, modlayout_name))
+			cfg->default_modlayout = i;
+
+		if(ent->pname[0]) {
+			int j;
+
+			for(j = 0;j < nlayers;j++) {
+				struct layer_table_ent *ent2 = &layer_table[j];
+
+				if(!strcmp(ent->pname, ent2->name)) {
+					int k;
+
+					struct layer *dst = ent->layer;
+					struct layer *src = ent2->layer;
+
+					for(k = 0;k < KEY_CNT;k++)
+						if(dst->keymap[k].action == ACTION_UNDEFINED)
+							dst->keymap[k] = src->keymap[k];
+				}
+			}
+		}
+	}
+
+	if(cfg->default_layout == -1) {
+		fprintf(stderr, "%s is not a valid default layout", layout_name);
+		cfg->default_layout = 0;
+	}
+
+	if(cfg->default_modlayout == -1) {
+		fprintf(stderr, "%s is not a valid default modifier layout\n", modlayout_name);
+		cfg->default_modlayout = 0;
+	}
+}
+
+static void parse(struct keyboard_config *cfg)
+{
+	int i;
+	char *line = NULL;
+	size_t n = 0;
+	ssize_t len;
+	struct layer *layer;
+
+	char layout_name[256];
+	char modlayout_name[256];
+
+	build_layer_table();
+
+	FILE *fh = fopen(path, "r");
+	if(!fh) {
+		perror("fopen");
+		exit(-1);
+	}
 
 	lnum = 0;
+	layer = layer_table[0].layer;
+
+	strcpy(layout_name, "main");
+	strcpy(modlayout_name, "main");
 
 	while((len=getline(&line, &n, fh)) != -1) {
+		char name[256];
+		char type[256];
+
+		uint16_t code;
+		struct key_descriptor desc;
+
+		size_t nargs;
+		char *fnname;
+		char *args[MAX_ARGS];
+
+
 		lnum++;
 		char *s = line;
 
@@ -512,40 +678,30 @@ static void parse(struct keyboard_config *cfg)
 		if(len && s[len-1] == '\n') //Strip tailing newline (not present on EOF)
 			s[--len] = '\0';
 
-		if(len == 0 || s[0] == '#') 
+		if(len == 0 || s[0] == '#')
 			continue;
 
-		if(s[0] == '[' && s[len-1] == ']') {
-			layer = &cfg->layers[++current_layer];
-		} else if(layer) {
-			struct key_descriptor desc;
-			char *key, *val;
-
-			uint16_t code;
-			uint16_t mods;
-
-			if(parse_kvp(s, &key, &val)) {
-				err("Invalid key value pair.");
-				goto next;
+		if(!parse_layer_heading(s, name, type)) {
+			int idx = lookup_layer(name);
+			assert(idx > 0);
+			layer = layer_table[idx].layer;
+		} else if(strchr(s, '=')) {
+			if(!parse_layer_entry(s, &code, &desc))
+				layer->keymap[code] = desc;
+			else
+				err("Invalid layer entry.");
+		} else if(!parse_fn(s, &fnname, args, &nargs)) {
+			if(!strcmp(fnname, "layout")) {
+				if(nargs == 1) {
+					strcpy(layout_name, args[0]);
+					strcpy(modlayout_name, args[0]);
+				} else if(nargs == 2) {
+					strcpy(layout_name, args[0]);
+					strcpy(modlayout_name, args[1]);
+				}
 			}
-
-			if(parse_keyseq(key, &code, &mods)) {
-				err("'%s' is not a valid key.", key);
-				goto next;
-			}
-
-			if(mods != 0) {
-				err("key cannot contain modifiers.");
-				goto next;
-			}
-
-			if(parse_val(val, &desc))
-				goto next;
-
-			layer->keymap[code] = desc;
 		}
 
-next:
 		free(line);
 		line = NULL;
 		n = 0;
@@ -554,15 +710,14 @@ next:
 	free(line);
 	fclose(fh);
 
-	for(i = 0;i < nlayers;i++) {
-		int p = parents[i];
-		if(p != -1) {
-			for(j = 0;j < KEY_CNT;j++) {
-				if(cfg->layers[i].keymap[j].action == ACTION_DEFAULT)
-					cfg->layers[i].keymap[j] = cfg->layers[p].keymap[j];
-			}
-		}
-	}
+	post_process_config(cfg, layout_name, modlayout_name);
+
+	for(i = 0;i < nlayers;i++)
+		cfg->layers[i] = layer_table[i].layer;
+
+	cfg->nlayers = nlayers;
+
+	return;
 }
 
 void config_free()
@@ -570,8 +725,18 @@ void config_free()
 	struct keyboard_config *cfg = configs;
 
 	while(cfg) {
+		size_t i;
 		struct keyboard_config *tmp = cfg;
+
 		cfg = cfg->next;
+
+		for(i = 0;i < tmp->nlayers;i++) {
+			struct layer *layer = tmp->layers[i];
+
+			free(layer->keymap);
+			free(layer);
+		}
+
 		free(tmp);
 	};
 }
@@ -587,7 +752,6 @@ void config_generate()
 	}
 
 	while((ent=readdir(dh))) {
-		size_t i;
 		struct keyboard_config *cfg;
 
 		int len = strlen(ent->d_name);
@@ -599,18 +763,12 @@ void config_generate()
 
 		cfg = calloc(1, sizeof(struct keyboard_config));
 
-		for(i = 0;i < KEY_CNT;i++) {
-			struct key_descriptor *desc = &cfg->layers[0].keymap[i];
-			desc->action = ACTION_KEY;
-			desc->arg.key = i;
-		}
-
 		strcpy(cfg->name, ent->d_name);
 		cfg->name[len-4] = '\0';
 
-		cfg->next = configs;
 		parse(cfg);
 
+		cfg->next = configs;
 		configs = cfg;
 	}
 

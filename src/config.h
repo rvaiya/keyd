@@ -28,20 +28,17 @@
 #include <stddef.h>
 #include "keys.h"
 
-#define MAX_LAYERS 8
+#define MAX_LAYERS 32
 #define CONFIG_DIR "/etc/keyd"
 #define MAX_LAYER_NAME_LEN 256
 
 enum action {
-	ACTION_DEFAULT,
-	ACTION_DOUBLE_MODIFIER,
-	ACTION_DOUBLE_LAYER,
-	ACTION_KEY,
+	ACTION_UNDEFINED,
+	ACTION_OVERLOAD,
+	ACTION_LAYOUT,
 	ACTION_KEYSEQ,
-	ACTION_LAYER_TOGGLE,
-	ACTION_LAYER_ONESHOT,
 	ACTION_LAYER,
-	ACTION_ONESHOT
+	ACTION_ONESHOT,
 };
 
 struct key_descriptor
@@ -49,20 +46,32 @@ struct key_descriptor
 	enum action action;
 	union {
 		uint32_t keyseq;
-		uint16_t key;
 		uint16_t mods;
-		uint8_t layer;
+		int8_t layer;
 	} arg, arg2;
 };
 
+
+
+
+//A layer may optionally have modifiers. If it does it is expected to behave as
+//a normal modifier in all instances except when a key is explicitly defined in
+//the keymap.
+
 struct layer {
-	struct key_descriptor keymap[KEY_CNT];
+	uint16_t mods;
+	struct key_descriptor *keymap;
 };
 
 struct keyboard_config {
 	char name[256];
 
-	struct layer layers[MAX_LAYERS];
+	struct layer *layers[MAX_LAYERS];
+	size_t nlayers;
+
+	int default_modlayout;
+	int default_layout;
+
 	struct keyboard_config *next;
 };
 
@@ -70,5 +79,6 @@ extern struct keyboard_config *configs;
 
 void config_generate();
 void config_free();
+const char *keyseq_to_string(uint32_t keyseq);
 
 #endif

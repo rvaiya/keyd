@@ -17,32 +17,31 @@ keyd [-m] [-l]
 
  **-d**: Fork and run in the background.
 
-# OVERVIEW
-
 keyd is intended to be run as system wide daemon managed by systemd. The
 default behaviour is to run the forground and print to stderr but it can also
 be run as a standalone daemon if -d is supplied, in which case log output will
-be stored in /var/log/keyd.log. 
+be stored in */var/log/keyd.log*.
 
 # CONFIGURATION
 
-All configuration files are stored in /etc/keyd. The name of each file should
+All configuration files are stored in */etc/keyd/*. The name of each file should
 correspond to the device name to which it is to be applied followed
 by .cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded
 upon initialization and can be reified by reloading keyd
 (e.g sudo systemctl restart keyd).
 
-The monitor flag (-m) can be used to obtain device and key names like so:
+A list of valid key names can be produced with **-l**. The monitor flag (**-m**) can
+also be used to obtain device and key names like so:
 
-```
-# sudo systemctl stop keyd
-# sudo keyd -m
+    > sudo systemctl stop keyd
+    > sudo keyd -m
 
-Magic Keyboard: capslock down
-Magic Keyboard: capslock up
-```
+    Magic Keyboard: capslock down
+    Magic Keyboard: capslock up
+    ...
 
-If no configuration file exists for a given keyboard 'default.cfg' is used as a fallback (if present).
+If no configuration file exists for a given keyboard *default.cfg* is used as a
+fallback (if present).
 
 Each line in a configuration file consists of a mapping of the following form:
 
@@ -50,9 +49,9 @@ Each line in a configuration file consists of a mapping of the following form:
 
 or else represents the beginning of a new layer. E.G:
 
-	[<layer name>]
+	[<layer>]
 
-Where `<keyseq>` has the form: `[<modifier1>-[<modifier2>-]]<key>`
+Where `<keyseq>` has the form: `[<modifier1>[-<modifier2>...]-<key>`
 
 and each modifier is one of:
 
@@ -63,23 +62,20 @@ and each modifier is one of:
 \    **G** - AltGr
 
 In addition to simple key mappings keyd can remap keys to actions which
-can conditionally send keystrokes or transform the state of the keymap. 
+can conditionally send keystrokes or transform the state of the keymap.
 
 It is, for instance, possible to map a key to escape when tapped and control when held
-by assigning it to mods_on_hold(C, esc). A complete list of available actions can be 
-found in ACTIONS.
+by assigning it to `overload(C, esc)`. A complete list of available actions can be
+found in *ACTIONS*.
 
-## LAYERS
+## Layers
 
 Each configuration file consists of one or more layers. Each layer is a keymap
-unto itself and can be activated by a key mapped to the appropriate
-action (see ACTIONS).
-
-The default layer is called 'default' and is used for mappings which
-are not explicitly assigned to a layer.
+unto itself and can be transiently activated by a key mapped to the *layer*
+action.
 
 For example the following configuration creates a new layer called 'symbols' which
-is activated by the capslock key on the default layer.
+is activated by holding the capslock key.
 
 	capslock = layer(symbols)
 
@@ -90,100 +86,134 @@ is activated by the capslock key on the default layer.
 
 Pressing capslock+f thus produces a tilde.
 
+Any set of valid modifiers is also a valid layer. For example the layer `M-C`
+corresponds to a layer which behaves like the modifiers meta and control. These
+play nicely with other modifiers and preserve existing stacking semantics.
+
 A layer may optionally have a parent from which mappings are drawn for keys
 which are not explicitly mapped. By default layers do not have a parent, that
 is, unmapped keys will have no effect. A parent is specified by appending
-`:<parent layer>` to the layer name. This is particularly useful for custom
-letter layouts like dvorak which remap a subset of keys but otherwise leave the
-default mappings in tact. 
+`:<parent>` to the layer name.
+
+The *layout* is a special layer from which mappings are drawn if no other layers
+are active.  The default layout is called *main* and is the one to which
+mappings are assigned if no layer heading is present. By default all keys are
+defined as themselves in the main layer.  Layers which intend to be used as
+layouts will likely want to inherit from main. The default layout can be
+changed by including layout(<layer>) at the top of the config file.
+
+## The Modifier Layout
+
+keyd distinguishes between the normal layout and the modifier layout. This
+allows the user to use a different letter arrangement for modifiers. It may,
+for example, be desireable to use an alternative key layout like dvorak while
+preserving standard qwerty modifier shortcuts. This can be achieved by passing
+a second argument to the layout function like so: `layout(dvorak, main)`.
+
+Note that this is different from simply defining a custom layer which reassigns
+each key to a modified key sequence (e.g `s = C-s`) since it applies to all
+modifiers and preserves expected stacking behaviour.
+
+## Modifier Layers
+
+In addition to standard layers, keyd introduces the concept of 'modifier
+layers' to accomodate the common use case of remapping a subset of modifier keys. A
+modifier layer will have identical behaviour to a set of modifiers unless a key is
+explicitly defined within it. To define a modifier layer simply define a layer
+which inherits from a valid modifier set.
+
+E.G:
+
+```
+capslock = layer(custom_control)
+
+[custom_control:C]
+
+1 = C-A-f1
+2 = C-A-f2
+```
+
+Will cause the capslock key to behave as control in all instances except when `C-1` is
+pressed, in which case the key sequence C-A-f1 will be emitted. This is not
+possible to achieve using standard layers without breaking expected behaviour
+like modifier stacking and pointer combos.
+
+## TLDR
+
+1. Use [mylayer] if you want to define a custom shift layer (e.g [symbols]).
+2. Use [mylayer:C] if you want a layer which behaves like a custom control key.
+3. Use [mylayer:main] for defining custom key layouts (e.g dvorak).
 
 ## ACTIONS
 
-**oneshot(mods)**: If tapped activate a modifier sequence for the next keypress, otherwise act as a normal modifier key when held.
+**oneshot(\<layer\>)**: If tapped activate a layer for the next keypress. If this is a modifier layer then it will cause the key to behave as the corresponding modifiers while held.
 
-**mods_on_hold(mods, keyseq)**: Activates the given set of modifiers whilst held and emits keysequence when tapped.
+**layer(\<layer\>)**: Activates the given layer while held.
 
-**layer_on_hold(layer, keyseq)**: Activates the given layer whilst held and emits keysequence when tapped.
+**overload(\<keyseq\>,\<layer\>)**: Activates the given layer while held and emits the given key sequence when tapped.
 
-**layer_toggle(layer)**: Permanently activate a layer when tapped. *Note*: You will need to explicitly map a toggle in the destination layer if you wish to return.
+**layout(\<layer\>)**: Sets the current layout to the given layer. You will likely want
+to ensure you have a way to switch layouts within the new one.
 
-**layer(layer)**: Activate the given layer while the key is held down.
+## Example
 
-**oneshot_layer(layer)**: If tapped activate a layer for the duration of the next keypress, otherwise act as a normal layer key when held.
+    # Makes dvorak the default key layout with
+    # qwerty (main) as the mod layout.
 
-### Legend:
+    layout(dvorak, main)
 
- - `<mods>` = A set of modifiers of the form: `<mod1>[-<mod2>...]` (e.g C-M = control + meta).
- - `<keyseq>` = A key sequence consisting of zero or more control characters and a key (e.g C-a = control+a).
- - `<layer>` = The name of a layer.
+    esc = layer(esc)
 
-## Examples
+    leftshift = oneshot(S)
+    rightshift = oneshot(S)
 
-Example 1
+    [esc]
 
-	# Maps capslock to control when held and escape when tapped.
-	capslock = mods_on_hold(C, esc)
+    # esc+q changes the layout to qwerty.
+    q = layout(main)
 
-	# Makes the shift key sticky for one keystroke.
+    w = layout(dvorak, main)
 
-	leftshift = oneshot(S)
-	rightshift = oneshot(S)
+    # Inherits the escape/shift bindings from the main layer
 
-Example 2
+    [dvorak:main]
 
-	# Maps escape to the escape layer when held and the escape key when pressed
-
-	esc = layer_on_hold(escape_layer, esc)
-
-	[escape_layer]
-
-	1 = layer_toggle(dvorak)
-	2 = layer_toggle(default)
-
-	# Creates a dvorak layer which inherits from the default layer. Without
-	# explicitly inheriting from another layer unmapped keys would be ignored.
-
-	[dvorak:default]
-
-	q = apostrophe
-	w = comma
-	e = dot
-	r = p
-	t = y
-	y = f
-	u = g
-	i = c
-	o = r
-	p = l
-
-	a = a
-	s = o
-	d = e
-	f = u
-	g = i
-	h = d
-	j = h
-	k = t
-	l = n
-	semicolon = s
-
-	z = semicolon
-	x = q
-	c = j
-	v = k
-	b = x
-	n = b
-	m = m
-	comma = w
-	dot = v
-	slash = z
-
+    q = apostrophe
+    w = comma
+    e = dot
+    r = p
+    t = y
+    y = f
+    u = g
+    i = c
+    o = r
+    p = l
+    a = a
+    s = o
+    d = e
+    f = u
+    g = i
+    h = d
+    j = h
+    k = t
+    l = n
+    semicolon = s
+    z = semicolon
+    x = q
+    c = j
+    v = k
+    b = x
+    n = b
+    m = m
+    comma = w
+    dot = v
+    slash = z
 
 # NOTES
 
 - Because of the way keyd works it is possible to render your machine unusable with a bad
   config file. This can usually be resolved by plugging in a different keyboard, however
-  if *default.cfg* has been misconfigured you will have to find an alternate way to kill 
+  if *default.cfg* has been misconfigured you will have to find an alternate way to kill
   the daemon (e.g SSH).
 
 # AUTHOR
