@@ -158,7 +158,7 @@ to ensure you have a way to switch layouts within the new one.
 ## Example
 
     # Makes dvorak the default key layout with
-    # qwerty (main) as the mod layout.
+    # qwerty (main) as the modifier layout.
 
     layout(dvorak, main)
 

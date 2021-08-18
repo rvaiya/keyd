@@ -1,4 +1,0 @@
-do away with the idea of layer inheritance
-different layer types (exclusive, modifier)
-modifiers are just layers with empty keymaps
-simplified parsing logic to reflect above.

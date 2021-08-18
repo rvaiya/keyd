@@ -15,11 +15,16 @@ Main Changes:
 - The default layer is now called main
 - The modifier layout is distinct from the key layout
 
-- mods_on_hold(C, esc)        = overload(C, esc)
-- layer_on_hold(layer, esc)   = overload(layer, esc)
-- layer_toggle(layer)         = layout(layer)
-- layer(layer)                = layer(layer)
-- oneshot(mods)               = oneshot(mods)
-- oneshot_layer(layer)        = oneshot(layer)
+Config migration map:
+
+```
+mods_on_hold(C, esc)        = overload(C, esc)
+layer_on_hold(layer, esc)   = overload(layer, esc)
+layer_toggle(layer)         = layout(layer)
+layer(layer)                = layer(layer)
+oneshot(mods)               = oneshot(mods)
+oneshot_layer(layer)        = oneshot(layer)
+[dvorak:default]            = [dvorak:main]
+```
 
 See the manpage for details.
