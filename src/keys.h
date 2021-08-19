@@ -61,7 +61,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_8] = { "8", NULL, "*" },
 	[KEY_9] = { "9", NULL, "(" },
 	[KEY_0] = { "0", NULL, ")" },
-	[KEY_MINUS] = { "-", "minus" "_" },
+	[KEY_MINUS] = { "-", "minus", "_" },
 	[KEY_EQUAL] = { "=", "equal", "+" },
 	[KEY_BACKSPACE] = { "backspace", NULL, NULL },
 	[KEY_TAB] = { "tab", NULL, NULL },
