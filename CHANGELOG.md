@@ -1,21 +1,21 @@
-# 0.1.0
+# v0.1.0
 
 Major version update:
 
 - Introduces support for modifier layers.
 - Simplifies config format.
 - Improves consistency/expected key behaviour.
+- Symbols can be used in place of their names (e.g `;` instead of `semicolon`)
+- Shifted symbols can now be specified directly (e.g `&` instead of `S-7`)
+- Macro support.
 
 This breaks existing configs. Moving forward the config format is expected to
 remain backwards compatible.
 
-Main Changes:
-
+Main Config Changes:
 - Modifiers are now just treated as layers
 - The default layer is now called main
 - The modifier layout is distinct from the key layout
-- Symbols can be used in place of their names (e.g ';' instead of 'semicolon')
-- Shifted symbols can now be specified directly (e.g & instead of S-7)
 
 Config migration map:
 

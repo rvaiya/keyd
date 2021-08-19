@@ -51,6 +51,9 @@ int nlayers = 0;
 static int lnum = 0;
 static char path[PATH_MAX];
 
+static uint32_t macros[MAX_MACROS][MAX_MACRO_SIZE];
+static size_t nmacros = 0;
+
 static int lookup_layer(const char *name);
 static int parse_modset(const char *s, uint16_t *mods);
 
@@ -341,6 +344,62 @@ static uint32_t parse_keyseq(const char *s)
 	return 0;
 }
 
+uint32_t *parse_macro_fn(const char *s, size_t *szp)
+{
+	char *_s = strdup(s);
+	size_t len = strlen(s);
+	uint32_t *macro = macros[nmacros++];
+
+	char *tok;
+	size_t sz = 0;
+
+	assert(nmacros <= MAX_MACROS);
+
+	if(strstr(s, "macro(") != s || s[len-1] != ')') {
+		free(_s);
+		return NULL;
+	}
+
+	_s[len-1] = 0;
+
+	for(tok = strtok(_s+6, " ");tok;tok = strtok(NULL, " ")) {
+		uint32_t seq;
+		len = strlen(tok);
+
+		if((seq=parse_keyseq(tok))) {
+			macro[sz++] = seq;
+			assert(sz < MAX_MACRO_SIZE);
+		} else if(len > 1 && tok[len-1] == 's' && tok[len-2] == 'm') {
+			int len = atoi(tok);
+			assert(len <= MAX_TIMEOUT_LEN);
+
+			macro[sz++] = TIMEOUT_KEY(len);
+		} else {
+			char *c;
+
+			for(c = tok;*c;c++) {
+				char s[2];
+
+				s[0] = *c;
+				s[1] = 0;
+
+				if(!(seq = parse_keyseq(s))) {
+					free(_s);
+					return NULL;
+				}
+
+				macro[sz++] = seq;
+				assert(sz < MAX_MACRO_SIZE);
+			}
+		}
+	}
+
+	free(_s);
+
+	*szp = sz;
+	return macro;
+}
+
 static int parse_kvp(char *s, char **_k, char **_v)
 {
 	char *v = NULL, *k = NULL;
@@ -429,10 +488,19 @@ static int parse_descriptor(const char *_s, struct key_descriptor *desc)
 	char *s = strdup(_s);
 	char *fn;
 	char *args[MAX_ARGS];
-	size_t nargs;
+	size_t nargs, sz;
+	uint32_t *macro;
 
 	if((seq=parse_keyseq(s))) {
 		keyseq_to_desc(seq, desc);
+
+		goto cleanup;
+	}
+
+	if((macro = parse_macro_fn(s, &sz))) {
+		desc->action = ACTION_MACRO;
+		desc->arg.macro = macro;
+		desc->arg2.sz = sz;
 
 		goto cleanup;
 	}

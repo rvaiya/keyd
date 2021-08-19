@@ -429,6 +429,28 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 
 		goto keyseq_cleanup;
 		break;
+	case ACTION_MACRO:
+		if(pressed) {
+			uint32_t *macro = d->arg.macro;
+			size_t sz = d->arg2.sz;
+
+			for(i = 0; i < sz;i++) {
+				uint32_t seq = macro[i];
+				uint16_t mods = macro[i] >> 16;
+				uint16_t key = macro[i] & 0xFF;
+
+				if(mods & MOD_TIMEOUT) {
+					usleep(GET_TIMEOUT(seq)*1000);
+				} else {
+					setmods(mods);
+					send_key(key, 1);
+					send_key(key, 0);
+				}
+			}
+
+			reify_layer_mods(kbd);
+		}
+		break;
 	case ACTION_UNDEFINED:
 		goto keyseq_cleanup;
 		break;

@@ -155,6 +155,25 @@ like modifier stacking and pointer combos.
 **layout(\<layer\>)**: Sets the current layout to the given layer. You will likely want
 to ensure you have a way to switch layouts within the new one.
 
+**macro(\<macro\>)**: Perform the key sequence described in `<macro>`
+
+Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of:
+
+- a valid key sequence.
+- a contiguous group of characters each of which is a valid key sequence.
+- a timeout of the form `<time>ms` (where `<time>` < 1024).
+
+Examples:
+
+    # Sends alt+p, waits 300ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
+    macro(A-p 100ms chromium enter)
+
+    # Types 'Hello World'
+    macro(h e l l o space w o r ld)
+
+    # Identical to the above
+    macro(Hello space World)
+
 ## Example
 
     # Makes dvorak the default key layout with

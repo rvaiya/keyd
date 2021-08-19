@@ -33,6 +33,16 @@
 #define MOD_SUPER 0x2
 #define MOD_ALT 0x1
 
+//Used for macros, bit of a kludge.
+
+#define MOD_TIMEOUT 0x20 //keysequence represents a timeout
+
+//Reserve the last 10 bits for the timeout value in ms.
+#define TIMEOUT_KEY(ms) ((ms << 22) | 0x200000)
+#define GET_TIMEOUT(key) (key >> 22)
+#define MAX_TIMEOUT_LEN ((1<<10)-1)
+
+
 struct keycode_table_ent {
 	const char *name;
 	const char *alt_name;

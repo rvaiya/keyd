@@ -40,7 +40,7 @@ Some of the more interesting ones include:
 
  - A tool for launching arbitrary system commands as root.
  - A tool for programming individual key up/down events.
- - A tool for generating unicode characters (which is best done higher up the input stack)
+ - A tool for generating unicode characters (though macros can be used to send the requisite keystrokes)
 
 # Dependencies
 

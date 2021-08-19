@@ -31,10 +31,13 @@
 #define MAX_LAYERS 32
 #define CONFIG_DIR "/etc/keyd"
 #define MAX_LAYER_NAME_LEN 256
+#define MAX_MACRO_SIZE 256
+#define MAX_MACROS 256
 
 enum action {
 	ACTION_UNDEFINED,
 	ACTION_OVERLOAD,
+	ACTION_MACRO,
 	ACTION_LAYOUT,
 	ACTION_KEYSEQ,
 	ACTION_LAYER,
@@ -48,6 +51,8 @@ struct key_descriptor
 		uint32_t keyseq;
 		uint16_t mods;
 		int8_t layer;
+		uint32_t *macro;
+		size_t sz;
 	} arg, arg2;
 };
 
