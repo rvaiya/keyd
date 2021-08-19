@@ -348,12 +348,12 @@ uint32_t *parse_macro_fn(const char *s, size_t *szp)
 {
 	char *_s = strdup(s);
 	size_t len = strlen(s);
-	uint32_t *macro = macros[nmacros++];
+	uint32_t *macro = macros[nmacros];
 
 	char *tok;
 	size_t sz = 0;
 
-	assert(nmacros <= MAX_MACROS);
+	assert(nmacros < MAX_MACROS);
 
 	if(strstr(s, "macro(") != s || s[len-1] != ')') {
 		free(_s);
@@ -397,6 +397,7 @@ uint32_t *parse_macro_fn(const char *s, size_t *szp)
 	free(_s);
 
 	*szp = sz;
+	nmacros++;
 	return macro;
 }
 
