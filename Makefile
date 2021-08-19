@@ -3,7 +3,7 @@
 DESTDIR=
 PREFIX=/usr
 
-VERSION=0.1.0
+VERSION=1.0.0
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
 CFLAGS=-DVERSION=\"$(VERSION)\" -DGIT_COMMIT_HASH=\"$(GIT_HASH)\"
 

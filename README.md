@@ -8,7 +8,7 @@ using kernel level input primitives (evdev, uinput).
 
 # UPDATE
 
-*Version 0.1.0 has just been released and includes some breaking changes. Please see the [changelog](CHANGELOG.md) for details.*
+*Version 1.0.0 has just been released and includes some breaking changes. Please see the [changelog](CHANGELOG.md) for details.*
 
 # Features
 
