@@ -100,7 +100,7 @@ const char *keyseq_to_string(uint32_t keyseq)
 	uint16_t mods = keyseq >> 16;
 	uint16_t code = keyseq & 0x00FF;
 
-	const char *key = keycode_strings[code];
+	const char *key = keycode_table[code].name;
 
 	if(mods & MOD_CTRL) {
 		strcpy(s+i, "C-");
@@ -127,7 +127,7 @@ const char *keyseq_to_string(uint32_t keyseq)
 	}
 
 	if(key)
-		strcpy(s+i, keycode_strings[code]);
+		strcpy(s+i, keycode_table[code].name);
 	else
 		strcpy(s+i, "UNKNOWN");
 
@@ -296,7 +296,8 @@ static int parse_layer_heading(const char *s, char name[256], char parent[256])
 	return 0;
 }
 
-static uint32_t parse_keyseq(const char *s) {
+static uint32_t parse_keyseq(const char *s)
+{
 	const char *c = s;
 	size_t i;
 	uint32_t mods = 0;
@@ -326,10 +327,15 @@ static uint32_t parse_keyseq(const char *s) {
 		c += 2;
 	}
 
-	for(i = 0;i < sizeof keycode_strings / sizeof keycode_strings[0];i++) {
-		if(keycode_strings[i] && !strcmp(keycode_strings[i], c)) {
+	for(i = 0;i < KEY_MAX;i++) {
+		const struct keycode_table_ent *ent = &keycode_table[i];
+
+		if(ent->name && !strcmp(ent->name, c))
 			return (mods << 16) | i;
-		}
+		if(ent->alt_name && !strcmp(ent->alt_name, c))
+			return (mods << 16) | i;
+		if(ent->shifted_name && !strcmp(ent->shifted_name, c))
+			return (mods | MOD_SHIFT) << 16 | i;
 	}
 
 	return 0;
@@ -342,6 +348,8 @@ static int parse_kvp(char *s, char **_k, char **_v)
 	while(*s && isspace(*s)) s++;
 	if(!*s) return -1;
 	k = s;
+
+	if(*s == '=') s++; //Allow the first character to be = as a special case.
 
 	while(*s && !isspace(*s) && *s != '=') s++;
 	if(!*s) return -1;

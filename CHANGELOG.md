@@ -14,6 +14,8 @@ Main Changes:
 - Modifiers are now just treated as layers
 - The default layer is now called main
 - The modifier layout is distinct from the key layout
+- Symbols can be used in place of their names (e.g ';' instead of 'semicolon')
+- Shifted symbols can now be specified directly (e.g & instead of S-7)
 
 Config migration map:
 

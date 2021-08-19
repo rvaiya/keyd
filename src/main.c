@@ -181,8 +181,8 @@ static int create_uinput_fd()
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
-	for(i = 0;i < sizeof keycode_strings/sizeof keycode_strings[0];i++) {
-		if(keycode_strings[i])
+	for(i = 0;i < KEY_MAX;i++) {
+		if(keycode_table[i].name)
 			ioctl(fd, UI_SET_KEYBIT, i);
 	}
 
@@ -650,9 +650,11 @@ static void evdev_monitor_loop(int *fds, int sz)
 			if(FD_ISSET(fd, &fdset)) {
 				while(read(fd, &ev, sizeof(ev)) > 0) {
 					if(ev.type == EV_KEY && ev.value != 2) {
+						assert(keycode_table[ev.code].name);
+
 						fprintf(stderr, "%s: %s %s\n",
 							names[fd],
-							keycode_strings[ev.code],
+							keycode_table[ev.code].name,
 							ev.value == 0 ? "up" : "down");
 					}
 				}
@@ -830,9 +832,16 @@ int main(int argc, char *argv[])
 			return monitor_loop();
 		} else if(!strcmp(argv[1], "-l")) {
 			size_t i;
-			for(i = 0; i < sizeof(keycode_strings)/sizeof(keycode_strings[0]);i++)
-				if(keycode_strings[i])
-					printf("%s\n", keycode_strings[i]);
+
+			for(i = 0; i < KEY_MAX;i++)
+				if(keycode_table[i].name) {
+					const struct keycode_table_ent *ent = &keycode_table[i];
+					printf("%s\n", ent->name);
+					if(ent->alt_name)
+						printf("%s\n", ent->alt_name);
+					if(ent->shifted_name)
+						printf("%s\n", ent->shifted_name);
+				}
 			return 0;
 		}
 	}

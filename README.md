@@ -12,7 +12,7 @@ using kernel level input primitives (evdev, uinput).
 
 # Features
 
-keyd has several unique features many of which are traditionally only 
+keyd has several unique features many of which are traditionally only
 found in custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware).
 Some of the more interesting ones include:
 
@@ -87,8 +87,8 @@ keyboard which is unaffected by the changes.
 
     [symbols]
 
-    d = S-grave
-    f = slash
+    d = ~
+    f = /
     ...
 
 # Recommended config
@@ -135,7 +135,7 @@ approach and has a different design philosophy.
 
 Notably keyd was written entirely in C with performance and simplicitly in
 mind and will likely never be as configurable as kmonad (which is extensible
-in Haskell). Having said that, it supplies (in the author's opinion) the 
+in Haskell). Having said that, it supplies (in the author's opinion) the
 most valuable features in less than 2000 lines of C while providing
 a simple language agnostic config format.
 
