@@ -115,7 +115,9 @@ keyd distinguishes between the key layout and the modifier layout. This
 allows the user to use a different letter arrangement for modifiers. It may,
 for example, be desireable to use an alternative key layout like dvorak while
 preserving standard qwerty modifier shortcuts. This can be achieved by passing
-a second argument to the layout function like so: `layout(dvorak, main)`.
+a second argument to the layout function like so: `layout(dvorak, main)`. The
+default behaviour is to assign the modifier layout to the key layout if one
+is not explicitly specified.
 
 Note that this is different from simply defining a custom layer which reassigns
 each key to a modified key sequence (e.g `s = C-s`) since it applies to all
@@ -185,57 +187,77 @@ Examples:
     # Identical to the above
     macro(Hello space World)
 
-# Example
+# EXAMPLES
 
-    # Set the default key layout to dvorak and the modifier layout to qwerty (main)
+## Example 1 
+
+Set the default key layout to dvorak and the modifier layout to qwerty (main).
+
     layout(dvorak, main)
 
-    # Holding escape activates the escape layer
-    esc = layer(esc)
-
-    shift = oneshot(S)
-    rightshift = oneshot(S)
-
-    [esc]
-
-    # esc+q changes both the key and modifier layout to qwerty.
-    q = layout(main)
-    w = layout(dvorak, main)
-
-    # Inherits all bindings from the main layer (including the defined escape/shift bindings),
-    # and defines a custom letter arrangement.
     [dvorak:main]
 
     q = apostrophe
     w = comma
     e = dot
-    r = p
-    t = y
-    y = f
-    u = g
-    i = c
-    o = r
-    p = l
-    a = a
-    s = o
-    d = e
-    f = u
-    g = i
-    h = d
-    j = h
-    k = t
-    l = n
-    semicolon = s
-    z = semicolon
-    x = q
-    c = j
-    v = k
-    b = x
-    n = b
-    m = m
-    comma = w
-    dot = v
-    slash = z
+    # etc...
+
+## Example 2
+
+Make esc+q/w/e set the letter layout.
+
+    # ...
+    esc = layer(esc)
+
+    [esc]
+
+    q = layout(main)
+    w = layout(dvorak, main)
+    e = layout(dvorak)
+
+## Example 3
+
+Invert the behaviour of the shift key without breaking modifier behaviour.
+
+    leftshift = layer(shift)
+    rightshift = layer(shift)
+
+    1 = !
+    2 = @
+    3 = #
+    4 = $
+    5 = %
+    6 = ^
+    7 = &
+    8 = *
+    9 = (
+    0 = )
+
+    [shift:S]
+
+    0 = 1
+    1 = 1
+    2 = 2
+    3 = 3
+    4 = 4
+    5 = 5
+    6 = 6
+    7 = 7
+    8 = 8
+    9 = 9
+
+
+## Example 4
+
+Tapping control once causes it to apply to the next key, tapping it twice
+activates it until it is pressed again, and holding it produces expected
+behaviour.
+
+    control = oneshot(control)
+
+    [control:C]
+
+    layert(control)
 
 # NOTES
 

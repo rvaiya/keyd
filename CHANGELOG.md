@@ -1,7 +1,11 @@
+# v1.1.1
+
+- Make layert behaviour more intuitive when combined with oneshot() and layer().
+
 # v1.1.0
 
 - Added layert() to facilitate semipermanent-activation of occluding layers.
-- Now resolve layer conflicts by picking the most recently activated one.
+- Now resolve layer conflicts by picking the one which was most recently activated.
 
 # v1.0.0
 
