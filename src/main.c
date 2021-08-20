@@ -431,7 +431,11 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		if(pressed) {
 			layer = kbd->layers[d->arg.layer];
 
-			layer->active = !layer->active;
+			if(oneshot_layers[d->arg.layer]) {
+				oneshot_layers[d->arg.layer] = 0;
+			} else {
+				layer->active = !layer->active;
+			}
 			reify_layer_mods(kbd);
 		}
 		break;
