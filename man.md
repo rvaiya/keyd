@@ -1,15 +1,27 @@
-% WARP(1)
+% KEYD(1)
 % Raheman Vaiya
 
-# OVERVIEW
+# NAME
 
-A system-wide key remapping daemon.
+**keyd** - A key remapping daemon.
 
-# USAGE
+# SYNOPSIS
 
-keyd [-m] [-l]
+**keyd** [**-m**] [**-l**] [**-d**]
 
-# ARGS
+# DESCRIPTION
+
+keyd is a system wide key remapping daemon which supports features like
+layering, oneshot modifier, and macros. In its most basic form it can be used
+to define a custom key layout that persists accross display server boundaries
+(e.g wayland/X/tty).
+
+keyd is intended to run as a systemd service but is capable of running
+independently. The default behaviour is to run the forground and print to
+stderr, unless **-d** is supplied, in which case in which case log output will
+be stored in */var/log/keyd.log*.
+
+# OPTIONS
 
  **-m**: Run in monitor mode. (ensure keyd is not running to see untranslated events).
 
@@ -17,18 +29,13 @@ keyd [-m] [-l]
 
  **-d**: Fork and run in the background.
 
-keyd is intended to be run as system wide daemon managed by systemd. The
-default behaviour is to run the forground and print to stderr but it can also
-be run as a standalone daemon if -d is supplied, in which case log output will
-be stored in */var/log/keyd.log*.
-
 # CONFIGURATION
 
-All configuration files are stored in */etc/keyd/*. The name of each file should
-correspond to the device name to which it is to be applied followed
-by .cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded
-upon initialization and can be reified by reloading keyd
-(e.g sudo systemctl restart keyd).
+All configuration files are stored in */etc/keyd/*. The name of each file
+should correspond to the device name to which it is to be applied followed by
+.cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded upon
+initialization and can be reified by reloading keyd (e.g sudo systemctl restart
+keyd).
 
 A list of valid key names can be produced with **-l**. The monitor flag (**-m**) can
 also be used to obtain device and key names like so:
@@ -81,8 +88,8 @@ is activated by holding the capslock key.
 
 	[symbols]
 
-	f = S-grave
-	d = slash
+	f = ~
+	d = /
 
 Pressing capslock+f thus produces a tilde.
 
@@ -104,7 +111,7 @@ changed by including layout(<layer>) at the top of the config file.
 
 ## The Modifier Layout
 
-keyd distinguishes between the normal layout and the modifier layout. This
+keyd distinguishes between the key layout and the modifier layout. This
 allows the user to use a different letter arrangement for modifiers. It may,
 for example, be desireable to use an alternative key layout like dvorak while
 preserving standard qwerty modifier shortcuts. This can be achieved by passing
@@ -169,7 +176,7 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 
 Examples:
 
-    # Sends alt+p, waits 300ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
+    # Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
     macro(A-p 100ms chromium enter)
 
     # Types 'Hello World'
@@ -178,27 +185,25 @@ Examples:
     # Identical to the above
     macro(Hello space World)
 
-## Example
+# Example
 
-    # Makes dvorak the default key layout with
-    # qwerty (main) as the modifier layout.
-
+    # Set the default key layout to dvorak and the modifier layout to qwerty (main)
     layout(dvorak, main)
 
+    # Holding escape activates the escape layer
     esc = layer(esc)
 
-    leftshift = oneshot(S)
+    shift = oneshot(S)
     rightshift = oneshot(S)
 
     [esc]
 
-    # esc+q changes the layout to qwerty.
+    # esc+q changes both the key and modifier layout to qwerty.
     q = layout(main)
-
     w = layout(dvorak, main)
 
-    # Inherits the escape/shift bindings from the main layer
-
+    # Inherits all bindings from the main layer (including the defined escape/shift bindings),
+    # and defines a custom letter arrangement.
     [dvorak:main]
 
     q = apostrophe

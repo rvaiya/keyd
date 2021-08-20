@@ -421,7 +421,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			layer->active = 1;
 			layer->timestamp = get_time();
 		} else if(pressed_timestamps[code] < last_keyseq_timestamp) {
-			layer->active = 0;
+			layer->active = !layer->active;
 		} else //Tapped
 			oneshot_layers[d->arg.layer] = 1;
 
@@ -437,6 +437,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 				layer->active = !layer->active;
 			}
 			reify_layer_mods(kbd);
+			goto keyseq_cleanup;
 		}
 		break;
 	case ACTION_LAYER:
@@ -445,8 +446,11 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		if(pressed) {
 			layer->active = 1;
 			layer->timestamp = get_time();
-		} else
-			layer->active = 0;
+		} else {
+			//Toggle rather than clear to account for
+			//the possibility of interposed layert()
+			layer->active = !layer->active;
+		}
 
 		reify_layer_mods(kbd);
 		break;

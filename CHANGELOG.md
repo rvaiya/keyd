@@ -1,23 +1,23 @@
-# v1.0.1
+# v1.1.0
 
-- Added layert().
-- No resolve layer conflicts by picking the most recently activated one in the case of multiple mappings.
+- Added layert() to facilitate semipermanent-activation of occluding layers.
+- Now resolve layer conflicts by picking the most recently activated one.
 
 # v1.0.0
 
 Major version update:
 
 - Introduces support for modifier layers.
-- Simplifies config format.
+- Simplifies the config format.
 - Improves consistency/expected key behaviour.
-- Symbols can be used in place of their names (e.g `;` instead of `semicolon`)
-- Shifted symbols can now be specified directly (e.g `&` instead of `S-7`)
+- Symbols can now be assigned directly place of their names (e.g `&` instead of `S-7`).
 - Macro support.
 
-This breaks existing configs. Moving forward the config format is expected to
+*This breaks existing configs*. Moving forward the config format is expected to
 remain backwards compatible.
 
 Main Config Changes:
+
 - Modifiers are now just treated as layers
 - The default layer is now called main
 - The modifier layout is distinct from the key layout
@@ -34,4 +34,4 @@ oneshot_layer(layer)        = oneshot(layer)
 [dvorak:default]            = [dvorak:main]
 ```
 
-See the manpage for details.
+See the [manpage](man.md) for details.
