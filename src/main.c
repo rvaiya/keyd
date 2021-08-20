@@ -428,7 +428,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		reify_layer_mods(kbd);
 		break;
 	case ACTION_LAYER_TOGGLE:
-		if(pressed) {
+		if(!pressed) {
 			layer = kbd->layers[d->arg.layer];
 
 			if(oneshot_layers[d->arg.layer]) {
