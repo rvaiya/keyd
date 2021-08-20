@@ -41,6 +41,7 @@ enum action {
 	ACTION_LAYOUT,
 	ACTION_KEYSEQ,
 	ACTION_LAYER,
+	ACTION_LAYER_TOGGLE,
 	ACTION_ONESHOT,
 };
 
@@ -66,6 +67,10 @@ struct key_descriptor
 struct layer {
 	uint16_t mods;
 	struct key_descriptor *keymap;
+
+	//State
+	uint8_t active;
+	uint64_t timestamp;
 };
 
 struct keyboard_config {

@@ -1,3 +1,8 @@
+# v1.0.1
+
+- Added layert().
+- No resolve layer conflicts by picking the most recently activated one in the case of multiple mappings.
+
 # v1.0.0
 
 Major version update:

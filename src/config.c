@@ -523,6 +523,18 @@ static int parse_descriptor(const char *_s, struct key_descriptor *desc)
 		desc->arg.layer = idx;
 
 		goto cleanup;
+	} else if(!strcmp(fn, "layert") && nargs == 1) {
+		int idx = lookup_layer(args[0]);
+
+		if(idx < 0) {
+			err("%s is not a valid layer.", args[0]);
+			goto fail;
+		}
+
+		desc->action = ACTION_LAYER_TOGGLE;
+		desc->arg.layer = idx;
+
+		goto cleanup;
 	} else if(!strcmp(fn, "layout") && nargs > 0) {
 		int idx;
 

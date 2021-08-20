@@ -150,6 +150,10 @@ like modifier stacking and pointer combos.
 
 **layer(\<layer\>)**: Activates the given layer while held.
 
+**layert(\<layer\>)**: Toggle the state of the given layer. Note this is
+intended for transient layers and is distinct from layout() which should
+be used for letter layouts.
+
 **overload(\<keyseq\>,\<layer\>)**: Activates the given layer while held and emits the given key sequence when tapped.
 
 **layout(\<layer\>)**: Sets the current layout to the given layer. You will likely want
