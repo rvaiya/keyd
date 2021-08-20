@@ -487,6 +487,8 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			}
 
 			reify_layer_mods(kbd);
+			goto keyseq_cleanup;
+
 		}
 		break;
 	case ACTION_UNDEFINED:
