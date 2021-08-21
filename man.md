@@ -103,10 +103,10 @@ is, unmapped keys will have no effect. A parent is specified by appending
 `:<parent>` to the layer name.
 
 The *layout* is a special layer from which mappings are drawn if no other layers
-are active.  The default layout is called *main* and is the one to which
+are active.  The default layout is called **main** and is the one to which
 mappings are assigned if no layer heading is present. By default all keys are
-defined as themselves in the main layer.  Layers which intend to be used as
-layouts will likely want to inherit from main. The default layout can be
+defined as themselves in the main layer. Layouts should inherit from main to 
+avoid having to explicitly define each key. The default layout can be
 changed by including layout(<layer>) at the top of the config file.
 
 ## The Modifier Layout
@@ -126,10 +126,10 @@ modifiers and preserves expected stacking behaviour.
 ## Modifier Layers
 
 In addition to standard layers, keyd introduces the concept of 'modifier
-layers' to accomodate the common use case of remapping a subset of modifier keys. A
-modifier layer will have identical behaviour to a set of modifiers unless a key is
-explicitly defined within it. To define a modifier layer simply define a layer
-which inherits from a valid modifier set.
+layers' to accomodate the common use case of remapping a subset of modifier
+keys. A modifier layer will behave as a set of modifiers in all instances
+except when a key is explicitly mapped within it and can be defined
+by creating a layer which inherits from a valid modifier set.
 
 E.G:
 
@@ -147,7 +147,7 @@ pressed, in which case the key sequence C-A-f1 will be emitted. This is not
 possible to achieve using standard layers without breaking expected behaviour
 like modifier stacking and pointer combos.
 
-## TLDR
+## Summary
 
 1. Use [mylayer] if you want to define a custom shift layer (e.g [symbols]).
 2. Use [mylayer:C] if you want a layer which behaves like a custom control key.
@@ -155,15 +155,17 @@ like modifier stacking and pointer combos.
 
 ## ACTIONS
 
-**oneshot(\<layer\>)**: If tapped activate a layer for the next keypress. If this is a modifier layer then it will cause the key to behave as the corresponding modifiers while held.
+**oneshot(\<layer\>)**: If tapped, activate the supplied layer for the duration
+of the next keypress. If `<layer>` is a modifier layer then it will cause the key to
+behave as the corresponding modifiers while held.
 
 **layer(\<layer\>)**: Activates the given layer while held.
 
-**layert(\<layer\>)**: Toggle the state of the given layer. Note this is
+**layert(\<layer\>)**: Toggles the state of the given layer. Note this is
 intended for transient layers and is distinct from layout() which should
 be used for letter layouts.
 
-**overload(\<keyseq\>,\<layer\>)**: Activates the given layer while held and emits the given key sequence when tapped.
+**overload(\<layer\>,\<keyseq\>,)**: Activates the given layer while held and emits the given key sequence when tapped.
 
 **layout(\<layer\>)**: Sets the current layout to the given layer. You will likely want
 to ensure you have a way to switch layouts within the new one.
