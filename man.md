@@ -167,8 +167,10 @@ be used for letter layouts.
 
 **overload(\<layer\>,\<keyseq\>,)**: Activates the given layer while held and emits the given key sequence when tapped.
 
-**layout(\<layer\>)**: Sets the current layout to the given layer. You will likely want
-to ensure you have a way to switch layouts within the new one.
+**layout(\<layer\>[, \<modifier layer\>])**: Sets the current layout to the given layer. You will likely want
+to ensure you have a way to switch layouts within the new one. A second layer may optionally
+be supplied and is used as the modifier layer if present.
+
 
 **macro(\<macro\>)**: Perform the key sequence described in `<macro>`
 
