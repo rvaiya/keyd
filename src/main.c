@@ -377,7 +377,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	}
 
 	if(!d)
-		return;
+		goto keyseq_cleanup;
 
 	switch(d->action) {
 		struct layer *layer;
