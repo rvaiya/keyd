@@ -42,8 +42,6 @@
 
 #define UINPUT_DEVICE_NAME "keyd virtual keyboard"
 #define MAX_KEYBOARDS 256
-#define LOCK_FILE "/var/lock/keyd.lock"
-#define LOG_FILE "/var/log/keyd.log" //Only used when running as a daemon.
 
 #ifdef DEBUG
 	#define dbg(fmt, ...) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)

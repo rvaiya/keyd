@@ -29,7 +29,6 @@
 #include "keys.h"
 
 #define MAX_LAYERS 32
-#define CONFIG_DIR "/etc/keyd"
 #define MAX_LAYER_NAME_LEN 256
 #define MAX_MACRO_SIZE 256
 #define MAX_MACROS 256

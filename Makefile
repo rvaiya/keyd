@@ -3,9 +3,18 @@
 DESTDIR=
 PREFIX=/usr
 
+LOCK_FILE="/var/lock/keyd.lock"
+LOG_FILE="/var/log/keyd.log"
+CONFIG_DIR="/etc/keyd"
+
 VERSION=1.1.2
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
-CFLAGS=-DVERSION=\"$(VERSION)\" -DGIT_COMMIT_HASH=\"$(GIT_HASH)\"
+
+CFLAGS=-DVERSION=\"$(VERSION)\" \
+	-DGIT_COMMIT_HASH=\"$(GIT_HASH)\" \
+	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
+	-DLOG_FILE=\"$(LOG_FILE)\" \
+	-DLOCK_FILE=\"$(LOCK_FILE)\"
 
 all:
 	mkdir -p bin
