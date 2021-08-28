@@ -71,9 +71,9 @@ and each modifier is one of:
 In addition to simple key mappings keyd can remap keys to actions which
 can conditionally send keystrokes or transform the state of the keymap.
 
-It is, for instance, possible to map a key to escape when tapped and control when held
-by assigning it to `overload(C, esc)`. A complete list of available actions can be
-found in *ACTIONS*.
+It is, for instance, possible to map a key to escape when tapped and control
+when held by assigning it to `overload(C, esc)`. A complete list of available
+actions can be found in *ACTIONS*.
 
 ## Layers
 
@@ -142,10 +142,10 @@ capslock = layer(custom_control)
 2 = C-A-f2
 ```
 
-Will cause the capslock key to behave as control in all instances except when `C-1` is
-pressed, in which case the key sequence C-A-f1 will be emitted. This is not
-possible to achieve using standard layers without breaking expected behaviour
-like modifier stacking and pointer combos.
+Will cause the capslock key to behave as control in all instances except when
+`C-1` is pressed, in which case the key sequence C-A-f1 will be emitted. This
+is not possible to achieve using standard layers without breaking expected
+behaviour like modifier stacking and pointer combos.
 
 ## Summary
 
@@ -155,24 +155,35 @@ like modifier stacking and pointer combos.
 
 ## ACTIONS
 
-**oneshot(\<layer\>)**: If tapped, activate the supplied layer for the duration
-of the next keypress. If `<layer>` is a modifier layer then it will cause the key to
-behave as the corresponding modifiers while held.
+**oneshot(\<layer\>)**
 
-**layer(\<layer\>)**: Activates the given layer while held.
+: If tapped, activate the supplied layer for the duration of the next keypress.
+If `<layer>` is a modifier layer then it will cause the key to behave as the
+corresponding modifiers while held.
 
-**layert(\<layer\>)**: Toggles the state of the given layer. Note this is
-intended for transient layers and is distinct from layout() which should
-be used for letter layouts.
+**layer(\<layer\>)**
 
-**overload(\<layer\>,\<keyseq\>,)**: Activates the given layer while held and emits the given key sequence when tapped.
+: Activates the given layer while held.
 
-**layout(\<layer\>[, \<modifier layer\>])**: Sets the current layout to the given layer. You will likely want
-to ensure you have a way to switch layouts within the new one. A second layer may optionally
-be supplied and is used as the modifier layer if present.
+**layert(\<layer\>)**
+
+: Toggles the state of the given layer. Note this is intended for transient
+layers and is distinct from layout() which should be used for letter layouts.
+
+**overload(\<layer\>,\<keyseq\>,)**
+
+: Activates the given layer while held and emits the given key sequence when tapped.
+
+**layout(\<layer\>[, \<modifier layer\>])**
+
+: Sets the current layout to the given layer. You will likely want to ensure
+you have a way to switch layouts within the new one. A second layer may
+optionally be supplied and is used as the modifier layer if present.
 
 
-**macro(\<macro\>)**: Perform the key sequence described in `<macro>`
+**macro(\<macro\>)**
+
+: Perform the key sequence described in `<macro>`
 
 Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of:
 
@@ -183,6 +194,7 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 Examples:
 
     # Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
+
     macro(A-p 100ms chromium enter)
 
     # Types 'Hello World'
@@ -239,7 +251,7 @@ Invert the behaviour of the shift key without breaking modifier behaviour.
 
     [shift:S]
 
-    0 = 1
+    0 = 0
     1 = 1
     2 = 2
     3 = 3
@@ -265,17 +277,17 @@ behaviour.
 
 # NOTES
 
-- Because of the way keyd works it is possible to render your machine unusable with a bad
-  config file. This can usually be resolved by plugging in a different keyboard, however
-  if *default.cfg* has been misconfigured you will have to find an alternate way to kill
-  the daemon (e.g SSH).
+Because of the way keyd works it is possible to render your machine unusable
+with a bad config file. This can usually be resolved by plugging in a different
+keyboard, however if *default.cfg* has been misconfigured you will have to find
+an alternate way to kill the daemon (e.g SSH).
 
 # AUTHOR
 
- - Written by Raheman Vaiya (2017-).
+Written by Raheman Vaiya (2017-).
 
 # BUGS
 
 Please file any bugs or feature requests at the following url:
 
-https://github.com/rvaiya/keyd/issues
+<https://github.com/rvaiya/keyd/issues>
