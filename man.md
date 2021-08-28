@@ -1,5 +1,4 @@
 % KEYD(1)
-% Raheman Vaiya
 
 # NAME
 
@@ -23,11 +22,14 @@ be stored in */var/log/keyd.log*.
 
 # OPTIONS
 
- **-m**: Run in monitor mode. (ensure keyd is not running to see untranslated events).
+**-m**
+:	Run in monitor mode. (ensure keyd is not running to see untranslated events).
 
- **-l**: List all valid key names.
+**-l**
+:	List all valid key names.
 
- **-d**: Fork and run in the background.
+**-d**
+:	Fork and run in the background.
 
 # CONFIGURATION
 
@@ -91,7 +93,7 @@ is activated by holding the capslock key.
 	f = ~
 	d = /
 
-Pressing capslock+f thus produces a tilde.
+Pressing `capslock+f` thus produces a tilde.
 
 Any set of valid modifiers is also a valid layer. For example the layer `M-C`
 corresponds to a layer which behaves like the modifiers meta and control. These
@@ -107,7 +109,7 @@ are active.  The default layout is called **main** and is the one to which
 mappings are assigned if no layer heading is present. By default all keys are
 defined as themselves in the main layer. Layouts should inherit from main to 
 avoid having to explicitly define each key. The default layout can be
-changed by including layout(<layer>) at the top of the config file.
+changed by including `layout(<layer>)` at the top of the config file.
 
 ## The Modifier Layout
 
@@ -133,17 +135,15 @@ by creating a layer which inherits from a valid modifier set.
 
 E.G:
 
-```
-capslock = layer(custom_control)
-
-[custom_control:C]
-
-1 = C-A-f1
-2 = C-A-f2
-```
+	capslock = layer(custom_control)
+	
+	[custom_control:C]
+	
+	1 = C-A-f1
+	2 = C-A-f2
 
 Will cause the capslock key to behave as control in all instances except when
-`C-1` is pressed, in which case the key sequence C-A-f1 will be emitted. This
+`C-1` is pressed, in which case the key sequence `C-A-f1` will be emitted. This
 is not possible to achieve using standard layers without breaking expected
 behaviour like modifier stacking and pointer combos.
 
@@ -168,7 +168,7 @@ corresponding modifiers while held.
 **layert(\<layer\>)**
 
 : Toggles the state of the given layer. Note this is intended for transient
-layers and is distinct from layout() which should be used for letter layouts.
+layers and is distinct from `layout()` which should be used for letter layouts.
 
 **overload(\<layer\>,\<keyseq\>,)**
 
@@ -179,7 +179,6 @@ layers and is distinct from layout() which should be used for letter layouts.
 : Sets the current layout to the given layer. You will likely want to ensure
 you have a way to switch layouts within the new one. A second layer may
 optionally be supplied and is used as the modifier layer if present.
-
 
 **macro(\<macro\>)**
 
@@ -194,7 +193,6 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 Examples:
 
 	# Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
-
 	macro(A-p 100ms chromium enter)
 
 	# Types 'Hello World'
@@ -220,7 +218,7 @@ Set the default key layout to dvorak and the modifier layout to qwerty (main).
 
 ## Example 2
 
-Make esc+q/w/e set the letter layout.
+Make `esc+q/w/e` set the letter layout.
 
 	# ...
 	esc = layer(esc)
