@@ -135,14 +135,12 @@ by creating a layer which inherits from a valid modifier set.
 
 E.G:
 
-```
-capslock = layer(custom_control)
-
-[custom_control:C]
-
-1 = C-A-f1
-2 = C-A-f2
-```
+	capslock = layer(custom_control)
+	
+	[custom_control:C]
+	
+	1 = C-A-f1
+	2 = C-A-f2
 
 Will cause the capslock key to behave as control in all instances except when
 `C-1` is pressed, in which case the key sequence C-A-f1 will be emitted. This
@@ -182,7 +180,6 @@ layers and is distinct from layout() which should be used for letter layouts.
 you have a way to switch layouts within the new one. A second layer may
 optionally be supplied and is used as the modifier layer if present.
 
-
 **macro(\<macro\>)**
 
 : Perform the key sequence described in `<macro>`
@@ -196,7 +193,6 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 Examples:
 
 	# Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
-
 	macro(A-p 100ms chromium enter)
 
 	# Types 'Hello World'
