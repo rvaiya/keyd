@@ -40,12 +40,12 @@ keyd).
 A list of valid key names can be produced with **-l**. The monitor flag (**-m**) can
 also be used to obtain device and key names like so:
 
-    > sudo systemctl stop keyd
-    > sudo keyd -m
+	> sudo systemctl stop keyd
+	> sudo keyd -m
 
-    Magic Keyboard: capslock down
-    Magic Keyboard: capslock up
-    ...
+	Magic Keyboard: capslock down
+	Magic Keyboard: capslock up
+	...
 
 If no configuration file exists for a given keyboard *default.cfg* is used as a
 fallback (if present).
@@ -62,11 +62,11 @@ Where `<keyseq>` has the form: `[<modifier1>[-<modifier2>...]-<key>`
 
 and each modifier is one of:
 
-\    **C** - Control\
-\    **M** - Meta/Super\
-\    **A** - Alt\
-\    **S** - Shift\
-\    **G** - AltGr
+\ **C** - Control\
+\ **M** - Meta/Super\
+\ **A** - Alt\
+\ **S** - Shift\
+\ **G** - AltGr
 
 In addition to simple key mappings keyd can remap keys to actions which
 can conditionally send keystrokes or transform the state of the keymap.
@@ -193,15 +193,15 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 
 Examples:
 
-    # Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
+	# Sends alt+p, waits 100ms (allowing the launcher time to start) and then sends 'chromium' before sending enter.
 
-    macro(A-p 100ms chromium enter)
+	macro(A-p 100ms chromium enter)
 
-    # Types 'Hello World'
-    macro(h e l l o space w o r ld)
+	# Types 'Hello World'
+	macro(h e l l o space w o r ld)
 
-    # Identical to the above
-    macro(Hello space World)
+	# Identical to the above
+	macro(Hello space World)
 
 # EXAMPLES
 
@@ -209,58 +209,58 @@ Examples:
 
 Set the default key layout to dvorak and the modifier layout to qwerty (main).
 
-    layout(dvorak, main)
+	layout(dvorak, main)
 
-    [dvorak:main]
+	[dvorak:main]
 
-    q = apostrophe
-    w = comma
-    e = dot
-    # etc...
+	q = apostrophe
+	w = comma
+	e = dot
+	# etc...
 
 ## Example 2
 
 Make esc+q/w/e set the letter layout.
 
-    # ...
-    esc = layer(esc)
+	# ...
+	esc = layer(esc)
 
-    [esc]
+	[esc]
 
-    q = layout(main)
-    w = layout(dvorak, main)
-    e = layout(dvorak)
+	q = layout(main)
+	w = layout(dvorak, main)
+	e = layout(dvorak)
 
 ## Example 3
 
 Invert the behaviour of the shift key without breaking modifier behaviour.
 
-    leftshift = layer(shift)
-    rightshift = layer(shift)
+	leftshift = layer(shift)
+	rightshift = layer(shift)
 
-    1 = !
-    2 = @
-    3 = #
-    4 = $
-    5 = %
-    6 = ^
-    7 = &
-    8 = *
-    9 = (
-    0 = )
+	1 = !
+	2 = @
+	3 = #
+	4 = $
+	5 = %
+	6 = ^
+	7 = &
+	8 = *
+	9 = (
+	0 = )
 
-    [shift:S]
+	[shift:S]
 
-    0 = 0
-    1 = 1
-    2 = 2
-    3 = 3
-    4 = 4
-    5 = 5
-    6 = 6
-    7 = 7
-    8 = 8
-    9 = 9
+	0 = 0
+	1 = 1
+	2 = 2
+	3 = 3
+	4 = 4
+	5 = 5
+	6 = 6
+	7 = 7
+	8 = 8
+	9 = 9
 
 
 ## Example 4
@@ -269,11 +269,11 @@ Tapping control once causes it to apply to the next key, tapping it twice
 activates it until it is pressed again, and holding it produces expected
 behaviour.
 
-    control = oneshot(control)
+	control = oneshot(control)
 
-    [control:C]
+	[control:C]
 
-    layert(control)
+	layert(control)
 
 # NOTES
 
