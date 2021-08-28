@@ -1,5 +1,4 @@
 % KEYD(1)
-% Raheman Vaiya
 
 # NAME
 
