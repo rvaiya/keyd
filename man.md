@@ -93,7 +93,7 @@ is activated by holding the capslock key.
 	f = ~
 	d = /
 
-Pressing capslock+f thus produces a tilde.
+Pressing `capslock+f` thus produces a tilde.
 
 Any set of valid modifiers is also a valid layer. For example the layer `M-C`
 corresponds to a layer which behaves like the modifiers meta and control. These
@@ -109,7 +109,7 @@ are active.  The default layout is called **main** and is the one to which
 mappings are assigned if no layer heading is present. By default all keys are
 defined as themselves in the main layer. Layouts should inherit from main to 
 avoid having to explicitly define each key. The default layout can be
-changed by including layout(<layer>) at the top of the config file.
+changed by including `layout(<layer>)` at the top of the config file.
 
 ## The Modifier Layout
 
@@ -143,7 +143,7 @@ E.G:
 	2 = C-A-f2
 
 Will cause the capslock key to behave as control in all instances except when
-`C-1` is pressed, in which case the key sequence C-A-f1 will be emitted. This
+`C-1` is pressed, in which case the key sequence `C-A-f1` will be emitted. This
 is not possible to achieve using standard layers without breaking expected
 behaviour like modifier stacking and pointer combos.
 
@@ -168,7 +168,7 @@ corresponding modifiers while held.
 **layert(\<layer\>)**
 
 : Toggles the state of the given layer. Note this is intended for transient
-layers and is distinct from layout() which should be used for letter layouts.
+layers and is distinct from `layout()` which should be used for letter layouts.
 
 **overload(\<layer\>,\<keyseq\>,)**
 
@@ -218,7 +218,7 @@ Set the default key layout to dvorak and the modifier layout to qwerty (main).
 
 ## Example 2
 
-Make esc+q/w/e set the letter layout.
+Make `esc+q/w/e` set the letter layout.
 
 	# ...
 	esc = layer(esc)
