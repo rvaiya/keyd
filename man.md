@@ -22,14 +22,11 @@ be stored in */var/log/keyd.log*.
 
 # OPTIONS
 
-**-m**
-:	Run in monitor mode. (ensure keyd is not running to see untranslated events).
+**-m**: Run in monitor mode. (ensure keyd is not running to see untranslated events).
 
-**-l**
-:	List all valid key names.
+**-l**: List all valid key names.
 
-**-d**
-:	Fork and run in the background.
+**-d**: Fork and run in the background.
 
 # CONFIGURATION
 
