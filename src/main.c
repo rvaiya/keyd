@@ -397,6 +397,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	switch(d->action) {
 		struct layer *layer;
 		uint32_t keyseq;
+		uint16_t keycode;
 
 	case ACTION_OVERLOAD:
 		keyseq = d->arg.keyseq;
@@ -409,7 +410,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			layer->active = 0;
 
 			if(lastd == d) { //If tapped
-				uint16_t key = keyseq & 0xFF;
+				uint16_t key = keyseq & 0xFFFF;
 				mods |= keyseq >> 16;
 
 				setmods(mods);
@@ -471,13 +472,19 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		break;
 	case ACTION_KEYSEQ:
 		mods |= d->arg.keyseq >> 16;
+		keycode = d->arg.keyseq & 0xFFFF;
 		if(pressed) {
 			setmods(mods);
-			send_key(d->arg.keyseq & 0xFF, 1);
 
+			//Account for the possibility that a version of the key
+			//with a different modifier set is already depressed (e.g [/{)
+			if(keystate[keycode])
+				send_key(keycode, 0);
+
+			send_key(keycode, 1);
 		} else {
 			reify_layer_mods(kbd);
-			send_key(d->arg.keyseq & 0xFF, 0);
+			send_key(keycode, 0);
 		}
 
 		goto keyseq_cleanup;
@@ -490,7 +497,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			for(i = 0; i < sz;i++) {
 				uint32_t seq = macro[i];
 				uint16_t mods = macro[i] >> 16;
-				uint16_t key = macro[i] & 0xFF;
+				uint16_t key = macro[i] & 0xFFFF;
 
 				if(mods & MOD_TIMEOUT) {
 					usleep(GET_TIMEOUT(seq)*1000);
