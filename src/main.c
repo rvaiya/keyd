@@ -43,12 +43,9 @@
 #define UINPUT_DEVICE_NAME "keyd virtual keyboard"
 #define MAX_KEYBOARDS 256
 
-#ifdef DEBUG
-	#define dbg(fmt, ...) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)
-#else
-	#define dbg(...)
-#endif
+#define dbg(fmt, ...) { if(debug) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 
+static int debug = 0;
 static int ufd = -1;
 
 static struct udev *udev;
@@ -128,6 +125,23 @@ static int is_keyboard(struct udev_device *dev)
 	return is_keyboard;
 }
 
+static const char *evdev_device_name(const char *devnode)
+{
+	static char name[256];
+
+	int fd = open(devnode, O_RDONLY);
+	if(fd < 0) {
+		perror("open");
+		exit(-1);
+	}
+
+	if(ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1)
+		return NULL;
+
+	close(fd);
+	return name;
+}
+
 static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 {
 	struct udev *udev;
@@ -157,10 +171,13 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 		const char *path = udev_device_get_devnode(dev);
 
 		if(is_keyboard(dev)) {
+			dbg("Detected keyboard node %s (%s)", name, evdev_device_name(path));
 			nodes[*sz] = malloc(strlen(path)+1);
 			strcpy(nodes[*sz], path);
 			(*sz)++;
 			assert(*sz <= MAX_KEYBOARDS);
+		} else if(path) {
+			dbg("Ignoring %s (%s)", evdev_device_name(path), path);
 		}
 
 		udev_device_unref(dev);
@@ -510,25 +527,6 @@ keyseq_cleanup:
 			oneshot_layers[i] = 0;
 		}
 	}
-}
-
-static const char *evdev_device_name(const char *devnode)
-{
-	static char name[256];
-
-	int fd = open(devnode, O_RDONLY);
-	if(fd < 0) {
-		perror("open");
-		exit(-1);
-	}
-
-	if(ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1) {
-		perror("ioctl");
-		exit(-1);
-	}
-
-	close(fd);
-	return name;
 }
 
 //Block on the given keyboard nodes until no keys are depressed.
@@ -886,6 +884,11 @@ static void daemonize()
 
 int main(int argc, char *argv[])
 {
+	if(getenv("KEYD_DEBUG"))
+		debug = 1;
+
+	dbg("Debug mode enabled.");
+
 	if(argc > 1) {
 		if(!strcmp(argv[1], "-v")) {
 			fprintf(stderr, "keyd version: %s (%s)\n", VERSION, GIT_COMMIT_HASH);

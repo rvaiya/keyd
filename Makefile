@@ -1,4 +1,4 @@
-.PHONY: all clean debug install uninstall
+.PHONY: all clean install uninstall
 
 DESTDIR=
 PREFIX=/usr
@@ -19,9 +19,6 @@ CFLAGS=-DVERSION=\"$(VERSION)\" \
 all:
 	mkdir -p bin
 	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev
-debug:
-	mkdir -p bin
-	$(CC) $(CFLAGS) -Wall -Wextra -pedantic -DDEBUG -g  src/*.c -o bin/keyd -ludev
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:
