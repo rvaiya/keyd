@@ -113,6 +113,7 @@ static int is_keyboard(struct udev_device *dev)
 		//Some mice can also send keypresses, ignore these
 		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_MOUSE") &&
 		   !strcmp(udev_list_entry_get_value(prop), "1")) {
+			dbg("%s appears to be a mouse", path);
 			return 0;
 		}
 
@@ -156,7 +157,6 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	if (!enumerate)
 		die("Cannot create enumerate context.");
 
-	udev_enumerate_add_match_subsystem(enumerate, "input");
 	udev_enumerate_add_match_subsystem(enumerate, "input");
 	udev_enumerate_scan_devices(enumerate);
 
@@ -611,6 +611,13 @@ static int manage_keyboard(const char *devnode)
 	if(!strcmp(name, UINPUT_DEVICE_NAME)) //Don't manage virtual keyboard
 		return 0;
 
+	for(kbd = keyboards;kbd;kbd = kbd->next) {
+		if(!strcmp(kbd->devnode, devnode)) {
+			dbg("Already managing %s.", devnode);
+			return 0;
+		}
+	}
+
 	for(cfg = configs;cfg;cfg = cfg->next) {
 		if(!strcmp(cfg->name, "default"))
 			default_cfg = cfg;
@@ -801,7 +808,6 @@ static void main_loop()
 		if(select(maxfd+1, &fds, NULL, NULL, NULL) > 0) {
 			if(FD_ISSET(monfd, &fds)) {
 				dev = udev_monitor_receive_device(udevmon);
-
 				const char *devnode = udev_device_get_devnode(dev);
 
 				if(devnode && is_keyboard(dev)) {
@@ -811,6 +817,8 @@ static void main_loop()
 						manage_keyboard(devnode);
 					else if(!strcmp(action, "remove"))
 						destroy_keyboard(devnode);
+					else
+						dbg("udev: action %s %s", action, devnode);
 				}
 				udev_device_unref(dev);
 			}
