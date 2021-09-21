@@ -102,28 +102,19 @@ static uint64_t get_time()
 
 static int is_keyboard(struct udev_device *dev)
 {
-	int is_keyboard = 0;
-
 	const char *path = udev_device_get_devnode(dev);
 	if(!path || !strstr(path, "event")) //Filter out non evdev devices.
 		return 0;
 
 	struct udev_list_entry *prop;
 	udev_list_entry_foreach(prop, udev_device_get_properties_list_entry(dev)) {
-		//Some mice can also send keypresses, ignore these
-		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_MOUSE") &&
-		   !strcmp(udev_list_entry_get_value(prop), "1")) {
-			dbg("%s appears to be a mouse", path);
-			return 0;
-		}
-
 		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_KEYBOARD") &&
 		   !strcmp(udev_list_entry_get_value(prop), "1")) {
-			is_keyboard = 1;
+			return 1;
 		}
 	}
 
-	return is_keyboard;
+	return 0;
 }
 
 static const char *evdev_device_name(const char *devnode)
@@ -201,6 +192,16 @@ static int create_uinput_fd()
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
+	ioctl(fd, UI_SET_EVBIT, EV_REL);
+
+	ioctl(fd, UI_SET_RELBIT, REL_X);
+	ioctl(fd, UI_SET_RELBIT, REL_Y);
+	ioctl(fd, UI_SET_RELBIT, REL_Z);
+
+	ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
+	ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
+	ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
+
 	for(i = 0;i < KEY_MAX;i++) {
 		if(keycode_table[i].name)
 			ioctl(fd, UI_SET_KEYBIT, i);
@@ -208,8 +209,8 @@ static int create_uinput_fd()
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x046d;
-	usetup.id.product = 0xc52b;
+	usetup.id.vendor = 0x1234;
+	usetup.id.product = 0x567a;
 	strcpy(usetup.name, UINPUT_DEVICE_NAME);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -368,8 +369,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	static struct key_descriptor *dcache[KEY_CNT] ={0};
 	static uint16_t mcache[KEY_CNT] ={0};
 
-	if(ev->type != EV_KEY)
+	if(ev->type != EV_KEY) {
+		write(ufd, ev, sizeof(*ev));
 		return;
+	}
 
 	//Wayland and X both ignore repeat events but VTs seem to require them.
 	if(pressed == 2) {
