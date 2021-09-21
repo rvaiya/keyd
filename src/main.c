@@ -407,10 +407,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		layer = kbd->layers[d->arg2.layer];
 
 		if(pressed) {
-			layer->active = 1;
+			layer->active = !layer->active;
 			layer->timestamp = get_time();
 		} else {
-			layer->active = 0;
+			layer->active = !layer->active;
 
 			if(lastd == d) { //If tapped
 				uint16_t key = keyseq & 0xFFFF;
