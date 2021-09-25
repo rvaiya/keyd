@@ -40,13 +40,15 @@
 #include "keys.h"
 #include "config.h"
 
-#define UINPUT_DEVICE_NAME "keyd virtual keyboard"
+#define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
+#define VIRTUAL_POINTER_NAME "keyd virtual pointer"
 #define MAX_KEYBOARDS 256
 
 #define dbg(fmt, ...) { if(debug) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 
 static int debug = 0;
-static int ufd = -1;
+static int vkbd = -1;
+static int vptd = -1;
 
 static struct udev *udev;
 static struct udev_monitor *udevmon;
@@ -178,7 +180,44 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	udev_unref(udev);
 }
 
-static int create_uinput_fd()
+static int create_virtual_pointer() 
+{
+	size_t i;
+	struct uinput_setup usetup;
+
+	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	if(fd < 0) {
+		perror("open");
+		exit(-1);
+	}
+
+	ioctl(fd, UI_SET_EVBIT, EV_REL);
+	ioctl(fd, UI_SET_EVBIT, EV_SYN);
+
+	ioctl(fd, UI_SET_RELBIT, REL_X);
+	ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
+	ioctl(fd, UI_SET_RELBIT, REL_HWHEEL);
+	ioctl(fd, UI_SET_RELBIT, REL_Y);
+	ioctl(fd, UI_SET_RELBIT, REL_Z);
+
+	ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
+	ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
+	ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
+
+
+	memset(&usetup, 0, sizeof(usetup));
+	usetup.id.bustype = BUS_USB;
+	usetup.id.vendor = 0x1234;
+	usetup.id.product = 0x567a;
+	strcpy(usetup.name, VIRTUAL_POINTER_NAME);
+
+	ioctl(fd, UI_DEV_SETUP, &usetup);
+	ioctl(fd, UI_DEV_CREATE);
+
+	return fd;
+}
+
+static int create_virtual_keyboard()
 {
 	size_t i;
 	struct uinput_setup usetup;
@@ -192,16 +231,6 @@ static int create_uinput_fd()
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
-	ioctl(fd, UI_SET_EVBIT, EV_REL);
-
-	ioctl(fd, UI_SET_RELBIT, REL_X);
-	ioctl(fd, UI_SET_RELBIT, REL_Y);
-	ioctl(fd, UI_SET_RELBIT, REL_Z);
-
-	ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
-	ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
-	ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
-
 	for(i = 0;i < KEY_MAX;i++) {
 		if(keycode_table[i].name)
 			ioctl(fd, UI_SET_KEYBIT, i);
@@ -211,7 +240,7 @@ static int create_uinput_fd()
 	usetup.id.bustype = BUS_USB;
 	usetup.id.vendor = 0x1234;
 	usetup.id.product = 0x567a;
-	strcpy(usetup.name, UINPUT_DEVICE_NAME);
+	strcpy(usetup.name, VIRTUAL_KEYBOARD_NAME);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
 	ioctl(fd, UI_DEV_CREATE);
@@ -219,7 +248,7 @@ static int create_uinput_fd()
 	return fd;
 }
 
-static void syn()
+static void syn(int fd)
 {
 	static struct input_event ev = {
 		.type = EV_SYN,
@@ -227,7 +256,7 @@ static void syn()
 		.value = 0,
 	};
 
-	write(ufd, &ev, sizeof(ev));
+	write(fd, &ev, sizeof(ev));
 }
 
 static void send_repetitions()
@@ -244,8 +273,8 @@ static void send_repetitions()
 	for(i = 0; i < sizeof keystate / sizeof keystate[0];i++) {
 		if(keystate[i]) {
 			ev.code = i;
-			write(ufd, &ev, sizeof(ev));
-			syn();
+			write(vkbd, &ev, sizeof(ev));
+			syn(vkbd);
 		}
 	}
 }
@@ -261,9 +290,9 @@ static void send_key(uint16_t code, int is_pressed)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(ufd, &ev, sizeof(ev));
+	write(vkbd, &ev, sizeof(ev));
 
-	syn();
+	syn(vkbd);
 }
 
 static void setmods(uint16_t mods)
@@ -370,7 +399,11 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	static uint16_t mcache[KEY_CNT] ={0};
 
 	if(ev->type != EV_KEY) {
-		write(ufd, ev, sizeof(*ev));
+		if(ev->type == EV_REL) {
+			write(vptd, ev, sizeof(*ev));
+			syn(vptd);
+		}
+
 		return;
 	}
 
@@ -611,7 +644,8 @@ static int manage_keyboard(const char *devnode)
 	struct keyboard_config *cfg = NULL;
 	struct keyboard_config *default_cfg = NULL;
 
-	if(!strcmp(name, UINPUT_DEVICE_NAME)) //Don't manage virtual keyboard
+	if(!strcmp(name, VIRTUAL_KEYBOARD_NAME) || 
+	   !strcmp(name, VIRTUAL_POINTER_NAME)) //Don't manage virtual devices.
 		return 0;
 
 	for(kbd = keyboards;kbd;kbd = kbd->next) {
@@ -939,7 +973,8 @@ int main(int argc, char *argv[])
 
 	warn("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	config_generate();
-	ufd = create_uinput_fd();
+	vkbd = create_virtual_keyboard();
+	vptd = create_virtual_pointer();
 
 	main_loop();
 }
