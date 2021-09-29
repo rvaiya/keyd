@@ -3,5 +3,7 @@
 *.swo
 *.out
 tags
+compile_commands.json
 bin/
+.cache/
 *.gch

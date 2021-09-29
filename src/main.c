@@ -29,11 +29,11 @@
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
-#include <linux/input.h>
+#include <input.h>
 #include <libudev.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <linux/uinput.h>
+#include <uinput.h>
 #include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>

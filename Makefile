@@ -10,7 +10,10 @@ CONFIG_DIR="/etc/keyd"
 VERSION=1.1.2
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
 
-CFLAGS=-DVERSION=\"$(VERSION)\" \
+# for input.h input-event-codes.h uinput.h
+CPPFLAGS=-idirafter /usr/include/linux
+
+CONFIG=-DVERSION=\"$(VERSION)\" \
 	-DGIT_COMMIT_HASH=\"$(GIT_HASH)\" \
 	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
 	-DLOG_FILE=\"$(LOG_FILE)\" \
@@ -18,7 +21,7 @@ CFLAGS=-DVERSION=\"$(VERSION)\" \
 
 all:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev
+	$(CC) -O3 $(CONFIG) $(CPPFLAGS) $(LDFLAGS) src/*.c -o bin/keyd -ludev
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:

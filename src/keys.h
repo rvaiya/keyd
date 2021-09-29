@@ -24,7 +24,7 @@
 #define _KEYS_H_
 #define _KEYS_H_
 
-#include <linux/input-event-codes.h>
+#include <input-event-codes.h>
 #include <stdint.h>
 
 #define MOD_ALT_GR 0x10

@@ -23,7 +23,7 @@
 #ifndef __H_CONFIG_
 #define __H_CONFIG_
 
-#include <linux/input-event-codes.h>
+#include <input-event-codes.h>
 #include <stdint.h>
 #include <stddef.h>
 #include "keys.h"
