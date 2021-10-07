@@ -284,6 +284,9 @@ static void send_repetitions()
 
 static void send_key(uint16_t code, int is_pressed)
 {
+	if(code == KEY_NOOP)
+		return;
+
 	keystate[code] = is_pressed;
 	struct input_event ev;
 

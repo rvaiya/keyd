@@ -33,6 +33,8 @@
 #define MOD_SUPER 0x2
 #define MOD_ALT 0x1
 
+#define KEY_NOOP 0x27b
+
 //Used for macros, bit of a kludge.
 
 #define MOD_TIMEOUT 0x20 //keysequence represents a timeout
@@ -483,6 +485,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_FASTREVERSE] = { "fastreverse", NULL, NULL },
 	[KEY_SLOWREVERSE] = { "slowreverse", NULL, NULL },
 	[KEY_DATA] = { "data", NULL, NULL },
+	[KEY_NOOP] = { "noop", NULL, NULL },
 
 
 	[BTN_0] = {"btn 0", NULL, NULL},

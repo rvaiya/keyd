@@ -74,6 +74,16 @@ It is, for instance, possible to map a key to escape when tapped and control
 when held by assigning it to `overload(C, esc)`. A complete list of available
 actions can be found in *ACTIONS*.
 
+As a special case <key> may be 'noop' which causes it to be
+ignored. This can be used to simulate a modifier sequence with no
+attendant termination key:
+
+E.G 
+
+`C-A-noop` will simulate the simultaneous depression and release
+of the control and alt keys.
+
+
 ## Layers
 
 Each configuration file consists of one or more layers. Each layer is a keymap
