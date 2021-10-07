@@ -49,12 +49,24 @@ Some of the more interesting ones include:
 
 # Installation
 
+## From Source
+
     sudo apt-get install libudev-dev # Debian specific, install the corresponding package on your distribution
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
     make && sudo make install
     sudo systemctl enable keyd && sudo systemctl start keyd
+
+## Packages
+
+Third party packages for the some distributions also exist. If you wish to add
+yours to the list please file a PR. These are kindly maintained by community
+members, no personal responsibility is taken for them.
+
+### Arch
+
+[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
 
 # Quickstart
 
