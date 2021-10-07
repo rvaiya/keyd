@@ -23,7 +23,12 @@
 #ifndef __H_CONFIG_
 #define __H_CONFIG_
 
+#ifdef __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#else
 #include <linux/input-event-codes.h>
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include "keys.h"

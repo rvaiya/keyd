@@ -14,7 +14,9 @@ CFLAGS=-DVERSION=\"$(VERSION)\" \
 	-DGIT_COMMIT_HASH=\"$(GIT_HASH)\" \
 	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
 	-DLOG_FILE=\"$(LOG_FILE)\" \
-	-DLOCK_FILE=\"$(LOCK_FILE)\"
+	-DLOCK_FILE=\"$(LOCK_FILE)\"\
+	-I/usr/local/include\
+	-L/usr/local/lib
 
 all:
 	mkdir -p bin
