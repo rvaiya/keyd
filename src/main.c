@@ -42,13 +42,8 @@
 
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
 #define VIRTUAL_POINTER_NAME "keyd virtual pointer"
-#define IS_MOUSE_BTN(code) ((code) == BTN_LEFT ||\
-			    (code) == BTN_RIGHT ||\
-			    (code) == BTN_MIDDLE ||\
-			    (code) == BTN_0 ||\
-			    (code) == BTN_1 ||\
-			    (code) == BTN_2 ||\
-			    (code) == BTN_3)
+#define IS_MOUSE_BTN(code) (((code) >= BTN_LEFT && (code) <= BTN_TASK) ||\
+			    ((code) >= BTN_0 && (code) <= BTN_9))
 #define MAX_KEYBOARDS 256
 
 #define dbg(fmt, ...) { if(debug) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }

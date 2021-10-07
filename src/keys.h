@@ -483,7 +483,29 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_FASTREVERSE] = { "fastreverse", NULL, NULL },
 	[KEY_SLOWREVERSE] = { "slowreverse", NULL, NULL },
 	[KEY_DATA] = { "data", NULL, NULL },
-	[KEY_MAX] = {0},
+
+
+	[BTN_0] = {"btn 0", NULL, NULL},
+	[BTN_1] = {"btn 1", NULL, NULL},
+	[BTN_2] = {"btn 2", NULL, NULL},
+	[BTN_3] = {"btn 3", NULL, NULL},
+	[BTN_4] = {"btn 4", NULL, NULL},
+	[BTN_5] = {"btn 5", NULL, NULL},
+	[BTN_6] = {"btn 6", NULL, NULL},
+	[BTN_7] = {"btn 7", NULL, NULL},
+	[BTN_8] = {"btn 8", NULL, NULL},
+	[BTN_9] = {"btn 9", NULL, NULL},
+
+	[BTN_LEFT] = {"btn left", NULL, NULL},
+	[BTN_RIGHT] = {"btn right", NULL, NULL},
+	[BTN_MIDDLE] = {"btn middle", NULL, NULL},
+	[BTN_SIDE] = {"btn side", NULL, NULL},
+	[BTN_EXTRA] = {"btn extra", NULL, NULL},
+	[BTN_FORWARD] = {"btn forward", NULL, NULL},
+	[BTN_BACK] = {"btn back", NULL, NULL},
+	[BTN_TASK] = {"btn task", NULL, NULL},
+
+	[KEY_MAX] = {0}
 };
 
 #endif
