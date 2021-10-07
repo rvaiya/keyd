@@ -769,7 +769,8 @@ static void evdev_monitor_loop(int *fds, int sz)
 			if(FD_ISSET(fd, &fdset)) {
 				while(read(fd, &ev, sizeof(ev)) > 0) {
 					if(ev.type == EV_KEY && ev.value != 2) {
-						assert(keycode_table[ev.code].name);
+						if(!keycode_table[ev.code].name)
+							die("Unrecognized keycode: %d\n", ev.code);
 
 						fprintf(stderr, "%s: %s %s\n",
 							names[fd],
