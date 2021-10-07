@@ -42,13 +42,20 @@
 
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
 #define VIRTUAL_POINTER_NAME "keyd virtual pointer"
+#define IS_MOUSE_BTN(code) ((code) == BTN_LEFT ||\
+			    (code) == BTN_RIGHT ||\
+			    (code) == BTN_MIDDLE ||\
+			    (code) == BTN_0 ||\
+			    (code) == BTN_1 ||\
+			    (code) == BTN_2 ||\
+			    (code) == BTN_3)
 #define MAX_KEYBOARDS 256
 
 #define dbg(fmt, ...) { if(debug) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 
 static int debug = 0;
 static int vkbd = -1;
-static int vptd = -1;
+static int vptr = -1;
 
 static struct udev *udev;
 static struct udev_monitor *udevmon;
@@ -192,6 +199,7 @@ static int create_virtual_pointer()
 	}
 
 	ioctl(fd, UI_SET_EVBIT, EV_REL);
+	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
 	ioctl(fd, UI_SET_RELBIT, REL_X);
@@ -398,10 +406,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 	static struct key_descriptor *dcache[KEY_CNT] ={0};
 	static uint16_t mcache[KEY_CNT] ={0};
 
-	if(ev->type != EV_KEY) {
-		if(ev->type == EV_REL) {
-			write(vptd, ev, sizeof(*ev));
-			syn(vptd);
+	if(ev->type != EV_KEY || IS_MOUSE_BTN(ev->code)) {
+		if(ev->type == EV_REL || ev->type == EV_KEY) {
+			write(vptr, ev, sizeof(*ev));
+			syn(vptr);
 		}
 
 		return;
@@ -974,7 +982,7 @@ int main(int argc, char *argv[])
 	warn("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	config_generate();
 	vkbd = create_virtual_keyboard();
-	vptd = create_virtual_pointer();
+	vptr = create_virtual_pointer();
 
 	main_loop();
 }
