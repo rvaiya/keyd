@@ -104,7 +104,7 @@ following config:
     leftmeta = oneshot(M)
     rightmeta = oneshot(M)
 
-    capslock = overload(esc, C)
+    capslock = overload(C, esc)
     insert = S-insert
 
 This remaps all modifiers to 'oneshot' keys and overloads the capslock key to

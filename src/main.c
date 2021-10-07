@@ -764,13 +764,14 @@ static void evdev_monitor_loop(int *fds, int sz)
 			if(FD_ISSET(fd, &fdset)) {
 				while(read(fd, &ev, sizeof(ev)) > 0) {
 					if(ev.type == EV_KEY && ev.value != 2) {
-						if(!keycode_table[ev.code].name)
-							die("Unrecognized keycode: %d\n", ev.code);
-
-						fprintf(stderr, "%s: %s %s\n",
-							names[fd],
-							keycode_table[ev.code].name,
-							ev.value == 0 ? "up" : "down");
+						const char *name = keycode_table[ev.code].name;
+						if(name)
+							fprintf(stderr, "%s: %s %s\n",
+								names[fd],
+								name,
+								ev.value == 0 ? "up" : "down");
+						else
+							fprintf(stderr, "Unrecognized keycode: %d\n", ev.code);
 					}
 				}
 			}
