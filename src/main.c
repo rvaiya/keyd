@@ -241,7 +241,7 @@ static int create_virtual_keyboard()
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
 	for(i = 0;i < KEY_MAX;i++) {
-		if(keycode_table[i].name)
+		if(keycode_table[i].name && !IS_MOUSE_BTN(i) )
 			ioctl(fd, UI_SET_KEYBIT, i);
 	}
 
