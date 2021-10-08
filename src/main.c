@@ -191,6 +191,7 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 static int create_virtual_pointer() 
 {
 	size_t i;
+	uint16_t code;
 	struct uinput_setup usetup;
 
 	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
@@ -209,10 +210,11 @@ static int create_virtual_pointer()
 	ioctl(fd, UI_SET_RELBIT, REL_Y);
 	ioctl(fd, UI_SET_RELBIT, REL_Z);
 
-	ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
-	ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
-	ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
+	for(code = BTN_LEFT;code <= BTN_TASK;code++)
+		ioctl(fd, UI_SET_KEYBIT, code);
 
+	for(code = BTN_0;code <= BTN_9;code++)
+		ioctl(fd, UI_SET_KEYBIT, code);
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
