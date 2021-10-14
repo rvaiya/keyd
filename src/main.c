@@ -988,7 +988,14 @@ int main(int argc, char *argv[])
 		daemonize();
 
 	warn("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
-	config_generate();
+
+	if(argc > 1 && !strcmp(argv[1], "-c")) {
+		config_generate(argv[2]);
+	}
+	else {
+		config_generate(NULL);
+	}
+
 	vkbd = create_virtual_keyboard();
 	vptr = create_virtual_pointer();
 

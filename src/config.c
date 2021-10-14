@@ -618,7 +618,11 @@ static void build_layer_table()
 	FILE *fh = fopen(path, "r");
 
 	if(!fh) {
-		perror("fopen");
+		int err_str_size = sizeof(path) + 6;
+		char *err_str = malloc(err_str_size);
+		snprintf(err_str, err_str_size, "fopen %s", path);
+		perror(err_str);
+		free(err_str);
 		exit(-1);
 	}
 
@@ -834,10 +838,20 @@ void config_free()
 	};
 }
 
-void config_generate()
+void config_generate(char* config_path_override)
 {
 	struct dirent *ent;
-	DIR *dh = opendir(CONFIG_DIR);
+	DIR *dh;
+
+	char *config_dir_path;
+
+	if(config_path_override != NULL) {
+		config_dir_path = config_path_override;
+	} else {
+		config_dir_path = CONFIG_DIR;
+	}
+
+	dh = opendir(config_dir_path);
 
 	if(!dh) {
 		perror("opendir");
@@ -852,7 +866,7 @@ void config_generate()
 			continue;
 
 
-		sprintf(path, "%s/%s", CONFIG_DIR, ent->d_name);
+		sprintf(path, "%s/%s", config_dir_path, ent->d_name);
 
 		cfg = calloc(1, sizeof(struct keyboard_config));
 
