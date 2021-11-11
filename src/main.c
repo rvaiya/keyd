@@ -52,7 +52,8 @@
 			    ((code) >= BTN_0 && (code) <= BTN_9))
 #define MAX_KEYBOARDS 256
 
-#define dbg(fmt, ...) { if(debug) warn("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
+#define dbg(fmt, ...) { if(debug) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
+#define dbg2(fmt, ...) { if(debug > 1) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 
 static int debug = 0;
 static int vkbd = -1;
@@ -80,7 +81,7 @@ struct keyboard {
 
 static struct keyboard *keyboards = NULL;
 
-static void warn(char *fmt, ...)
+static void info(char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -110,21 +111,30 @@ static uint64_t get_time()
 	return (tv.tv_sec*1E9)+tv.tv_nsec;
 }
 
-static int is_keyboard(struct udev_device *dev)
+static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
 {
+	*iskbd = 0;
+	*ismouse = 0;
+
 	const char *path = udev_device_get_devnode(dev);
+
 	if(!path || !strstr(path, "event")) //Filter out non evdev devices.
-		return 0;
+		return;
 
 	struct udev_list_entry *prop;
 	udev_list_entry_foreach(prop, udev_device_get_properties_list_entry(dev)) {
 		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_KEYBOARD") &&
 		   !strcmp(udev_list_entry_get_value(prop), "1")) {
-			return 1;
+			if(iskbd)
+				*iskbd = 1;
+		}
+
+		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_MOUSE") &&
+		   !strcmp(udev_list_entry_get_value(prop), "1")) {
+			if(ismouse)
+				*ismouse = 1;
 		}
 	}
-
-	return 0;
 }
 
 static const char *evdev_device_name(const char *devnode)
@@ -167,12 +177,15 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 
 	*sz = 0;
 	udev_list_entry_foreach(ent, devices) {
+		int iskbd, ismouse;
 		const char *name = udev_list_entry_get_name(ent);;
 		struct udev_device *dev = udev_device_new_from_syspath(udev, name);
 		const char *path = udev_device_get_devnode(dev);
 
-		if(is_keyboard(dev)) {
-			dbg("Detected keyboard node %s (%s)", name, evdev_device_name(path));
+		udev_type(dev, &iskbd, &ismouse);
+
+		if(iskbd) {
+			dbg("Detected keyboard node %s (%s) ismouse: %d", name, evdev_device_name(path), ismouse);
 			nodes[*sz] = malloc(strlen(path)+1);
 			strcpy(nodes[*sz], path);
 			(*sz)++;
@@ -416,6 +429,8 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		if(ev->type == EV_REL || ev->type == EV_KEY) {
 			write(vptr, ev, sizeof(*ev));
 			syn(vptr);
+		} else if(ev->type != EV_SYN) {
+			dbg("Unrecognized event: (type: %d, code: %d, value: %d)", ev->type, ev->code, ev->value);
 		}
 
 		return;
@@ -679,11 +694,11 @@ static int manage_keyboard(const char *devnode)
 
 	if(!cfg) {
 		if(default_cfg) {
-			warn("No config found for %s (%s), falling back to default.cfg", name, devnode);
+			info("No config found for %s (%s), falling back to default.cfg", name, devnode);
 			cfg = default_cfg;
 		} else {
 			//Don't manage keyboards for which there is no configuration.
-			warn("No config found for %s (%s), ignoring", name, devnode);
+			info("No config found for %s (%s), ignoring", name, devnode);
 			return 0;
 		}
 	}
@@ -712,7 +727,7 @@ static int manage_keyboard(const char *devnode)
 	kbd->next = keyboards;
 	keyboards = kbd;
 
-	warn("Managing %s", evdev_device_name(devnode));
+	info("Managing %s", evdev_device_name(devnode));
 	return 1;
 }
 
@@ -777,12 +792,14 @@ static void evdev_monitor_loop(int *fds, int sz)
 					if(ev.type == EV_KEY && ev.value != 2) {
 						const char *name = keycode_table[ev.code].name;
 						if(name)
-							fprintf(stderr, "%s: %s %s\n",
+							info("%s: %s %s",
 								names[fd],
 								name,
 								ev.value == 0 ? "up" : "down");
 						else
-							fprintf(stderr, "Unrecognized keycode: %d\n", ev.code);
+							info("Unrecognized keycode: %d", ev.code);
+					} else if (ev.type != EV_SYN) {
+							dbg("%s: Event: (%d, %d, %d)", names[fd], ev.type, ev.value, ev.code);
 					}
 				}
 			}
@@ -860,10 +877,12 @@ static void main_loop()
 
 		if(select(maxfd+1, &fds, NULL, NULL, NULL) > 0) {
 			if(FD_ISSET(monfd, &fds)) {
+				int iskbd;
 				dev = udev_monitor_receive_device(udevmon);
 				const char *devnode = udev_device_get_devnode(dev);
+				udev_type(dev, &iskbd, NULL);
 
-				if(devnode && is_keyboard(dev)) {
+				if(devnode && iskbd) {
 					const char *action = udev_device_get_action(dev);
 
 					if(!strcmp(action, "add"))
@@ -918,7 +937,7 @@ static void lock()
 	}
 
 	if(flock(fd, LOCK_EX | LOCK_NB) == -1) {
-		warn("Another instance of keyd is already running.");
+		info("Another instance of keyd is already running.");
 		exit(-1);
 	}
 }
@@ -926,7 +945,7 @@ static void lock()
 
 static void exit_signal_handler(int sig)
 {
-	warn("%s received, cleaning up and terminating...", sig == SIGINT ? "SIGINT" : "SIGTERM");
+	info("%s received, cleaning up and terminating...", sig == SIGINT ? "SIGINT" : "SIGTERM");
 
 	cleanup();
 	exit(0);
@@ -936,8 +955,8 @@ static void daemonize()
 {
 	int fd = open(LOG_FILE, O_APPEND|O_WRONLY);
 
-	warn("Daemonizing.");
-	warn("Log output will be stored in %s", LOG_FILE);
+	info("Daemonizing.");
+	info("Log output will be stored in %s", LOG_FILE);
 
 	if(fork()) exit(0);
 	if(fork()) exit(0);
@@ -953,9 +972,10 @@ static void daemonize()
 int main(int argc, char *argv[])
 {
 	if(getenv("KEYD_DEBUG"))
-		debug = 1;
+		debug = atoi(getenv("KEYD_DEBUG"));
 
 	dbg("Debug mode enabled.");
+	dbg2("Verbose debugging enabled.");
 
 	if(argc > 1) {
 		if(!strcmp(argv[1], "-v")) {
@@ -987,7 +1007,7 @@ int main(int argc, char *argv[])
 	if(argc > 1 && !strcmp(argv[1], "-d"))
 		daemonize();
 
-	warn("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
+	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	config_generate();
 	vkbd = create_virtual_keyboard();
 	vptr = create_virtual_pointer();
