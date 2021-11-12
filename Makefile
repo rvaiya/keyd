@@ -21,6 +21,8 @@ CFLAGS=-DVERSION=\"$(VERSION)\" \
 all:
 	mkdir -p bin
 	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev
+debug:
+	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev -pedantic -Wall -Wextra -g
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:

@@ -113,8 +113,10 @@ static uint64_t get_time()
 
 static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
 {
-	*iskbd = 0;
-	*ismouse = 0;
+	if(iskbd)
+		*iskbd = 0;
+	if(ismouse)
+		*ismouse = 0;
 
 	const char *path = udev_device_get_devnode(dev);
 
