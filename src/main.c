@@ -471,10 +471,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 		layer = kbd->layers[d->arg2.layer];
 
 		if(pressed) {
-			layer->active = !layer->active;
+			layer->active = 1;
 			layer->timestamp = get_time();
 		} else {
-			layer->active = !layer->active;
+			layer->active = 0;
 
 			if(lastd == d) { //If tapped
 				uint16_t key = keyseq & 0xFFFF;
@@ -502,9 +502,10 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 
 		if(pressed) {
 			layer->active = 1;
+			oneshot_layers[d->arg.layer] = 0;
 			layer->timestamp = get_time();
 		} else if(pressed_timestamps[code] < last_keyseq_timestamp) {
-			layer->active = !layer->active;
+			layer->active = 0;
 		} else //Tapped
 			oneshot_layers[d->arg.layer] = 1;
 
@@ -530,9 +531,7 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 			layer->active = 1;
 			layer->timestamp = get_time();
 		} else {
-			//Toggle rather than clear to account for
-			//the possibility of interposed layert()
-			layer->active = !layer->active;
+			layer->active = 0;
 		}
 
 		reify_layer_mods(kbd);
