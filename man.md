@@ -67,6 +67,8 @@ and each modifier is one of:
 \ **S** - Shift\
 \ **G** - AltGr
 
+Lines can be commented out by prepending # but inline comments are not supported.
+
 In addition to simple key mappings keyd can remap keys to actions which
 can conditionally send keystrokes or transform the state of the keymap.
 

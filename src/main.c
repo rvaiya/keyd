@@ -203,7 +203,7 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	udev_unref(udev);
 }
 
-static int create_virtual_pointer() 
+static int create_virtual_pointer()
 {
 	size_t i;
 	uint16_t code;
@@ -674,7 +674,7 @@ static int manage_keyboard(const char *devnode)
 	struct keyboard_config *cfg = NULL;
 	struct keyboard_config *default_cfg = NULL;
 
-	if(!strcmp(name, VIRTUAL_KEYBOARD_NAME) || 
+	if(!strcmp(name, VIRTUAL_KEYBOARD_NAME) ||
 	   !strcmp(name, VIRTUAL_POINTER_NAME)) //Don't manage virtual devices.
 		return 0;
 
@@ -996,6 +996,19 @@ int main(int argc, char *argv[])
 					if(ent->shifted_name)
 						printf("%s\n", ent->shifted_name);
 				}
+			return 0;
+		} else {
+			if(strcmp(argv[1], "-h") && strcmp(argv[1], "--help"))
+				fprintf(stderr, "%s is not a valid option.\n", argv[1]);
+
+			fprintf(stderr, "Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
+				"\t-m monitor mode\n"
+				"\t-l list keys\n"
+				"\t-d fork and start as a daemon\n"
+				"\t-v print version\n"
+				"\t-h print this help message\n",
+				argv[0]);
+
 			return 0;
 		}
 	}
