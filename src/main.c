@@ -205,7 +205,6 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 
 static int create_virtual_pointer()
 {
-	size_t i;
 	uint16_t code;
 	struct uinput_setup usetup;
 
@@ -408,11 +407,9 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 }
 
 //Where the magic happens
-static void process_event(struct keyboard *kbd, struct input_event *ev)
+static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 {
 	size_t i;
-	uint16_t code = ev->code;
-	uint8_t pressed = ev->value;
 
 	struct key_descriptor *d;
 
@@ -426,23 +423,6 @@ static void process_event(struct keyboard *kbd, struct input_event *ev)
 
 	static struct key_descriptor *dcache[KEY_CNT] ={0};
 	static uint16_t mcache[KEY_CNT] ={0};
-
-	if(ev->type != EV_KEY || IS_MOUSE_BTN(ev->code)) {
-		if(ev->type == EV_REL || ev->type == EV_KEY) {
-			write(vptr, ev, sizeof(*ev));
-			syn(vptr);
-		} else if(ev->type != EV_SYN) {
-			dbg("Unrecognized event: (type: %d, code: %d, value: %d)", ev->type, ev->code, ev->value);
-		}
-
-		return;
-	}
-
-	//Wayland and X both ignore repeat events but VTs seem to require them.
-	if(pressed == 2) {
-		send_repetitions();
-		return;
-	}
 
 	if(!pressed) {
 		d = dcache[code];
@@ -904,7 +884,28 @@ static void main_loop()
 					struct input_event ev;
 
 					while(read(fd, &ev, sizeof(ev)) > 0) {
-						process_event(kbd, &ev);
+						//Preprocess events.
+						switch(ev.type) {
+						case EV_KEY:
+							if(IS_MOUSE_BTN(ev.code)) {
+								write(vptr, &ev, sizeof(ev)); //Pass mouse buttons through the virtual pointer unimpeded.
+								syn(vptr);
+							} else if(ev.value == 2) {
+								//Wayland and X both ignore repeat events but VTs seem to require them.
+								send_repetitions();
+							} else {
+								process_key_event(kbd, ev.code, ev.value);
+							}
+							break;
+						case EV_REL: //Pointer motion events
+							write(vptr, &ev, sizeof(ev));
+							syn(vptr);
+							break;
+						case EV_SYN:
+							break;
+						default:
+							dbg("Unrecognized event: (type: %d, code: %d, value: %d)", ev.type, ev.code, ev.value);
+						}
 					}
 				}
 			}
