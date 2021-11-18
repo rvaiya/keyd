@@ -76,6 +76,10 @@ struct keyboard {
 	struct layer *modlayout;
 	struct layer *layout;
 
+	struct key_descriptor *dcache[KEY_CNT];
+	uint16_t mcache[KEY_CNT];
+	uint64_t pressed_timestamps[KEY_CNT];
+
 	struct keyboard *next;
 };
 
@@ -352,13 +356,42 @@ static void reify_layer_mods(struct keyboard *kbd)
 	setmods(mods);
 }
 
-static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, uint16_t *modsp)
+static struct layer *kbd_last_active_layer(struct keyboard *kbd, uint16_t *codep)
+{
+	size_t i;
+	uint64_t maxts = 0;
+	struct layer *layer = NULL;
+
+	for(i = 0;i < kbd->nlayers;i++) {
+		struct layer *l = kbd->layers[i];
+
+		if(l->active && (l->timestamp > maxts)) {
+			maxts = l->timestamp;
+			layer = l;
+		}
+	}
+
+	return layer;
+}
+
+static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, int pressed, uint16_t *modsp)
 {
 	size_t i;
 	struct key_descriptor *desc = NULL;
 	struct layer *layer = NULL;
 	uint16_t mods = 0;
 	size_t nactive = 0;
+
+	//Cache the descriptor to ensure consistency upon up/down event pairs since layers can change midkey.
+	if(!pressed) {
+		*modsp = kbd->mcache[code];
+		desc = kbd->dcache[code];
+
+		kbd->dcache[code] = NULL;
+		kbd->mcache[code] = 0;
+
+		return desc;
+	}
 
 	//Pick the most recently activated layer in which a mapping is defined.
 
@@ -402,8 +435,27 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 			return NULL;
 	}
 
+	kbd->pressed_timestamps[code] = get_time();
+	kbd->dcache[code] = desc;
+	kbd->mcache[code] = mods;
+
 	*modsp = mods;
 	return desc;
+}
+
+static void do_keyseq( uint32_t seq) {
+	if(!seq) return;
+
+	uint16_t mods = seq >> 16;
+	uint16_t key = seq & 0xFFFF;
+
+	if(mods & MOD_TIMEOUT) {
+		usleep(GET_TIMEOUT(seq)*1000);
+	} else {
+		setmods(mods);
+		send_key(key, 1);
+		send_key(key, 0);
+	}
 }
 
 //Where the magic happens
@@ -415,31 +467,12 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 
 	static struct key_descriptor *lastd = NULL;
 	static uint8_t oneshot_layers[MAX_LAYERS] = {0};
-	static uint64_t pressed_timestamps[KEY_CNT] = {0};
 	static uint64_t last_keyseq_timestamp = 0;
+
 	uint16_t mods = 0;
 
-	//Cache the descriptor to ensure consistency upon up/down event pairs since layers can change midkey.
-
-	static struct key_descriptor *dcache[KEY_CNT] ={0};
-	static uint16_t mcache[KEY_CNT] ={0};
-
-	if(!pressed) {
-		d = dcache[code];
-		mods = mcache[code];
-
-		dcache[code] = NULL;
-		mcache[code] = 0;
-	} else {
-		pressed_timestamps[code] = get_time();
-		d = kbd_lookup_descriptor(kbd, code, &mods);
-
-		dcache[code] = d;
-		mcache[code] = mods;
-	}
-
-	if(!d)
-		goto keyseq_cleanup;
+	d = kbd_lookup_descriptor(kbd, code, pressed, &mods);
+	if(!d) goto keyseq_cleanup;
 
 	switch(d->action) {
 		struct layer *layer;
@@ -484,7 +517,7 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 			layer->active = 1;
 			oneshot_layers[d->arg.layer] = 0;
 			layer->timestamp = get_time();
-		} else if(pressed_timestamps[code] < last_keyseq_timestamp) {
+		} else if(kbd->pressed_timestamps[code] < last_keyseq_timestamp) {
 			layer->active = 0;
 		} else //Tapped
 			oneshot_layers[d->arg.layer] = 1;
@@ -540,19 +573,8 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 			uint32_t *macro = d->arg.macro;
 			size_t sz = d->arg2.sz;
 
-			for(i = 0; i < sz;i++) {
-				uint32_t seq = macro[i];
-				uint16_t mods = macro[i] >> 16;
-				uint16_t key = macro[i] & 0xFFFF;
-
-				if(mods & MOD_TIMEOUT) {
-					usleep(GET_TIMEOUT(seq)*1000);
-				} else {
-					setmods(mods);
-					send_key(key, 1);
-					send_key(key, 0);
-				}
-			}
+			for(i = 0; i < sz;i++)
+				do_keyseq(macro[i]);
 
 			reify_layer_mods(kbd);
 			goto keyseq_cleanup;
