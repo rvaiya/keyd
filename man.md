@@ -20,6 +20,16 @@ independently. The default behaviour is to run the forground and print to
 stderr, unless **-d** is supplied, in which case in which case log output will
 be stored in */var/log/keyd.log*.
 
+**NOTE**
+
+Becuase keyd modifies your primary input device it is possible to render your
+machine unusuable with a bad config file. If you find yourself in this
+situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd to
+terminate. If you are experimenting with the available options it is advisable
+to do so in a keyboard specific file (see CONFIGURATION) instead of directly in
+`default.cfg`, so it remains possible to plug in another keyboard unaffected by the
+changes.
+
 # OPTIONS
 
 **-m**: Run in monitor mode. (ensure keyd is not running to see untranslated events).
@@ -76,7 +86,7 @@ It is, for instance, possible to map a key to escape when tapped and control
 when held by assigning it to `overload(C, esc)`. A complete list of available
 actions can be found in *ACTIONS*.
 
-As a special case <key> may be 'noop' which causes it to be
+As a special case \<key\> may be 'noop' which causes it to be
 ignored. This can be used to simulate a modifier sequence with no
 attendant termination key:
 
@@ -306,13 +316,6 @@ of \` will thus produce A-S-tab instead of M-\`.
 	tab = A-tab
 	` = A-S-tab
 
-
-# NOTES
-
-Because of the way keyd works it is possible to render your machine unusable
-with a bad config file. This can usually be resolved by plugging in a different
-keyboard, however if *default.cfg* has been misconfigured you will have to find
-an alternate way to kill the daemon (e.g SSH).
 
 # AUTHOR
 

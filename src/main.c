@@ -356,6 +356,16 @@ static void reify_layer_mods(struct keyboard *kbd)
 	setmods(mods);
 }
 
+static struct key_descriptor *kbd_panic_check(struct keyboard *kbd)
+{
+	if(kbd->dcache[KEY_BACKSPACE] &&
+	   kbd->dcache[KEY_BACKSLASH] &&
+	   kbd->dcache[KEY_ENTER]) {
+		info("Termination key sequence triggered (backspace backslash enter), terminating.");
+		exit(1);
+	}
+}
+
 static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, int pressed, uint16_t *modsp)
 {
 	size_t i;
@@ -456,6 +466,8 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 
 	d = kbd_lookup_descriptor(kbd, code, pressed, &mods);
 	if(!d) goto keyseq_cleanup;
+
+	kbd_panic_check(kbd);
 
 	switch(d->action) {
 		struct layer *layer;
