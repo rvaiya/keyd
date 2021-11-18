@@ -193,6 +193,13 @@ optionally be supplied and is used as the modifier layer if present.
 
 : Perform the key sequence described in `<macro>`
 
+**swap(\<layer\>[, \<keyseq\>])**
+
+: Swap the currently active layer with the supplied one. The supplied layer is
+active for the duration of the depression of the current layer's activation
+key. A key sequence may optionally be supplied to be performed before the layer
+change.
+
 Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of:
 
 - a valid key sequence.
@@ -281,6 +288,24 @@ behaviour.
 	[control:C]
 
 	layert(control)
+
+# Example 5
+
+Meta behaves as normal except when tab is pressed after which the alt_tab layer
+is activated for the duration of the leftmeta keypress. Subsequent actuations
+of \` will thus produce A-S-tab instead of M-\`.
+
+	leftmeta = layer(meta)
+
+	[meta:M]
+
+	tab = swap(alt_tab)
+
+	[alt_tab:A]
+
+	tab = A-tab
+	` = A-S-tab
+
 
 # NOTES
 

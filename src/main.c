@@ -356,24 +356,6 @@ static void reify_layer_mods(struct keyboard *kbd)
 	setmods(mods);
 }
 
-static struct layer *kbd_last_active_layer(struct keyboard *kbd, uint16_t *codep)
-{
-	size_t i;
-	uint64_t maxts = 0;
-	struct layer *layer = NULL;
-
-	for(i = 0;i < kbd->nlayers;i++) {
-		struct layer *l = kbd->layers[i];
-
-		if(l->active && (l->timestamp > maxts)) {
-			maxts = l->timestamp;
-			layer = l;
-		}
-	}
-
-	return layer;
-}
-
 static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, int pressed, uint16_t *modsp)
 {
 	size_t i;
@@ -468,6 +450,7 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	static struct key_descriptor *lastd = NULL;
 	static uint8_t oneshot_layers[MAX_LAYERS] = {0};
 	static uint64_t last_keyseq_timestamp = 0;
+	static uint16_t swapped_keycode = 0;
 
 	uint16_t mods = 0;
 
@@ -580,6 +563,70 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 			goto keyseq_cleanup;
 
 		}
+		break;
+	case ACTION_SWAP:
+		layer = kbd->layers[d->arg.layer];
+
+		if(pressed && !swapped_keycode) { //For simplicity only allow one swapped layer at a time.
+			struct layer *old_layer;
+			uint16_t code = 0;
+			uint64_t maxts = 0;
+
+			//Find a currently depressed keycode corresponding to the last active
+			//layer.
+			for(i = 0;i < sizeof(kbd->dcache)/sizeof(kbd->dcache[0]);i++) {
+				struct key_descriptor *d = kbd->dcache[i];
+
+				if(d) {
+					struct layer *l;
+
+					switch(d->action) {
+						//If it is layer key.
+					case ACTION_ONESHOT:
+					case ACTION_LAYER:
+						l = kbd->layers[d->arg.layer];
+						break;
+					case ACTION_OVERLOAD:
+						l = kbd->layers[d->arg2.layer];
+						break;
+					default:
+						continue;
+					}
+
+					if(l->timestamp > maxts) {
+						code = i;
+						old_layer = l;
+					}
+				}
+			}
+
+			//If a layer activation key is being held...
+			if(code) {
+				old_layer->active = 0;
+
+				layer->active = 1;
+				layer->timestamp = get_time();
+
+				//Replace the keycode's descriptor with the present one so key up
+				//deactivates the appropriate layer.
+				kbd->dcache[code] = d;
+
+				swapped_keycode = code;
+
+				do_keyseq(d->arg2.keyseq);
+				reify_layer_mods(kbd);
+			}
+		}
+
+		//Key up corresponding to the swapped key.
+		if(!pressed && swapped_keycode == code) {
+			layer->active = 0;
+
+			swapped_keycode = 0;
+
+			reify_layer_mods(kbd);
+		}
+
 		break;
 	case ACTION_UNDEFINED:
 		goto keyseq_cleanup;

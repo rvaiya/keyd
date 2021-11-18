@@ -595,6 +595,26 @@ static int parse_descriptor(const char *_s, struct key_descriptor *desc)
 		desc->arg2.layer = idx;
 
 		goto cleanup;
+	} else if(!strcmp(fn, "swap")) {
+		int idx;
+
+		if((idx = lookup_layer(args[0])) < 0) {
+			err("%s is not a valid layer.", args[0]);
+			goto fail;
+		}
+
+		desc->action = ACTION_SWAP;
+		desc->arg.layer = idx;
+		desc->arg2.keyseq = 0;
+
+		if(nargs == 2) {
+			if(!(desc->arg2.keyseq=parse_keyseq(args[1]))) {
+				err("%s is not a valid key sequence.", args[1]);
+				goto fail;
+			}
+		}
+
+		goto cleanup;
 	} else {
 		err("%s is not a valid action or key.", _s);
 		goto fail;
