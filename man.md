@@ -199,16 +199,16 @@ layers and is distinct from `layout()` which should be used for letter layouts.
 you have a way to switch layouts within the new one. A second layer may
 optionally be supplied and is used as the modifier layer if present.
 
-**macro(\<macro\>)**
-
-: Perform the key sequence described in `<macro>`
-
 **swap(\<layer\>[, \<keyseq\>])**
 
 : Swap the currently active layer with the supplied one. The supplied layer is
 active for the duration of the depression of the current layer's activation
 key. A key sequence may optionally be supplied to be performed before the layer
 change.
+
+**macro(\<macro\>)**
+
+: Perform the key sequence described in `<macro>`
 
 Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of:
 
