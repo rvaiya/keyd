@@ -356,7 +356,7 @@ static void reify_layer_mods(struct keyboard *kbd)
 	setmods(mods);
 }
 
-static struct key_descriptor *kbd_panic_check(struct keyboard *kbd)
+static void kbd_panic_check(struct keyboard *kbd)
 {
 	if(kbd->dcache[KEY_BACKSPACE] &&
 	   kbd->dcache[KEY_BACKSLASH] &&
