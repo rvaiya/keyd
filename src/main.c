@@ -236,8 +236,8 @@ static int create_virtual_pointer()
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x1234;
-	usetup.id.product = 0x567a;
+	usetup.id.vendor = 0x0FAC;
+	usetup.id.product = 0x0ADE;
 	strcpy(usetup.name, VIRTUAL_POINTER_NAME);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -825,11 +825,26 @@ static void evdev_monitor_loop(int *fds, int sz)
 	struct input_event ev;
 	fd_set fdset;
 	int i;
-	char names[256][256];
+
+	struct {
+		char name[256];
+		uint16_t product_id;
+		uint16_t vendor_id;
+	} info_table[256];
 
 	for(i = 0;i < sz;i++) {
+		struct input_id info;
+
 		int fd = fds[i];
-		if(ioctl(fd, EVIOCGNAME(sizeof(names[fd])), names[fd]) == -1) {
+		if(ioctl(fd, EVIOCGID, &info) == -1) {
+			perror("ioctl");
+			exit(-1);
+		}
+
+		info_table[fd].product_id = info.product;
+		info_table[fd].vendor_id = info.vendor;
+
+		if(ioctl(fd, EVIOCGNAME(sizeof(info_table[0].name)), info_table[fd].name) == -1) {
 			perror("ioctl");
 			exit(-1);
 		}
@@ -837,9 +852,14 @@ static void evdev_monitor_loop(int *fds, int sz)
 
 	while(1) {
 		int i;
-		int maxfd = fds[0];
+		int maxfd = 1;
 
 		FD_ZERO(&fdset);
+
+		//Proactively monitor stdout for pipe closures instead of waiting
+		//for a failed write to generate SIGPIPE.
+		FD_SET(1, &fdset);
+
 		for(i = 0;i < sz;i++) {
 			if(maxfd < fds[i]) maxfd = fds[i];
 			FD_SET(fds[i], &fdset);
@@ -849,19 +869,28 @@ static void evdev_monitor_loop(int *fds, int sz)
 
 		for(i = 0;i < sz;i++) {
 			int fd = fds[i];
+
+			if(FD_ISSET(1, &fdset)) { //STDOUT closed.
+				exit(0);
+			}
+
 			if(FD_ISSET(fd, &fdset)) {
 				while(read(fd, &ev, sizeof(ev)) > 0) {
 					if(ev.type == EV_KEY && ev.value != 2) {
 						const char *name = keycode_table[ev.code].name;
-						if(name)
-							info("%s: %s %s",
-								names[fd],
-								name,
-								ev.value == 0 ? "up" : "down");
+						if(name) {
+							printf("%s(%04x:%04x): %s %s\n",
+							       info_table[fd].name,
+							       info_table[fd].product_id,
+							       info_table[fd].vendor_id,
+							       name,
+							       ev.value == 0 ? "up" : "down");
+							fflush(stdout);
+						}
 						else
 							info("Unrecognized keycode: %d", ev.code);
 					} else if (ev.type != EV_SYN) {
-							dbg("%s: Event: (%d, %d, %d)", names[fd], ev.type, ev.value, ev.code);
+							dbg("%s: Event: (%d, %d, %d)", info_table[fd].name, ev.type, ev.value, ev.code);
 					}
 				}
 			}
