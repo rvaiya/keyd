@@ -236,8 +236,8 @@ static int create_virtual_pointer()
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x0FAC;
-	usetup.id.product = 0x0ADE;
+	usetup.id.product = 0x1FAC;
+	usetup.id.vendor = 0x0ADE;
 	strcpy(usetup.name, VIRTUAL_POINTER_NAME);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -267,8 +267,8 @@ static int create_virtual_keyboard()
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x1234;
-	usetup.id.product = 0x567a;
+	usetup.id.product = 0x0FAC;
+	usetup.id.vendor = 0x0ADE;
 	strcpy(usetup.name, VIRTUAL_KEYBOARD_NAME);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
