@@ -35,8 +35,12 @@
 #include <sys/file.h>
 #include <dirent.h>
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <signal.h>
 #include <unistd.h>
+#include <termios.h>
 #include <libudev.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -820,17 +824,33 @@ static int destroy_keyboard(const char *devnode)
 	return 0;
 }
 
+static void monitor_exit(int)
+{
+	struct termios tinfo;
+
+	tcgetattr(0, &tinfo);
+	tinfo.c_lflag |= ECHO;
+	tcsetattr(0, TCSANOW, &tinfo);
+
+	exit(0);
+}
+
 static void evdev_monitor_loop(int *fds, int sz)
 {
 	struct input_event ev;
 	fd_set fdset;
 	int i;
+	struct stat finfo;
+	int ispiped;
 
 	struct {
 		char name[256];
 		uint16_t product_id;
 		uint16_t vendor_id;
 	} info_table[256];
+
+	fstat(1, &finfo);
+	ispiped = finfo.st_mode & S_IFIFO;
 
 	for(i = 0;i < sz;i++) {
 		struct input_id info;
@@ -858,7 +878,9 @@ static void evdev_monitor_loop(int *fds, int sz)
 
 		//Proactively monitor stdout for pipe closures instead of waiting
 		//for a failed write to generate SIGPIPE.
-		FD_SET(1, &fdset);
+
+		if(ispiped)
+			FD_SET(1, &fdset);
 
 		for(i = 0;i < sz;i++) {
 			if(maxfd < fds[i]) maxfd = fds[i];
@@ -870,8 +892,10 @@ static void evdev_monitor_loop(int *fds, int sz)
 		for(i = 0;i < sz;i++) {
 			int fd = fds[i];
 
-			if(FD_ISSET(1, &fdset)) { //STDOUT closed.
-				exit(0);
+			if(FD_ISSET(1, &fdset) &&
+			   read(1, NULL, 0) == -1) { //STDOUT closed.
+				//Re-enable echo.
+				monitor_exit(0);
 			}
 
 			if(FD_ISSET(fd, &fdset)) {
@@ -879,7 +903,7 @@ static void evdev_monitor_loop(int *fds, int sz)
 					if(ev.type == EV_KEY && ev.value != 2) {
 						const char *name = keycode_table[ev.code].name;
 						if(name) {
-							printf("%s(%04x:%04x): %s %s\n",
+							printf("%s\t%04x:%04x\t%s %s\n",
 							       info_table[fd].name,
 							       info_table[fd].product_id,
 							       info_table[fd].vendor_id,
@@ -905,6 +929,15 @@ static int monitor_loop()
 	int fd = -1;
 	int fds[256];
 	int nfds = 0;
+
+	struct termios tinfo;
+
+	//Disable terminal echo so keys don't appear twice.
+	tcgetattr(0, &tinfo);
+	tinfo.c_lflag &= ~ECHO;
+	tcsetattr(0, TCSANOW, &tinfo);
+
+	signal(SIGINT, monitor_exit);
 
 	get_keyboard_nodes(devnodes, &sz);
 
