@@ -824,7 +824,7 @@ static int destroy_keyboard(const char *devnode)
 	return 0;
 }
 
-static void monitor_exit(int)
+static void monitor_exit(int status)
 {
 	struct termios tinfo;
 
@@ -832,7 +832,7 @@ static void monitor_exit(int)
 	tinfo.c_lflag |= ECHO;
 	tcsetattr(0, TCSANOW, &tinfo);
 
-	exit(0);
+	exit(status);
 }
 
 static void evdev_monitor_loop(int *fds, int sz)
