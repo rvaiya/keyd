@@ -1,7 +1,7 @@
 # Impetus
 
 Linux lacks a good key remapping solution. In order to achieve satisfactory
-results a medley of tools need to be employed (e.g xcape, xmodmap) with the end
+results a medley of tools need to be employed (e.g. xcape, xmodmap) with the end
 result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
@@ -32,7 +32,7 @@ Some of the more interesting ones include:
  - Want to put the control and escape keys where God intended.
  - Would like the ability to easily generate keycodes in other languages.
  - Constantly fiddle with their key layout.
- - Want an inuitive keyboard config format which is simple to grok.
+ - Want an intuitive keyboard config format which is simple to grok.
  - Wish to be able to switch to a VT to debug something without breaking their keymap.
  - Like tiny daemons that adhere to the Unix philosophy.
 
@@ -88,8 +88,8 @@ esc = capslock
 
 *Note*: It is possible to render your machine unusable with a bad config file.
 Before proceeding ensure you have some way of killing keyd if things go wrong
-(e.g ssh). It is recommended that you avoid experimenting in default.cfg (see
-the man page for keyboard specific configuraiton) so you can plug in another
+(e.g. ssh). It is recommended that you avoid experimenting in default.cfg (see
+the man page for keyboard specific configuration) so you can plug in another
 keyboard which is unaffected by the changes.
 
 # Sample Config
@@ -145,7 +145,7 @@ way to get comparable features. I became aware of kmonad after having published
 keyd. While kmonad is a fine project with similar goals, it takes a different
 approach and has a different design philosophy.
 
-Notably keyd was written entirely in C with performance and simplicitly in
+Notably keyd was written entirely in C with performance and simplicity in
 mind and will likely never be as configurable as kmonad (which is extensible
 in Haskell). Having said that, it supplies (in the author's opinion) the
 most valuable features in less than 2000 lines of C while providing
@@ -155,7 +155,7 @@ a simple language agnostic config format.
 
 If you feel something is missing or find a bug you are welcome to file an issue
 on github. keyd has a minimalist (but sane) design philosophy which
-intentionally omits certain features (e.g unicode/execing arbitrary executables
+intentionally omits certain features (e.g. unicode/executing arbitrary executables
 as root). Things which already exist in custom keyboard firmware like QMK are
 good candidates for inclusion.
 

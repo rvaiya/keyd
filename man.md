@@ -12,18 +12,18 @@
 
 keyd is a system wide key remapping daemon which supports features like
 layering, oneshot modifier, and macros. In its most basic form it can be used
-to define a custom key layout that persists accross display server boundaries
+to define a custom key layout that persists across display server boundaries
 (e.g wayland/X/tty).
 
 keyd is intended to run as a systemd service but is capable of running
-independently. The default behaviour is to run the forground and print to
+independently. The default behaviour is to run the foreground and print to
 stderr, unless **-d** is supplied, in which case in which case log output will
 be stored in */var/log/keyd.log*.
 
 **NOTE**
 
-Becuase keyd modifies your primary input device it is possible to render your
-machine unusuable with a bad config file. If you find yourself in this
+Because keyd modifies your primary input device it is possible to render your
+machine unusable with a bad config file. If you find yourself in this
 situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd to
 terminate. If you are experimenting with the available options it is advisable
 to do so in a keyboard specific file (see CONFIGURATION) instead of directly in
@@ -90,7 +90,7 @@ As a special case \<key\> may be 'noop' which causes it to be
 ignored. This can be used to simulate a modifier sequence with no
 attendant termination key:
 
-E.G 
+E.G.
 
 `C-A-noop` will simulate the simultaneous depression and release
 of the control and alt keys.
@@ -126,7 +126,7 @@ is, unmapped keys will have no effect. A parent is specified by appending
 The *layout* is a special layer from which mappings are drawn if no other layers
 are active.  The default layout is called **main** and is the one to which
 mappings are assigned if no layer heading is present. By default all keys are
-defined as themselves in the main layer. Layouts should inherit from main to 
+defined as themselves in the main layer. Layouts should inherit from main to
 avoid having to explicitly define each key. The default layout can be
 changed by including `layout(<layer>)` at the top of the config file.
 
@@ -134,7 +134,7 @@ changed by including `layout(<layer>)` at the top of the config file.
 
 keyd distinguishes between the key layout and the modifier layout. This
 allows the user to use a different letter arrangement for modifiers. It may,
-for example, be desireable to use an alternative key layout like dvorak while
+for example, be desirable to use an alternative key layout like dvorak while
 preserving standard qwerty modifier shortcuts. This can be achieved by passing
 a second argument to the layout function like so: `layout(dvorak, main)`. The
 default behaviour is to assign the modifier layout to the key layout if one
@@ -147,12 +147,12 @@ modifiers and preserves expected stacking behaviour.
 ## Modifier Layers
 
 In addition to standard layers, keyd introduces the concept of 'modifier
-layers' to accomodate the common use case of remapping a subset of modifier
+layers' to accommodate the common use case of remapping a subset of modifier
 keys. A modifier layer will behave as a set of modifiers in all instances
 except when a key is explicitly mapped within it and can be defined
 by creating a layer which inherits from a valid modifier set.
 
-E.G:
+E.G.:
 
 	capslock = layer(custom_control)
 	
@@ -168,9 +168,9 @@ behaviour like modifier stacking and pointer combos.
 
 ## Summary
 
-1. Use [mylayer] if you want to define a custom shift layer (e.g [symbols]).
+1. Use [mylayer] if you want to define a custom shift layer (e.g. [symbols]).
 2. Use [mylayer:C] if you want a layer which behaves like a custom control key.
-3. Use [mylayer:main] for defining custom key layouts (e.g dvorak).
+3. Use [mylayer:main] for defining custom key layouts (e.g. dvorak).
 
 ## ACTIONS
 
@@ -229,7 +229,7 @@ Examples:
 
 # EXAMPLES
 
-## Example 1 
+## Example 1
 
 Set the default key layout to dvorak and the modifier layout to qwerty (main).
 
