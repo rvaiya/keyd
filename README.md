@@ -87,10 +87,10 @@ esc = capslock
 4. See the [man page](man.md) for a comprehensive list of config options.
 
 *Note*: It is possible to render your machine unusable with a bad config file.
-Before proceeding ensure you have some way of killing keyd if things go wrong
-(e.g. ssh). It is recommended that you avoid experimenting in default.cfg (see
-the man page for keyboard specific configuration) so you can plug in another
-keyboard which is unaffected by the changes.
+In the event of a rogue configuration the key sequence `backspace+slash+enter`
+should terminate keyd. It is recommended that you avoid experimenting in
+default.cfg (see the man page for keyboard specific configuration) so you can
+plug in another keyboard which is unaffected by the changes.
 
 # Sample Config
 

@@ -1,3 +1,14 @@
+# v1.3.0
+
+- Adds the ability to swap layers mid-key (#48).
+- Adds a panic key sequence (backspace + backslash + enter).
+- Clears oneshot layers when undefined keys are pressed.
+- Removes duplicate keycode names in `keyd -l`.
+- Fixes accidental layer toggle bug (#44).
+- Improves logging.
+- Fixes support for keyboards with built in mice.
+- Misc bugfixes.
+
 # v1.1.1
 
 - Make layert behaviour more intuitive when combined with oneshot() and layer().
