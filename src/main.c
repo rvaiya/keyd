@@ -824,7 +824,7 @@ static int destroy_keyboard(const char *devnode)
 	return 0;
 }
 
-static void monitor_exit(int)
+static void monitor_exit(int status)
 {
 	struct termios tinfo;
 
