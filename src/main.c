@@ -465,6 +465,10 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	static uint8_t oneshot_layers[MAX_LAYERS] = {0};
 	static uint64_t last_keyseq_timestamp = 0;
 	static uint16_t swapped_keycode = 0;
+	static uint16_t last_keydown = 0;
+
+	if(pressed)
+		last_keydown = code;
 
 	uint16_t mods = 0;
 
@@ -488,7 +492,7 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 		} else {
 			layer->active = 0;
 
-			if(lastd == d) { //If tapped
+			if(last_keydown == code) { //If tapped
 				uint16_t key = keyseq & 0xFFFF;
 				mods |= keyseq >> 16;
 
