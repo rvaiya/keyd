@@ -50,8 +50,7 @@ enum action {
 	ACTION_SWAP,
 };
 
-struct key_descriptor
-{
+struct key_descriptor {
 	enum action action;
 	union {
 		uint32_t keyseq;

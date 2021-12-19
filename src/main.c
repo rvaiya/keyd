@@ -65,7 +65,7 @@ static int vptr = -1;
 
 static struct udev *udev;
 static struct udev_monitor *udevmon;
-static uint8_t keystate[KEY_CNT] = {0};
+static uint8_t keystate[KEY_CNT] = { 0 };
 
 //Active keyboard state.
 struct keyboard {
@@ -116,32 +116,36 @@ static uint64_t get_time()
 {
 	struct timespec tv;
 	clock_gettime(CLOCK_MONOTONIC, &tv);
-	return (tv.tv_sec*1E9)+tv.tv_nsec;
+	return (tv.tv_sec * 1E9) + tv.tv_nsec;
 }
 
 static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
 {
-	if(iskbd)
+	if (iskbd)
 		*iskbd = 0;
-	if(ismouse)
+	if (ismouse)
 		*ismouse = 0;
 
 	const char *path = udev_device_get_devnode(dev);
 
-	if(!path || !strstr(path, "event")) //Filter out non evdev devices.
+	if (!path || !strstr(path, "event"))	//Filter out non evdev devices.
 		return;
 
 	struct udev_list_entry *prop;
-	udev_list_entry_foreach(prop, udev_device_get_properties_list_entry(dev)) {
-		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_KEYBOARD") &&
-		   !strcmp(udev_list_entry_get_value(prop), "1")) {
-			if(iskbd)
+	udev_list_entry_foreach(prop,
+				udev_device_get_properties_list_entry(dev))
+	{
+		if (!strcmp
+		    (udev_list_entry_get_name(prop), "ID_INPUT_KEYBOARD")
+		    && !strcmp(udev_list_entry_get_value(prop), "1")) {
+			if (iskbd)
 				*iskbd = 1;
 		}
 
-		if(!strcmp(udev_list_entry_get_name(prop), "ID_INPUT_MOUSE") &&
-		   !strcmp(udev_list_entry_get_value(prop), "1")) {
-			if(ismouse)
+		if (!strcmp
+		    (udev_list_entry_get_name(prop), "ID_INPUT_MOUSE")
+		    && !strcmp(udev_list_entry_get_value(prop), "1")) {
+			if (ismouse)
 				*ismouse = 1;
 		}
 	}
@@ -152,12 +156,12 @@ static const char *evdev_device_name(const char *devnode)
 	static char name[256];
 
 	int fd = open(devnode, O_RDONLY);
-	if(fd < 0) {
+	if (fd < 0) {
 		perror("open");
 		exit(-1);
 	}
 
-	if(ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1)
+	if (ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1)
 		return NULL;
 
 	close(fd);
@@ -189,19 +193,22 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	udev_list_entry_foreach(ent, devices) {
 		int iskbd, ismouse;
 		const char *name = udev_list_entry_get_name(ent);;
-		struct udev_device *dev = udev_device_new_from_syspath(udev, name);
+		struct udev_device *dev =
+		    udev_device_new_from_syspath(udev, name);
 		const char *path = udev_device_get_devnode(dev);
 
 		udev_type(dev, &iskbd, &ismouse);
 
-		if(iskbd) {
-			dbg("Detected keyboard node %s (%s) ismouse: %d", name, evdev_device_name(path), ismouse);
-			nodes[*sz] = malloc(strlen(path)+1);
+		if (iskbd) {
+			dbg("Detected keyboard node %s (%s) ismouse: %d",
+			    name, evdev_device_name(path), ismouse);
+			nodes[*sz] = malloc(strlen(path) + 1);
 			strcpy(nodes[*sz], path);
 			(*sz)++;
 			assert(*sz <= MAX_KEYBOARDS);
-		} else if(path) {
-			dbg("Ignoring %s (%s)", evdev_device_name(path), path);
+		} else if (path) {
+			dbg("Ignoring %s (%s)", evdev_device_name(path),
+			    path);
 		}
 
 		udev_device_unref(dev);
@@ -217,7 +224,7 @@ static int create_virtual_pointer()
 	struct uinput_setup usetup;
 
 	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-	if(fd < 0) {
+	if (fd < 0) {
 		perror("open");
 		exit(-1);
 	}
@@ -232,10 +239,10 @@ static int create_virtual_pointer()
 	ioctl(fd, UI_SET_RELBIT, REL_Y);
 	ioctl(fd, UI_SET_RELBIT, REL_Z);
 
-	for(code = BTN_LEFT;code <= BTN_TASK;code++)
+	for (code = BTN_LEFT; code <= BTN_TASK; code++)
 		ioctl(fd, UI_SET_KEYBIT, code);
 
-	for(code = BTN_0;code <= BTN_9;code++)
+	for (code = BTN_0; code <= BTN_9; code++)
 		ioctl(fd, UI_SET_KEYBIT, code);
 
 	memset(&usetup, 0, sizeof(usetup));
@@ -256,7 +263,7 @@ static int create_virtual_keyboard()
 	struct uinput_setup usetup;
 
 	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-	if(fd < 0) {
+	if (fd < 0) {
 		perror("open");
 		exit(-1);
 	}
@@ -264,8 +271,8 @@ static int create_virtual_keyboard()
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
-	for(i = 0;i < KEY_MAX;i++) {
-		if(keycode_table[i].name && !IS_MOUSE_BTN(i) )
+	for (i = 0; i < KEY_MAX; i++) {
+		if (keycode_table[i].name && !IS_MOUSE_BTN(i))
 			ioctl(fd, UI_SET_KEYBIT, i);
 	}
 
@@ -303,8 +310,8 @@ static void send_repetitions()
 	};
 
 	//Inefficient, but still reasonably fast (<100us)
-	for(i = 0; i < sizeof keystate / sizeof keystate[0];i++) {
-		if(keystate[i]) {
+	for (i = 0; i < sizeof keystate / sizeof keystate[0]; i++) {
+		if (keystate[i]) {
 			ev.code = i;
 			write(vkbd, &ev, sizeof(ev));
 			syn(vkbd);
@@ -314,7 +321,7 @@ static void send_repetitions()
 
 static void send_key(uint16_t code, int is_pressed)
 {
-	if(code == KEY_NOOP)
+	if (code == KEY_NOOP)
 		return;
 
 	keystate[code] = is_pressed;
@@ -333,15 +340,15 @@ static void send_key(uint16_t code, int is_pressed)
 
 static void setmods(uint16_t mods)
 {
-	if(!!(mods & MOD_CTRL) != keystate[KEY_LEFTCTRL])
+	if (!!(mods & MOD_CTRL) != keystate[KEY_LEFTCTRL])
 		send_key(KEY_LEFTCTRL, !keystate[KEY_LEFTCTRL]);
-	if(!!(mods & MOD_SHIFT) != keystate[KEY_LEFTSHIFT])
+	if (!!(mods & MOD_SHIFT) != keystate[KEY_LEFTSHIFT])
 		send_key(KEY_LEFTSHIFT, !keystate[KEY_LEFTSHIFT]);
-	if(!!(mods & MOD_SUPER) != keystate[KEY_LEFTMETA])
+	if (!!(mods & MOD_SUPER) != keystate[KEY_LEFTMETA])
 		send_key(KEY_LEFTMETA, !keystate[KEY_LEFTMETA]);
-	if(!!(mods & MOD_ALT) != keystate[KEY_LEFTALT])
+	if (!!(mods & MOD_ALT) != keystate[KEY_LEFTALT])
 		send_key(KEY_LEFTALT, !keystate[KEY_LEFTALT]);
-	if(!!(mods & MOD_ALT_GR) != keystate[KEY_RIGHTALT])
+	if (!!(mods & MOD_ALT_GR) != keystate[KEY_RIGHTALT])
 		send_key(KEY_RIGHTALT, !keystate[KEY_RIGHTALT]);
 }
 
@@ -350,10 +357,10 @@ static void reify_layer_mods(struct keyboard *kbd)
 	uint16_t mods = 0;
 	size_t i;
 
-	for(i = 0;i < kbd->nlayers;i++) {
+	for (i = 0; i < kbd->nlayers; i++) {
 		struct layer *layer = kbd->layers[i];
 
-		if(layer->active)
+		if (layer->active)
 			mods |= layer->mods;
 	}
 
@@ -362,15 +369,17 @@ static void reify_layer_mods(struct keyboard *kbd)
 
 static void kbd_panic_check(struct keyboard *kbd)
 {
-	if(kbd->dcache[KEY_BACKSPACE] &&
-	   kbd->dcache[KEY_BACKSLASH] &&
-	   kbd->dcache[KEY_ENTER]) {
+	if (kbd->dcache[KEY_BACKSPACE] &&
+	    kbd->dcache[KEY_BACKSLASH] && kbd->dcache[KEY_ENTER]) {
 		info("Termination key sequence triggered (backspace backslash enter), terminating.");
 		exit(1);
 	}
 }
 
-static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16_t code, int pressed, uint16_t *modsp)
+static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd,
+						    uint16_t code,
+						    int pressed,
+						    uint16_t * modsp)
 {
 	size_t i;
 	struct key_descriptor *desc = NULL;
@@ -379,7 +388,7 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 	size_t nactive = 0;
 
 	//Cache the descriptor to ensure consistency upon up/down event pairs since layers can change midkey.
-	if(!pressed) {
+	if (!pressed) {
 		*modsp = kbd->mcache[code];
 		desc = kbd->dcache[code];
 
@@ -388,15 +397,16 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 
 		return desc;
 	}
-
 	//Pick the most recently activated layer in which a mapping is defined.
 
-	for(i = 0;i < kbd->nlayers;i++) {
+	for (i = 0; i < kbd->nlayers; i++) {
 		struct layer *l = kbd->layers[i];
 		struct key_descriptor *d = &l->keymap[code];
 
-		if(l->active) {
-			if(d->action && (!desc || (l->timestamp > layer->timestamp))) {
+		if (l->active) {
+			if (d->action
+			    && (!desc
+				|| (l->timestamp > layer->timestamp))) {
 				desc = d;
 				layer = l;
 			}
@@ -409,23 +419,23 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 	//the layer in which the mapping is defined.
 
 	mods = 0;
-	for(i = 0;i < kbd->nlayers;i++) {
+	for (i = 0; i < kbd->nlayers; i++) {
 		struct layer *l = kbd->layers[i];
 
-		if(l->active && l != layer)
+		if (l->active && l != layer)
 			mods |= l->mods;
 	}
 
-	if(!desc) {
+	if (!desc) {
 		//If any modifier layers are active and do not explicitly
 		//define a mapping, obtain the target from modlayout.
 
-		if(mods) {
-			if(mods == MOD_SHIFT || mods == MOD_ALT_GR)
+		if (mods) {
+			if (mods == MOD_SHIFT || mods == MOD_ALT_GR)
 				desc = &kbd->layout->keymap[code];
 			else
 				desc = &kbd->modlayout->keymap[code];
-		} else if(!nactive) //If no layers are active use the default layout
+		} else if (!nactive)	//If no layers are active use the default layout
 			desc = &kbd->layout->keymap[code];
 		else
 			return NULL;
@@ -439,14 +449,16 @@ static struct key_descriptor *kbd_lookup_descriptor(struct keyboard *kbd, uint16
 	return desc;
 }
 
-static void do_keyseq( uint32_t seq) {
-	if(!seq) return;
+static void do_keyseq(uint32_t seq)
+{
+	if (!seq)
+		return;
 
 	uint16_t mods = seq >> 16;
 	uint16_t key = seq & 0xFFFF;
 
-	if(mods & MOD_TIMEOUT) {
-		usleep(GET_TIMEOUT(seq)*1000);
+	if (mods & MOD_TIMEOUT) {
+		usleep(GET_TIMEOUT(seq) * 1000);
 	} else {
 		setmods(mods);
 		send_key(key, 1);
@@ -455,29 +467,31 @@ static void do_keyseq( uint32_t seq) {
 }
 
 //Where the magic happens
-static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
+static void process_key_event(struct keyboard *kbd, uint16_t code,
+			      int pressed)
 {
 	size_t i;
 
 	struct key_descriptor *d;
 
 	static struct key_descriptor *lastd = NULL;
-	static uint8_t oneshot_layers[MAX_LAYERS] = {0};
+	static uint8_t oneshot_layers[MAX_LAYERS] = { 0 };
 	static uint64_t last_keyseq_timestamp = 0;
 	static uint16_t swapped_keycode = 0;
 	static uint16_t last_keydown = 0;
 
-	if(pressed)
+	if (pressed)
 		last_keydown = code;
 
 	uint16_t mods = 0;
 
 	d = kbd_lookup_descriptor(kbd, code, pressed, &mods);
-	if(!d) goto keyseq_cleanup;
+	if (!d)
+		goto keyseq_cleanup;
 
 	kbd_panic_check(kbd);
 
-	switch(d->action) {
+	switch (d->action) {
 		struct layer *layer;
 		uint32_t keyseq;
 		uint16_t keycode;
@@ -486,13 +500,13 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 		keyseq = d->arg.keyseq;
 		layer = kbd->layers[d->arg2.layer];
 
-		if(pressed) {
+		if (pressed) {
 			layer->active = 1;
 			layer->timestamp = get_time();
 		} else {
 			layer->active = 0;
 
-			if(last_keydown == code) { //If tapped
+			if (last_keydown == code) {	//If tapped
 				uint16_t key = keyseq & 0xFFFF;
 				mods |= keyseq >> 16;
 
@@ -511,27 +525,29 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 		kbd->layout = kbd->layers[d->arg.layer];
 		kbd->modlayout = kbd->layers[d->arg2.layer];
 
-		dbg("layer: %d, modlayout: %d", kbd->layout, kbd->modlayout);
+		dbg("layer: %d, modlayout: %d", kbd->layout,
+		    kbd->modlayout);
 		break;
 	case ACTION_ONESHOT:
 		layer = kbd->layers[d->arg.layer];
 
-		if(pressed) {
+		if (pressed) {
 			layer->active = 1;
 			oneshot_layers[d->arg.layer] = 0;
 			layer->timestamp = get_time();
-		} else if(kbd->pressed_timestamps[code] < last_keyseq_timestamp) {
+		} else if (kbd->pressed_timestamps[code] <
+			   last_keyseq_timestamp) {
 			layer->active = 0;
-		} else //Tapped
+		} else		//Tapped
 			oneshot_layers[d->arg.layer] = 1;
 
 		reify_layer_mods(kbd);
 		break;
 	case ACTION_LAYER_TOGGLE:
-		if(!pressed) {
+		if (!pressed) {
 			layer = kbd->layers[d->arg.layer];
 
-			if(oneshot_layers[d->arg.layer]) {
+			if (oneshot_layers[d->arg.layer]) {
 				oneshot_layers[d->arg.layer] = 0;
 			} else {
 				layer->active = !layer->active;
@@ -543,7 +559,7 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	case ACTION_LAYER:
 		layer = kbd->layers[d->arg.layer];
 
-		if(pressed) {
+		if (pressed) {
 			layer->active = 1;
 			layer->timestamp = get_time();
 		} else {
@@ -555,12 +571,12 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	case ACTION_KEYSEQ:
 		mods |= d->arg.keyseq >> 16;
 		keycode = d->arg.keyseq & 0xFFFF;
-		if(pressed) {
+		if (pressed) {
 			setmods(mods);
 
 			//Account for the possibility that a version of the key
 			//with a different modifier set is already depressed (e.g [/{)
-			if(keystate[keycode])
+			if (keystate[keycode])
 				send_key(keycode, 0);
 
 			send_key(keycode, 1);
@@ -572,11 +588,11 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 		goto keyseq_cleanup;
 		break;
 	case ACTION_MACRO:
-		if(pressed) {
+		if (pressed) {
 			uint32_t *macro = d->arg.macro;
 			size_t sz = d->arg2.sz;
 
-			for(i = 0; i < sz;i++)
+			for (i = 0; i < sz; i++)
 				do_keyseq(macro[i]);
 
 			reify_layer_mods(kbd);
@@ -587,33 +603,38 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	case ACTION_SWAP:
 		layer = kbd->layers[d->arg.layer];
 
-		if(pressed && !swapped_keycode) { //For simplicity only allow one swapped layer at a time.
+		if (pressed && !swapped_keycode) {	//For simplicity only allow one swapped layer at a time.
 			struct layer *old_layer;
 			uint16_t code = 0;
 			uint64_t maxts = 0;
 
 			//Find a currently depressed keycode corresponding to the last active
 			//layer.
-			for(i = 0;i < sizeof(kbd->dcache)/sizeof(kbd->dcache[0]);i++) {
+			for (i = 0;
+			     i <
+			     sizeof(kbd->dcache) / sizeof(kbd->dcache[0]);
+			     i++) {
 				struct key_descriptor *d = kbd->dcache[i];
 
-				if(d) {
+				if (d) {
 					struct layer *l;
 
-					switch(d->action) {
+					switch (d->action) {
 						//If it is layer key.
 					case ACTION_ONESHOT:
 					case ACTION_LAYER:
-						l = kbd->layers[d->arg.layer];
+						l = kbd->layers[d->arg.
+								layer];
 						break;
 					case ACTION_OVERLOAD:
-						l = kbd->layers[d->arg2.layer];
+						l = kbd->layers[d->arg2.
+								layer];
 						break;
 					default:
 						continue;
 					}
 
-					if(l->timestamp > maxts) {
+					if (l->timestamp > maxts) {
 						code = i;
 						old_layer = l;
 					}
@@ -621,7 +642,7 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 			}
 
 			//If a layer activation key is being held...
-			if(code) {
+			if (code) {
 				old_layer->active = 0;
 
 				layer->active = 1;
@@ -637,9 +658,8 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 				reify_layer_mods(kbd);
 			}
 		}
-
 		//Key up corresponding to the swapped key.
-		if(!pressed && swapped_keycode == code) {
+		if (!pressed && swapped_keycode == code) {
 			layer->active = 0;
 
 			swapped_keycode = 0;
@@ -656,15 +676,15 @@ static void process_key_event(struct keyboard *kbd, uint16_t code, int pressed)
 	lastd = d;
 	return;
 
-keyseq_cleanup:
+      keyseq_cleanup:
 	lastd = d;
 
-	if(pressed)
+	if (pressed)
 		last_keyseq_timestamp = get_time();
 
 	//Clear active oneshot layers.
-	for(i = 0;i < kbd->nlayers;i++) {
-		if(oneshot_layers[i]) {
+	for (i = 0; i < kbd->nlayers; i++) {
+		if (oneshot_layers[i]) {
 			kbd->layers[i]->active = 0;
 			oneshot_layers[i] = 0;
 		}
@@ -679,11 +699,11 @@ static void await_keyboard_neutrality(char **devs, int n)
 	int i;
 
 	dbg("Awaiting keyboard neutrality.");
-	for(i = 0;i < n;i++) {
-		if((fds[i] = open(devs[i], O_RDONLY | O_NONBLOCK)) < 0)
+	for (i = 0; i < n; i++) {
+		if ((fds[i] = open(devs[i], O_RDONLY | O_NONBLOCK)) < 0)
 			die("open");
 
-		if(fds[i] > maxfd)
+		if (fds[i] > maxfd)
 			maxfd = fds[i];
 	}
 
@@ -695,7 +715,7 @@ static void await_keyboard_neutrality(char **devs, int n)
 	//this seems to work fine. Given the stateless nature of evdev I am not
 	//aware of a better way to achieve this.
 
-	while(1) {
+	while (1) {
 		struct timeval tv = {
 			.tv_usec = 300000
 		};
@@ -705,31 +725,33 @@ static void await_keyboard_neutrality(char **devs, int n)
 		fd_set fdset;
 
 		FD_ZERO(&fdset);
-		for(i = 0;i < n;i++)
+		for (i = 0; i < n; i++)
 			FD_SET(fds[i], &fdset);
 
-		select(maxfd+1, &fdset, NULL, NULL, &tv);
+		select(maxfd + 1, &fdset, NULL, NULL, &tv);
 
-		for(i = 0;i < n;i++) {
-			if(FD_ISSET(fds[i], &fdset)) {
-				while(read(fds[i], &ev, sizeof ev) > 0) {
-					if(ev.type == EV_KEY) {
-						keystate[ev.code] = ev.value;
-						dbg("keystate[%d]: %d", ev.code, ev.value);
+		for (i = 0; i < n; i++) {
+			if (FD_ISSET(fds[i], &fdset)) {
+				while (read(fds[i], &ev, sizeof ev) > 0) {
+					if (ev.type == EV_KEY) {
+						keystate[ev.code] =
+						    ev.value;
+						dbg("keystate[%d]: %d",
+						    ev.code, ev.value);
 					}
 				}
 			}
 		}
 
-		for(i = 0;i < KEY_CNT;i++)
-			if(keystate[i])
+		for (i = 0; i < KEY_CNT; i++)
+			if (keystate[i])
 				break;
 
-		if(i == KEY_CNT)
+		if (i == KEY_CNT)
 			break;
 	}
 
-	for(i = 0;i < n;i++)
+	for (i = 0; i < n; i++)
 		close(fds[i]);
 
 	dbg("Keyboard neutrality achieved");
@@ -743,37 +765,37 @@ static int manage_keyboard(const char *devnode)
 	struct keyboard_config *cfg = NULL;
 	struct keyboard_config *default_cfg = NULL;
 
-	if(!strcmp(name, VIRTUAL_KEYBOARD_NAME) ||
-	   !strcmp(name, VIRTUAL_POINTER_NAME)) //Don't manage virtual devices.
+	if (!strcmp(name, VIRTUAL_KEYBOARD_NAME) || !strcmp(name, VIRTUAL_POINTER_NAME))	//Don't manage virtual devices.
 		return 0;
 
-	for(kbd = keyboards;kbd;kbd = kbd->next) {
-		if(!strcmp(kbd->devnode, devnode)) {
+	for (kbd = keyboards; kbd; kbd = kbd->next) {
+		if (!strcmp(kbd->devnode, devnode)) {
 			dbg("Already managing %s.", devnode);
 			return 0;
 		}
 	}
 
-	for(cfg = configs;cfg;cfg = cfg->next) {
-		if(!strcmp(cfg->name, "default"))
+	for (cfg = configs; cfg; cfg = cfg->next) {
+		if (!strcmp(cfg->name, "default"))
 			default_cfg = cfg;
 
-		if(!strcmp(cfg->name, name))
+		if (!strcmp(cfg->name, name))
 			break;
 	}
 
-	if(!cfg) {
-		if(default_cfg) {
+	if (!cfg) {
+		if (default_cfg) {
 			info("No config found for %s (%s), falling back to default.cfg", name, devnode);
 			cfg = default_cfg;
 		} else {
 			//Don't manage keyboards for which there is no configuration.
-			info("No config found for %s (%s), ignoring", name, devnode);
+			info("No config found for %s (%s), ignoring", name,
+			     devnode);
 			return 0;
 		}
 	}
 
-	if((fd = open(devnode, O_RDONLY | O_NONBLOCK)) < 0) {
+	if ((fd = open(devnode, O_RDONLY | O_NONBLOCK)) < 0) {
 		perror("open");
 		exit(1);
 	}
@@ -789,7 +811,7 @@ static int manage_keyboard(const char *devnode)
 	strcpy(kbd->devnode, devnode);
 
 	//Grab the keyboard.
-	if(ioctl(fd, EVIOCGRAB, (void *)1) < 0) {
+	if (ioctl(fd, EVIOCGRAB, (void *) 1) < 0) {
 		perror("EVIOCGRAB");
 		exit(-1);
 	}
@@ -805,14 +827,14 @@ static int destroy_keyboard(const char *devnode)
 {
 	struct keyboard **ent = &keyboards;
 
-	while(*ent) {
-		if(!strcmp((*ent)->devnode, devnode)) {
+	while (*ent) {
+		if (!strcmp((*ent)->devnode, devnode)) {
 			dbg("Destroying %s", devnode);
 			struct keyboard *kbd = *ent;
 			*ent = kbd->next;
 
 			//Attempt to ungrab the the keyboard (assuming it still exists)
-			if(ioctl(kbd->fd, EVIOCGRAB, (void *)1) < 0) {
+			if (ioctl(kbd->fd, EVIOCGRAB, (void *) 1) < 0) {
 				perror("EVIOCGRAB");
 			}
 
@@ -856,11 +878,11 @@ static void evdev_monitor_loop(int *fds, int sz)
 	fstat(1, &finfo);
 	ispiped = finfo.st_mode & S_IFIFO;
 
-	for(i = 0;i < sz;i++) {
+	for (i = 0; i < sz; i++) {
 		struct input_id info;
 
 		int fd = fds[i];
-		if(ioctl(fd, EVIOCGID, &info) == -1) {
+		if (ioctl(fd, EVIOCGID, &info) == -1) {
 			perror("ioctl");
 			exit(-1);
 		}
@@ -868,13 +890,15 @@ static void evdev_monitor_loop(int *fds, int sz)
 		info_table[fd].product_id = info.product;
 		info_table[fd].vendor_id = info.vendor;
 
-		if(ioctl(fd, EVIOCGNAME(sizeof(info_table[0].name)), info_table[fd].name) == -1) {
+		if (ioctl
+		    (fd, EVIOCGNAME(sizeof(info_table[0].name)),
+		     info_table[fd].name) == -1) {
 			perror("ioctl");
 			exit(-1);
 		}
 	}
 
-	while(1) {
+	while (1) {
 		int i;
 		int maxfd = 1;
 
@@ -883,42 +907,52 @@ static void evdev_monitor_loop(int *fds, int sz)
 		//Proactively monitor stdout for pipe closures instead of waiting
 		//for a failed write to generate SIGPIPE.
 
-		if(ispiped)
+		if (ispiped)
 			FD_SET(1, &fdset);
 
-		for(i = 0;i < sz;i++) {
-			if(maxfd < fds[i]) maxfd = fds[i];
+		for (i = 0; i < sz; i++) {
+			if (maxfd < fds[i])
+				maxfd = fds[i];
 			FD_SET(fds[i], &fdset);
 		}
 
-		select(maxfd+1, &fdset, NULL, NULL, NULL);
+		select(maxfd + 1, &fdset, NULL, NULL, NULL);
 
-		for(i = 0;i < sz;i++) {
+		for (i = 0; i < sz; i++) {
 			int fd = fds[i];
 
-			if(FD_ISSET(1, &fdset) &&
-			   read(1, NULL, 0) == -1) { //STDOUT closed.
+			if (FD_ISSET(1, &fdset) && read(1, NULL, 0) == -1) {	//STDOUT closed.
 				//Re-enable echo.
 				monitor_exit(0);
 			}
 
-			if(FD_ISSET(fd, &fdset)) {
-				while(read(fd, &ev, sizeof(ev)) > 0) {
-					if(ev.type == EV_KEY && ev.value != 2) {
-						const char *name = keycode_table[ev.code].name;
-						if(name) {
-							printf("%s\t%04x:%04x\t%s %s\n",
-							       info_table[fd].name,
-							       info_table[fd].product_id,
-							       info_table[fd].vendor_id,
-							       name,
-							       ev.value == 0 ? "up" : "down");
+			if (FD_ISSET(fd, &fdset)) {
+				while (read(fd, &ev, sizeof(ev)) > 0) {
+					if (ev.type == EV_KEY
+					    && ev.value != 2) {
+						const char *name =
+						    keycode_table[ev.code].
+						    name;
+						if (name) {
+							printf
+							    ("%s\t%04x:%04x\t%s %s\n",
+							     info_table
+							     [fd].name,
+							     info_table
+							     [fd].
+							     product_id,
+							     info_table
+							     [fd].
+							     vendor_id,
+							     name,
+							     ev.value ==
+							     0 ? "up" :
+							     "down");
 							fflush(stdout);
-						}
-						else
+						} else
 							info("Unrecognized keycode: %d", ev.code);
 					} else if (ev.type != EV_SYN) {
-							dbg("%s: Event: (%d, %d, %d)", info_table[fd].name, ev.type, ev.value, ev.code);
+						dbg("%s: Event: (%d, %d, %d)", info_table[fd].name, ev.type, ev.value, ev.code);
 					}
 				}
 			}
@@ -945,9 +979,9 @@ static int monitor_loop()
 
 	get_keyboard_nodes(devnodes, &sz);
 
-	for(i = 0;i < sz;i++) {
+	for (i = 0; i < sz; i++) {
 		fd = open(devnodes[i], O_RDONLY | O_NONBLOCK);
-		if(fd < 0) {
+		if (fd < 0) {
 			perror("open");
 			exit(-1);
 		}
@@ -970,7 +1004,7 @@ static void main_loop()
 	get_keyboard_nodes(devs, &n);
 	await_keyboard_neutrality(devs, n);
 
-	for(i = 0;i < n;i++) {
+	for (i = 0; i < n; i++) {
 		manage_keyboard(devs[i]);
 		free(devs[i]);
 	}
@@ -981,12 +1015,13 @@ static void main_loop()
 	if (!udev)
 		die("Can't create udev.");
 
-	udev_monitor_filter_add_match_subsystem_devtype(udevmon, "input", NULL);
+	udev_monitor_filter_add_match_subsystem_devtype(udevmon, "input",
+							NULL);
 	udev_monitor_enable_receiving(udevmon);
 
 	monfd = udev_monitor_get_fd(udevmon);
 
-	while(1) {
+	while (1) {
 		int maxfd;
 		fd_set fds;
 		struct udev_device *dev;
@@ -996,56 +1031,70 @@ static void main_loop()
 
 		maxfd = monfd;
 
-		for(kbd = keyboards;kbd;kbd=kbd->next) {
+		for (kbd = keyboards; kbd; kbd = kbd->next) {
 			int fd = kbd->fd;
 
 			maxfd = maxfd > fd ? maxfd : fd;
 			FD_SET(fd, &fds);
 		}
 
-		if(select(maxfd+1, &fds, NULL, NULL, NULL) > 0) {
-			if(FD_ISSET(monfd, &fds)) {
+		if (select(maxfd + 1, &fds, NULL, NULL, NULL) > 0) {
+			if (FD_ISSET(monfd, &fds)) {
 				int iskbd;
 				dev = udev_monitor_receive_device(udevmon);
-				const char *devnode = udev_device_get_devnode(dev);
+				const char *devnode =
+				    udev_device_get_devnode(dev);
 				udev_type(dev, &iskbd, NULL);
 
-				if(devnode && iskbd) {
-					const char *action = udev_device_get_action(dev);
+				if (devnode && iskbd) {
+					const char *action =
+					    udev_device_get_action(dev);
 
-					if(!strcmp(action, "add"))
+					if (!strcmp(action, "add"))
 						manage_keyboard(devnode);
-					else if(!strcmp(action, "remove"))
+					else if (!strcmp(action, "remove"))
 						destroy_keyboard(devnode);
 					else
-						dbg("udev: action %s %s", action, devnode);
+						dbg("udev: action %s %s",
+						    action, devnode);
 				}
 				udev_device_unref(dev);
 			}
 
 
-			for(kbd = keyboards;kbd;kbd=kbd->next) {
+			for (kbd = keyboards; kbd; kbd = kbd->next) {
 				int fd = kbd->fd;
 
-				if(FD_ISSET(fd, &fds)) {
+				if (FD_ISSET(fd, &fds)) {
 					struct input_event ev;
 
-					while(read(fd, &ev, sizeof(ev)) > 0) {
+					while (read(fd, &ev, sizeof(ev)) >
+					       0) {
 						//Preprocess events.
-						switch(ev.type) {
+						switch (ev.type) {
 						case EV_KEY:
-							if(IS_MOUSE_BTN(ev.code)) {
-								write(vptr, &ev, sizeof(ev)); //Pass mouse buttons through the virtual pointer unimpeded.
+							if (IS_MOUSE_BTN
+							    (ev.code)) {
+								write(vptr, &ev, sizeof(ev));	//Pass mouse buttons through the virtual pointer unimpeded.
 								syn(vptr);
-							} else if(ev.value == 2) {
+							} else if (ev.
+								   value ==
+								   2) {
 								//Wayland and X both ignore repeat events but VTs seem to require them.
-								send_repetitions();
+								send_repetitions
+								    ();
 							} else {
-								process_key_event(kbd, ev.code, ev.value);
+								process_key_event
+								    (kbd,
+								     ev.
+								     code,
+								     ev.
+								     value);
 							}
 							break;
-						case EV_REL: //Pointer motion events
-							write(vptr, &ev, sizeof(ev));
+						case EV_REL:	//Pointer motion events
+							write(vptr, &ev,
+							      sizeof(ev));
 							syn(vptr);
 							break;
 						case EV_SYN:
@@ -1066,7 +1115,7 @@ static void cleanup()
 	struct keyboard *kbd = keyboards;
 	config_free();
 
-	while(kbd) {
+	while (kbd) {
 		struct keyboard *tmp = kbd;
 		kbd = kbd->next;
 		free(tmp);
@@ -1080,12 +1129,12 @@ static void lock()
 {
 	int fd;
 
-	if((fd=open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
+	if ((fd = open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
 		perror("flock open");
 		exit(1);
 	}
 
-	if(flock(fd, LOCK_EX | LOCK_NB) == -1) {
+	if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
 		info("Another instance of keyd is already running.");
 		exit(-1);
 	}
@@ -1094,7 +1143,8 @@ static void lock()
 
 static void exit_signal_handler(int sig)
 {
-	info("%s received, cleaning up and terminating...", sig == SIGINT ? "SIGINT" : "SIGTERM");
+	info("%s received, cleaning up and terminating...",
+	     sig == SIGINT ? "SIGINT" : "SIGTERM");
 
 	cleanup();
 	exit(0);
@@ -1102,13 +1152,15 @@ static void exit_signal_handler(int sig)
 
 static void daemonize()
 {
-	int fd = open(LOG_FILE, O_APPEND|O_WRONLY);
+	int fd = open(LOG_FILE, O_APPEND | O_WRONLY);
 
 	info("Daemonizing.");
 	info("Log output will be stored in %s", LOG_FILE);
 
-	if(fork()) exit(0);
-	if(fork()) exit(0);
+	if (fork())
+		exit(0);
+	if (fork())
+		exit(0);
 
 	close(0);
 	close(1);
@@ -1120,42 +1172,48 @@ static void daemonize()
 
 int main(int argc, char *argv[])
 {
-	if(getenv("KEYD_DEBUG"))
+	if (getenv("KEYD_DEBUG"))
 		debug = atoi(getenv("KEYD_DEBUG"));
 
 	dbg("Debug mode enabled.");
 	dbg2("Verbose debugging enabled.");
 
-	if(argc > 1) {
-		if(!strcmp(argv[1], "-v")) {
-			fprintf(stderr, "keyd version: %s (%s)\n", VERSION, GIT_COMMIT_HASH);
+	if (argc > 1) {
+		if (!strcmp(argv[1], "-v")) {
+			fprintf(stderr, "keyd version: %s (%s)\n", VERSION,
+				GIT_COMMIT_HASH);
 			return 0;
-		} else if(!strcmp(argv[1], "-m")) {
+		} else if (!strcmp(argv[1], "-m")) {
 			return monitor_loop();
-		} else if(!strcmp(argv[1], "-l")) {
+		} else if (!strcmp(argv[1], "-l")) {
 			size_t i;
 
-			for(i = 0; i < KEY_MAX;i++)
-				if(keycode_table[i].name) {
-					const struct keycode_table_ent *ent = &keycode_table[i];
+			for (i = 0; i < KEY_MAX; i++)
+				if (keycode_table[i].name) {
+					const struct keycode_table_ent *ent
+					    = &keycode_table[i];
 					printf("%s\n", ent->name);
-					if(ent->alt_name)
-						printf("%s\n", ent->alt_name);
-					if(ent->shifted_name)
-						printf("%s\n", ent->shifted_name);
+					if (ent->alt_name)
+						printf("%s\n",
+						       ent->alt_name);
+					if (ent->shifted_name)
+						printf("%s\n",
+						       ent->shifted_name);
 				}
 			return 0;
 		} else {
-			if(strcmp(argv[1], "-h") && strcmp(argv[1], "--help"))
-				fprintf(stderr, "%s is not a valid option.\n", argv[1]);
+			if (strcmp(argv[1], "-h")
+			    && strcmp(argv[1], "--help"))
+				fprintf(stderr,
+					"%s is not a valid option.\n",
+					argv[1]);
 
-			fprintf(stderr, "Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
-				"\t-m monitor mode\n"
-				"\t-l list keys\n"
+			fprintf(stderr,
+				"Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
+				"\t-m monitor mode\n" "\t-l list keys\n"
 				"\t-d fork and start as a daemon\n"
 				"\t-v print version\n"
-				"\t-h print this help message\n",
-				argv[0]);
+				"\t-h print this help message\n", argv[0]);
 
 			return 0;
 		}
@@ -1166,7 +1224,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, exit_signal_handler);
 	signal(SIGTERM, exit_signal_handler);
 
-	if(argc > 1 && !strcmp(argv[1], "-d"))
+	if (argc > 1 && !strcmp(argv[1], "-d"))
 		daemonize();
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
