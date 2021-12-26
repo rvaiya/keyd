@@ -47,6 +47,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include "keys.h"
 #include "config.h"
 
@@ -1178,54 +1179,54 @@ int main(int argc, char *argv[])
 	dbg("Debug mode enabled.");
 	dbg2("Verbose debugging enabled.");
 
-	if (argc > 1) {
-		if (!strcmp(argv[1], "-v")) {
-			fprintf(stderr, "keyd version: %s (%s)\n", VERSION,
-				GIT_COMMIT_HASH);
-			return 0;
-		} else if (!strcmp(argv[1], "-m")) {
-			return monitor_loop();
-		} else if (!strcmp(argv[1], "-l")) {
-			size_t i;
+	{
+      	static struct option longopts[] = {
+			{"help", no_argument, NULL, 'h'},
+			{NULL, 0, NULL, 0}
+		};
+		int longindex = 0;
+		int opt;
+		while ((opt = getopt_long(argc, argv, "vmlhd", longopts, &longindex)) != -1)
+			switch (opt) {
+			case 'v':
+				fprintf(stderr, "keyd version: %s (%s)\n", VERSION, GIT_COMMIT_HASH);
+				return 0;
+			case 'm':
+				return monitor_loop();
+			case 'l':
+				size_t i;
 
-			for (i = 0; i < KEY_MAX; i++)
-				if (keycode_table[i].name) {
-					const struct keycode_table_ent *ent
-					    = &keycode_table[i];
-					printf("%s\n", ent->name);
-					if (ent->alt_name)
-						printf("%s\n",
-						       ent->alt_name);
-					if (ent->shifted_name)
-						printf("%s\n",
-						       ent->shifted_name);
-				}
-			return 0;
-		} else {
-			if (strcmp(argv[1], "-h")
-			    && strcmp(argv[1], "--help"))
+				for (i = 0; i < KEY_MAX; i++)
+					if (keycode_table[i].name) {
+						const struct keycode_table_ent *ent = &keycode_table[i];
+						printf("%s\n", ent->name);
+						if (ent->alt_name)
+							printf("%s\n", ent->alt_name);
+						if (ent->shifted_name)
+							printf("%s\n", ent->shifted_name);
+					}
+				return 0;
+			case 'h':
 				fprintf(stderr,
-					"%s is not a valid option.\n",
-					argv[1]);
-
-			fprintf(stderr,
-				"Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
-				"\t-m monitor mode\n" "\t-l list keys\n"
-				"\t-d fork and start as a daemon\n"
-				"\t-v print version\n"
-				"\t-h print this help message\n", argv[0]);
-
-			return 0;
-		}
+						"Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
+						"\t-m monitor mode\n" "\t-l list keys\n"
+						"\t-d fork and start as a daemon\n"
+						"\t-v print version\n"
+						"\t-h print this help message\n",
+						argv[0]);
+				return 0;
+			case 'd':
+				daemonize();
+				break;
+			case '?':
+				return 1;
+			}
 	}
 
 	lock();
 
 	signal(SIGINT, exit_signal_handler);
 	signal(SIGTERM, exit_signal_handler);
-
-	if (argc > 1 && !strcmp(argv[1], "-d"))
-		daemonize();
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	config_generate();
