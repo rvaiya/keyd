@@ -1126,11 +1126,11 @@ static void cleanup()
 	udev_monitor_unref(udevmon);
 }
 
-static void lock()
+static void lock(const char *lock_file)
 {
 	int fd;
 
-	if ((fd = open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
+	if ((fd = open(lock_file, O_CREAT | O_RDWR, 0600)) == -1) {
 		perror("flock open");
 		exit(1);
 	}
@@ -1151,12 +1151,12 @@ static void exit_signal_handler(int sig)
 	exit(0);
 }
 
-static void daemonize()
+static void daemonize(const char *log_file)
 {
-	int fd = open(LOG_FILE, O_APPEND | O_WRONLY);
+	int fd = open(log_file, O_APPEND | O_WRONLY);
 
 	info("Daemonizing.");
-	info("Log output will be stored in %s", LOG_FILE);
+	info("Log output will be stored in %s", log_file);
 
 	if (fork())
 		exit(0);
@@ -1179,9 +1179,15 @@ int main(int argc, char *argv[])
 	dbg("Debug mode enabled.");
 	dbg2("Verbose debugging enabled.");
 
+	char *config_dir = CONFIG_DIR;
+	char *log_file = LOG_FILE;
+	char *lock_file = LOCK_FILE;
 	{
       	static struct option longopts[] = {
 			{"help", no_argument, NULL, 'h'},
+			{"config-dir", required_argument, NULL, 0},
+			{"log-file", required_argument, NULL, 1},
+			{"lock-file", required_argument, NULL, 2},
 			{NULL, 0, NULL, 0}
 		};
 		int longindex = 0;
@@ -1209,27 +1215,43 @@ int main(int argc, char *argv[])
 			case 'h':
 				fprintf(stderr,
 						"Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
-						"\t-m monitor mode\n" "\t-l list keys\n"
+						"\t-m monitor mode\n"
+						"\t-l list keys\n"
 						"\t-d fork and start as a daemon\n"
+						"\t--config-dir <CONFIG_DIR>\n"
+						"\t--log-file <LOG_FILE>\n"
+						"\t--lock-file <LOCK_FILE>\n"
 						"\t-v print version\n"
 						"\t-h print this help message\n",
 						argv[0]);
 				return 0;
 			case 'd':
-				daemonize();
+				daemonize(log_file);
+				break;
+			case 0:
+				config_dir = strdup(optarg);
+				fprintf(stderr, "Using config directory \"%s\"\n", config_dir);
+				break;
+			case 1:
+				log_file = strdup(optarg);
+				fprintf(stderr, "Using log file \"%s\"\n", log_file);
+				break;
+			case 2:
+				lock_file = strdup(optarg);
+				fprintf(stderr, "Using lock file \"%s\"\n", lock_file);
 				break;
 			case '?':
 				return 1;
 			}
 	}
 
-	lock();
+	lock(lock_file);
 
 	signal(SIGINT, exit_signal_handler);
 	signal(SIGTERM, exit_signal_handler);
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
-	config_generate();
+	config_generate(config_dir);
 	vkbd = create_virtual_keyboard();
 	vptr = create_virtual_pointer();
 

@@ -877,10 +877,10 @@ void config_free()
 	};
 }
 
-void config_generate()
+void config_generate(const char *config_dir)
 {
 	struct dirent *ent;
-	DIR *dh = opendir(CONFIG_DIR);
+	DIR *dh = opendir(config_dir);
 
 	if (!dh) {
 		perror("opendir");
@@ -895,7 +895,7 @@ void config_generate()
 			continue;
 
 
-		sprintf(path, "%s/%s", CONFIG_DIR, ent->d_name);
+		sprintf(path, "%s/%s", config_dir, ent->d_name);
 
 		cfg = calloc(1, sizeof(struct keyboard_config));
 
