@@ -1,0 +1,25 @@
+2 down
+2 up
+t down
+t up
+b down
+b up
+b down
+b up
+t down
+t up
+b down
+b up
+
+shift down
+shift up
+a down
+a up
+shift down
+shift up
+a down
+a up
+shift down
+shift up
+b down
+b up

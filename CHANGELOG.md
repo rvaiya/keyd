@@ -1,17 +1,47 @@
-# v1.3.1
+# v2.0-beta
 
-- Fixed overload behaviour (see #34)
+Major version update. 
 
-# v1.3.0
+This breaks 1.x configs. The format may change slightly before leaving beta,
+but once it does should remain backwards compatible for the foreseeable future.
 
-- Adds the ability to swap layers mid-key (#48).
-- Adds a panic key sequence (backspace + backslash + enter).
-- Clears oneshot layers when undefined keys are pressed.
-- Removes duplicate keycode names in `keyd -l`.
-- Fixes accidental layer toggle bug (#44).
-- Improves logging.
-- Fixes support for keyboards with built in mice.
-- Misc bugfixes.
+A non exhaustive list of changes can be found below. It is best to forget
+everything you know and read man page anew.
+
+- Eliminated layer inheritance in favour of simple types.
+(layouts are now defined with `:layout` instead of `:main`)
+- Macros are now repeatable.
+- Overload now accepts a hold threshold timeout.
+- Config files are now vendor/product id oriented.
+- SIGUSR1 now triggers a config reload.
+- Modifiers are layers by default and can be extended directly.
+- Config files now end in `.conf`.
+- `layert()` is now `toggle()`.
+- All layers are 'modifier layers' (terminological change)
+- Eliminated the dedicated modifer layout.
+- Modifiers no longer apply to key sequences defined within a layer.
+  (Layer entries are now always executed verbatim.)
+
+  The old behaviour was unintuitive and can be emulated using nested
+  layers if necessary.
+
+For most old configs transitioning should be a simple matter of changing
+the file extension from `.cfg` to `.conf`, replacing `layert` with
+`toggle`, changing `:main` to `:layout` and adding
+
+```
+[ids]
+
+*
+
+[main]
+```
+
+to the top of the file. 
+
+More involved configs may need additional changes, but should be possible
+to replicate using the new rules. If not, please file an issue on
+[github](https://github.com/rvaiya/keyd/issues).
 
 # v1.1.1
 

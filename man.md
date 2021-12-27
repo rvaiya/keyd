@@ -11,28 +11,25 @@
 # DESCRIPTION
 
 keyd is a system wide key remapping daemon which supports features like
-layering, oneshot modifier, and macros. In its most basic form it can be used
-to define a custom key layout that persists across display server boundaries
+layering, oneshot modifiers, and macros. In its most basic form it can be used
+to define a custom key layout that persists accross display server boundaries
 (e.g wayland/X/tty).
 
-keyd is intended to run as a systemd service but is capable of running
-independently. The default behaviour is to run the foreground and print to
-stderr, unless **-d** is supplied, in which case in which case log output will
-be stored in */var/log/keyd.log*.
+The program is intended to run as a systemd service but is capable of running
+as a standalone daemon. The default behaviour is to run in the forground and print
+to stderr, unless **-d** is supplied, in which case in which case log output
+will be stored in */var/log/keyd.log*.
 
 **NOTE**
 
-Because keyd modifies your primary input device it is possible to render your
-machine unusable with a bad config file. If you find yourself in this
-situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd to
-terminate. If you are experimenting with the available options it is advisable
-to do so in a keyboard specific file (see CONFIGURATION) instead of directly in
-`default.cfg`, so it remains possible to plug in another keyboard unaffected by the
-changes.
+Becuase keyd modifies your primary input device it is possible to render your
+machine unusuable with a bad config file. If you find yourself in this
+situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd
+to terminate.
 
 # OPTIONS
 
-**-m**: Run in monitor mode. (ensure keyd is not running to see untranslated events).
+**-m**: Monitor and print keyboard events to stdout.
 
 **-l**: List all valid key names.
 
@@ -40,32 +37,55 @@ changes.
 
 # CONFIGURATION
 
-All configuration files are stored in */etc/keyd/*. The name of each file
-should correspond to the device name to which it is to be applied followed by
-.cfg (e.g "/etc/keyd/Magic Keyboard.cfg"). Configuration files are loaded upon
-initialization and can be reified by reloading keyd (e.g sudo systemctl restart
-keyd).
+All configuration files are stored in */etc/keyd/* and are loaded upon
+initialization. A reload can be triggered by restarting the daemon or by
+sending SIGUSR1 to the process (e.g sudo pkill -usr1 keyd).
 
-A list of valid key names can be produced with **-l**. The monitor flag (**-m**) can
-also be used to obtain device and key names like so:
+A valid config file has the extension .conf and must begin with an *ids* section that has the following form:
 
-	> sudo systemctl stop keyd
-	> sudo keyd -m
+	[ids]
 
-	Magic Keyboard: capslock down
-	Magic Keyboard: capslock up
+	<id 1>
+	<id 2>
 	...
 
-If no configuration file exists for a given keyboard *default.cfg* is used as a
-fallback (if present).
+Where each \<id\> is one of:
 
-Each line in a configuration file consists of a mapping of the following form:
+	- A device id of the form <vendor id>:<product id> (obtained with -m).
+	- The wildcard "*".
+
+A wildcard indicates that the file should apply to all keyboards
+which are not explicitly listed in another configuration file and
+may optionally be followed by one or more lines of the form:
+
+	-<vendor id>:<product id>
+
+representing a device to be excluded from the matching policy. Thus the following
+config will match all devices except 0123:4567:
+
+	[ids]
+	*
+	-0123:4567
+
+
+The monitor flag (**-m**) can be used to interactively obtain device ids and key names like so:
+
+	> sudo systemctl stop keyd # Avoid loopback.
+	> sudo keyd -m
+
+	Magic Keyboard	0ade:0fac	capslock down
+	Magic Keyboard	0ade:0fac	capslock up
+	...
+
+Every subsequent section of the file corresponds to a layer and has the form:
+
+	[<name>[:<type>]]
+
+Where `<type>` is either a valid modifier set (see *MODIFIERS*) or "layout".
+
+Each line within a layer is a mapping of the form:
 
 	<key> = <action>|<keyseq>
-
-or else represents the beginning of a new layer. E.G:
-
-	[<layer>]
 
 Where `<keyseq>` has the form: `[<modifier1>[-<modifier2>...]-<key>`
 
@@ -77,100 +97,126 @@ and each modifier is one of:
 \ **S** - Shift\
 \ **G** - AltGr
 
-Lines can be commented out by prepending # but inline comments are not supported.
-
-In addition to simple key mappings keyd can remap keys to actions which
-can conditionally send keystrokes or transform the state of the keymap.
+In addition to key sequences, keyd can remap keys to actions which
+conditionally send keystrokes or transform the state of the keymap.
 
 It is, for instance, possible to map a key to escape when tapped and control
 when held by assigning it to `overload(C, esc)`. A complete list of available
 actions can be found in *ACTIONS*.
 
-As a special case \<key\> may be 'noop' which causes it to be
-ignored. This can be used to simulate a modifier sequence with no
-attendant termination key:
-
-E.G.
-
-`C-A-noop` will simulate the simultaneous depression and release
-of the control and alt keys.
-
-
 ## Layers
 
-Each configuration file consists of one or more layers. Each layer is a keymap
-unto itself and can be transiently activated by a key mapped to the *layer*
-action.
+Each layer is a keymap unto itself and can be transiently activated by a key
+mapped to the corresponding *layer()* action.
 
-For example the following configuration creates a new layer called 'symbols' which
+For example, the following configuration creates a new layer called 'symbols' which
 is activated by holding the capslock key.
 
+	[ids]
+	*
+
+	[main]
 	capslock = layer(symbols)
 
 	[symbols]
-
 	f = ~
 	d = /
+	...
 
 Pressing `capslock+f` thus produces a tilde.
 
-Any set of valid modifiers is also a valid layer. For example the layer `M-C`
-corresponds to a layer which behaves like the modifiers meta and control. These
-play nicely with other modifiers and preserve existing stacking semantics.
+Key sequences within a layer are fully descriptive and completely self
+contained. That is, the sequence 'A-b' corresponds exactly to the combination
+`<alt>+<b>`. If any additional modifiers are active they will be deactivated
+for the duration of the corresponding key stroke.
 
-A layer may optionally have a parent from which mappings are drawn for keys
-which are not explicitly mapped. By default layers do not have a parent, that
-is, unmapped keys will have no effect. A parent is specified by appending
-`:<parent>` to the layer name.
+## Layouts
 
-The *layout* is a special layer from which mappings are drawn if no other layers
-are active.  The default layout is called **main** and is the one to which
-mappings are assigned if no layer heading is present. By default all keys are
-defined as themselves in the main layer. Layouts should inherit from main to
-avoid having to explicitly define each key. The default layout can be
-changed by including `layout(<layer>)` at the top of the config file.
+The *layout* is a special kind of layer from which mappings are drawn if no
+other layers are active. By default all keys are mapped to themselves within a
+layout. Every config has at least one layout called *main*, but additional
+layouts may be defined and subsequently activated using the `layout()` action.  
 
-## The Modifier Layout
+Layouts also have the additional property of being affected by the active modifier
+set. That is, unlike layouts, key sequences mapped within them are not
+interpreted literally.
 
-keyd distinguishes between the key layout and the modifier layout. This
-allows the user to use a different letter arrangement for modifiers. It may,
-for example, be desirable to use an alternative key layout like dvorak while
-preserving standard qwerty modifier shortcuts. This can be achieved by passing
-a second argument to the layout function like so: `layout(dvorak, main)`. The
-default behaviour is to assign the modifier layout to the key layout if one
-is not explicitly specified.
+If you wish to use an alternative letter arrangement, this is the appropriate
+place to define it.
 
-Note that this is different from simply defining a custom layer which reassigns
-each key to a modified key sequence (e.g `s = C-s`) since it applies to all
-modifiers and preserves expected stacking behaviour.
+E.G
 
-## Modifier Layers
+	[main]
 
-In addition to standard layers, keyd introduces the concept of 'modifier
-layers' to accommodate the common use case of remapping a subset of modifier
-keys. A modifier layer will behave as a set of modifiers in all instances
-except when a key is explicitly mapped within it and can be defined
-by creating a layer which inherits from a valid modifier set.
+	rightshift = layout(dvorak)
 
-E.G.:
+	[dvorak:layout]
 
-	capslock = layer(custom_control)
+	rightshift = layout(main)
+	s = o
+	d = e
+	...
+
+## Modifiers
+
+Unlike most other remapping tools keyd provides first class support for
+modifiers. A valid modifier set may optionally be used as a layer type,
+causing the layer to behave as the modifier set in all instances except
+where an explicit mapping overrides the default behaviour.
+
+These layers play nicely with other modifiers and preserve existing stacking
+semantics.
+
+For example:
+
+	[main]
+
+	leftalt = layer(myalt)
+	rightalt = layer(myalt)
 	
-	[custom_control:C]
-	
+	[myalt:A]
+
 	1 = C-A-f1
-	2 = C-A-f2
 
-Will cause the capslock key to behave as control in all instances except when
-`C-1` is pressed, in which case the key sequence `C-A-f1` will be emitted. This
-is not possible to achieve using standard layers without breaking expected
-behaviour like modifier stacking and pointer combos.
+Will cause the leftalt key to behave as alt in all instances except when
+alt+1 is pressed, in which case the key sequence `C-A-f1` will be emitted.
 
-## Summary
+By default each modifier is mapped to an eponymously named layer.
 
-1. Use [mylayer] if you want to define a custom shift layer (e.g. [symbols]).
-2. Use [mylayer:C] if you want a layer which behaves like a custom control key.
-3. Use [mylayer:main] for defining custom key layouts (e.g. dvorak).
+Thus, the above config can be shortened to:
+
+	[A]
+
+	1 = C-A-f1
+
+since leftalt and rightalt are already assigned to `layer(A)`.
+
+Additionally, any set of valid modifiers is also a valid layer. For
+example, the layer `M-C` corresponds to a layer which behaves like the
+modifiers meta and control, which means the following:
+
+	capslock = layer(M-A)
+
+will cause capslock to behave as meta and alt when held. 
+
+### Lookup Rules
+
+In order to achieve this (un)holy union, the following lookup rules are used:
+
+	- If one or more layers is active then:
+		- If an explicit mapping exists within the most recently active layer:
+			- Use the defined mapping.
+		- Else:
+			- If the layer has one or more modifiers:
+				Apply the corresponding modifiers to the layout.
+			- Else:
+				Do nothing.
+	- Else:
+		Use the layout mapping.
+
+The upshot of all this is that things should mostly just work™. The
+majority of users needn't be explicitly conscious of the lookup rules
+unless they are doing something unorthodox (e.g nesting hybrid layers).
 
 ## ACTIONS
 
@@ -184,20 +230,27 @@ corresponding modifiers while held.
 
 : Activates the given layer while held.
 
-**layert(\<layer\>)**
+**toggle(\<layer\>)**
 
-: Toggles the state of the given layer. Note this is intended for transient
-layers and is distinct from `layout()` which should be used for letter layouts.
+: Toggles the state of the given layer. Note this is intended for layers and is
+distinct from `layout()` which should be used for letter layouts.
 
-**overload(\<layer\>,\<keyseq\>,)**
+**overload(\<layer\>,\<keyseq\>[,\<timeout\>])**
 
-: Activates the given layer while held and emits the given key sequence when tapped.
+: Activates the given layer while held and emits the given key sequence when
+tapped. A timeout in milliseconds may optionally be supplied to disambiguate
+between a tap and a hold. 
 
-**layout(\<layer\>[, \<modifier layer\>])**
+	If a timeout is present depression of the corresponding key is only interpreted
+as a layer activation in the event that it is sustained for more than
+\<timeout\> a milliseconds. This is useful if the overloaded key is frequently
+used on its own (e.g space) and only occasionally treated as a modifier (the opposite
+of the default assumption).
+
+**layout(\<layer\>)**
 
 : Sets the current layout to the given layer. You will likely want to ensure
-you have a way to switch layouts within the new one. A second layer may
-optionally be supplied and is used as the modifier layer if present.
+you have a way to switch layouts within the newly activated one.
 
 **swap(\<layer\>[, \<keyseq\>])**
 
@@ -231,34 +284,31 @@ Examples:
 
 ## Example 1
 
-Set the default key layout to dvorak and the modifier layout to qwerty (main).
-
-	layout(dvorak, main)
-
-	[dvorak:main]
-
-	q = apostrophe
-	w = comma
-	e = dot
-	# etc...
-
-## Example 2
-
 Make `esc+q/w/e` set the letter layout.
 
-	# ...
+	[ids]
+	*
+
+	[main]
 	esc = layer(esc)
 
-	[esc]
+	[dvorak:layout]
+	s = o
+	d = e
+	...
 
+	[esc]
 	q = layout(main)
-	w = layout(dvorak, main)
-	e = layout(dvorak)
+	w = layout(dvorak)
 
 ## Example 3
 
 Invert the behaviour of the shift key without breaking modifier behaviour.
 
+	[ids]
+	*
+
+	[main]
 	leftshift = layer(shift)
 	rightshift = layer(shift)
 
@@ -274,7 +324,6 @@ Invert the behaviour of the shift key without breaking modifier behaviour.
 	0 = )
 
 	[shift:S]
-
 	0 = 0
 	1 = 1
 	2 = 2
@@ -287,34 +336,35 @@ Invert the behaviour of the shift key without breaking modifier behaviour.
 	9 = 9
 
 
-## Example 4
+## Example 3
 
 Tapping control once causes it to apply to the next key, tapping it twice
 activates it until it is pressed again, and holding it produces expected
 behaviour.
 
-	control = oneshot(control)
+	[main]
+	leftcontrol = oneshot(control)
+	rightcontrol = oneshot(control)
 
 	[control:C]
+	toggle(control)
 
-	layert(control)
+# Example 4
 
-# Example 5
-
-Meta behaves as normal except when tab is pressed after which the alt_tab layer
+Meta behaves as normal except when \` is pressed, after which the alt_tab layer
 is activated for the duration of the leftmeta keypress. Subsequent actuations
-of \` will thus produce A-S-tab instead of M-\`.
+of \` will thus produce A-tab instead of M-\`.
 
+	[main]
 	leftmeta = layer(meta)
+	rightmeta = layer(meta)
 
 	[meta:M]
-
-	tab = swap(alt_tab)
+	` = swap(alt_tab, A-tab)
 
 	[alt_tab:A]
-
-	tab = A-tab
-	` = A-S-tab
+	tab = A-S-tab
+	` = A-tab
 
 
 # AUTHOR

@@ -1,0 +1,21 @@
+meta down
+alt down
+2 down
+2 up
+a down
+a up
+alt up
+meta up
+
+meta down
+alt down
+meta up
+alt up
+tab down
+tab up
+meta down
+control down
+a down
+a up
+control up
+meta up

@@ -31,6 +31,7 @@
 #endif
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #define MOD_ALT_GR 0x10
 #define MOD_CTRL 0x8
@@ -41,14 +42,7 @@
 #define KEY_NOOP 0x27b
 
 //Used for macros, bit of a kludge.
-
-#define MOD_TIMEOUT 0x20	//keysequence represents a timeout
-
-//Reserve the last 10 bits for the timeout value in ms.
-#define TIMEOUT_KEY(ms) ((ms << 22) | 0x200000)
-#define GET_TIMEOUT(key) (key >> 22)
-#define MAX_TIMEOUT_LEN ((1<<10)-1)
-
+uint16_t keycode_to_mod(uint16_t code);
 
 struct keycode_table_ent {
 	const char *name;

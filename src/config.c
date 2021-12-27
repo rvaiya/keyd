@@ -21,224 +21,68 @@
  */
 
 #include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <ctype.h>
-#include <limits.h>
-#include "config.h"
+#include <stdlib.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include "ini.h"
 #include "keys.h"
+#include "error.h"
+#include "descriptor.h"
+#include "layer.h"
+#include "config.h"
+#include <string.h>
 
-#define MAX_ARGS 10
+static struct config *fallback_config = NULL;
+static struct config *configs = NULL;
 
-struct keyboard_config *configs = NULL;
+/*
+ * Parse a value of the form 'key = value'. The value may contain =
+ * and the key may itself be = as a special case. The returned
+ * values are pointers within the modified input string.
+ */
 
-struct layer_table_ent {
-	char name[256];
-	char pname[256];
-
-	uint8_t modsonly;
-	struct layer *layer;
-} layer_table[MAX_LAYERS];
-
-int nlayers = 0;
-
-static int lnum = 0;
-static char path[PATH_MAX];
-
-static uint32_t macros[MAX_MACROS][MAX_MACRO_SIZE];
-static size_t nmacros = 0;
-
-static int lookup_layer(const char *name);
-static int parse_modset(const char *s, uint16_t * mods);
-
-#define err(fmt, ...) fprintf(stderr, "%s: ERROR on line %d: "fmt"\n", path, lnum, ##__VA_ARGS__)
-
-static const char *modseq_to_string(uint16_t mods)
+static int parse_kvp(char *s, char **key, char **value)
 {
-	static char s[32];
-	int i = 0;
-	s[0] = '\0';
+	char *last_space = NULL;
+	char *c = s;
 
-	if (mods & MOD_CTRL) {
-		strcpy(s + i, "-C");
-		i += 2;
-	}
-	if (mods & MOD_SHIFT) {
-		strcpy(s + i, "-S");
-		i += 2;
-	}
+	if (*c == '=')		//Allow the first character to be = as a special case.
+		c++;
 
-	if (mods & MOD_SUPER) {
-		strcpy(s + i, "-M");
-		i += 2;
-	}
+	while (*c) {
+		switch (*c) {
+		case '=':
+			if (last_space)
+				*last_space = 0;
+			else
+				*c = 0;
+			c++;
 
-	if (mods & MOD_ALT) {
-		strcpy(s + i, "-A");
-		i += 2;
-	}
+			while (*c && *c == ' ')
+				c++;
 
-	if (mods & MOD_ALT_GR) {
-		strcpy(s + i, "-G");
-		i += 2;
-	}
+			*key = s;
+			*value = c;
 
-	if (i)
-		return s + 1;
-	else
-		return s;
-}
-
-const char *keyseq_to_string(uint32_t keyseq)
-{
-	int i = 0;
-	static char s[256];
-
-	uint16_t mods = keyseq >> 16;
-	uint16_t code = keyseq & 0x00FF;
-
-	const char *key = keycode_table[code].name;
-
-	if (mods & MOD_CTRL) {
-		strcpy(s + i, "C-");
-		i += 2;
-	}
-	if (mods & MOD_SHIFT) {
-		strcpy(s + i, "S-");
-		i += 2;
-	}
-
-	if (mods & MOD_SUPER) {
-		strcpy(s + i, "M-");
-		i += 2;
-	}
-
-	if (mods & MOD_ALT) {
-		strcpy(s + i, "A-");
-		i += 2;
-	}
-
-	if (mods & MOD_ALT_GR) {
-		strcpy(s + i, "G-");
-		i += 2;
-	}
-
-	if (key)
-		strcpy(s + i, keycode_table[code].name);
-	else
-		strcpy(s + i, "UNKNOWN");
-
-	return s;
-}
-
-//Returns the position in the layer table
-static struct layer_table_ent *create_layer(const char *name,
-					    const char *pname,
-					    uint16_t mods)
-{
-	struct layer_table_ent *ent = &layer_table[nlayers];
-
-	ent->layer = calloc(1, sizeof(struct layer));
-	ent->layer->keymap =
-	    calloc(KEY_CNT, sizeof(struct key_descriptor));
-
-	ent->modsonly = 0;
-	ent->layer->mods = mods;
-
-	strcpy(ent->pname, pname);
-	strcpy(ent->name, name);
-
-	nlayers++;
-	assert(nlayers <= MAX_LAYERS);
-	return ent;
-}
-
-static struct layer_table_ent *create_mod_layer(uint16_t mods)
-{
-	struct layer_table_ent *ent = create_layer("", "", mods);
-	ent->modsonly = 1;
-
-	return ent;
-}
-
-static void keyseq_to_desc(uint32_t seq, struct key_descriptor *desc)
-{
-	desc->action = ACTION_KEYSEQ;
-	desc->arg.keyseq = seq;
-
-	//To facilitate simplification of modifier handling convert
-	//all traditional modifier keys to their internal layer
-	//representations.
-
-	switch (seq) {
-	case KEY_LEFTCTRL:
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = lookup_layer("C");
-		break;
-	case KEY_LEFTALT:
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = lookup_layer("A");
-		break;
-	case KEY_RIGHTALT:
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = lookup_layer("G");
-		break;
-	case KEY_LEFTSHIFT:
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = lookup_layer("S");
-		break;
-	case KEY_LEFTMETA:
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = lookup_layer("M");
-		break;
-	}
-}
-
-static struct layer_table_ent *create_main_layer()
-{
-	int i;
-	struct layer_table_ent *ent = create_layer("main", "", 0);
-
-	for (i = 0; i < KEY_CNT; i++)
-		keyseq_to_desc(i, &ent->layer->keymap[i]);
-
-	return ent;
-}
-
-//Returns the index in the layer table or -1.
-static int lookup_layer(const char *name)
-{
-	int i;
-	uint16_t mods;
-
-	for (i = 0; i < nlayers; i++) {
-		if (!strcmp(layer_table[i].name, name))
-			return i;
-	}
-
-	if (!parse_modset(name, &mods)) {
-		//Check if a dedicated mod layer already exists.
-		for (i = 0; i < nlayers; i++) {
-			struct layer_table_ent *ent = &layer_table[i];
-			if (ent->modsonly && ent->layer->mods == mods)
-				return i;
+			return 0;
+		case ' ':
+			if (!last_space)
+				last_space = c;
+			break;
+		default:
+			last_space = NULL;
+			break;
 		}
 
-		//Autovivify mod layers which don't exist.
-
-		create_mod_layer(mods);
-		return nlayers - 1;
+		c++;
 	}
 
 	return -1;
 }
-
 
 static int parse_modset(const char *s, uint16_t * mods)
 {
@@ -277,636 +121,417 @@ static int parse_modset(const char *s, uint16_t * mods)
 	return 0;
 }
 
-static int parse_layer_heading(const char *s, char name[256],
-			       char parent[256])
+static uint32_t lookup_keycode(const char *name)
 {
-	size_t len = strlen(s);
-	char *c;
-
-	name[0] = 0;
-	parent[0] = 0;
-
-	if (s[0] != '[' || s[len - 1] != ']')
-		return -1;
-
-	c = strchr(s, ':');
-	if (c) {
-		int sz = c - (s + 1);
-		memcpy(name, s + 1, sz);
-		name[sz] = 0;
-
-		sz = len - 2 - sz - 1;
-		memcpy(parent, c + 1, sz);
-		parent[sz] = 0;
-	} else {
-		int sz = len - 2;
-		memcpy(name, s + 1, sz);
-		name[sz] = 0;
-	}
-
-	return 0;
-}
-
-static uint32_t parse_keyseq(const char *s)
-{
-	const char *c = s;
-	size_t i;
-	uint32_t mods = 0;
-
-	while (*c && c[1] == '-') {
-		switch (*c) {
-		case 'C':
-			mods |= MOD_CTRL;
-			break;
-		case 'M':
-			mods |= MOD_SUPER;
-			break;
-		case 'A':
-			mods |= MOD_ALT;
-			break;
-		case 'S':
-			mods |= MOD_SHIFT;
-			break;
-		case 'G':
-			mods |= MOD_ALT_GR;
-			break;
-		default:
-			return 0;
-			break;
-		}
-
-		c += 2;
-	}
+	int i;
 
 	for (i = 0; i < KEY_MAX; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
 
-		if (ent->name && !strcmp(ent->name, c))
-			return (mods << 16) | i;
-		if (ent->alt_name && !strcmp(ent->alt_name, c))
-			return (mods << 16) | i;
-		if (ent->shifted_name && !strcmp(ent->shifted_name, c))
-			return (mods | MOD_SHIFT) << 16 | i;
+		if (ent->name &&
+		    (!strcmp(ent->name, name) ||
+		     (ent->alt_name && !strcmp(ent->alt_name, name))))
+			return i;
 	}
 
 	return 0;
 }
 
-uint32_t *parse_macro_fn(const char *s, size_t *szp)
+static char *read_file(const char *path)
 {
-	char *_s = strdup(s);
+	struct stat st;
+	size_t sz;
+	int fd;
+	char *data;
+	ssize_t n = 0, nr;
+
+	if (stat(path, &st)) {
+		perror("stat");
+		exit(-1);
+	}
+
+	sz = st.st_size;
+	data = malloc(sz + 1);
+
+	fd = open(path, O_RDONLY);
+	while ((nr = read(fd, data + n, sz - n))) {
+		n += nr;
+	}
+
+	data[sz] = '\0';
+	return data;
+}
+
+static struct layer *lookup_layer(const char *name, void *_config)
+{
+	struct config *config = (struct config *) (_config);
+	size_t i;
+	uint16_t mods;
+
+	for (i = 0; i < config->nr_layers; i++) {
+		struct layer *layer = config->layers[i];
+
+		if (!strcmp(layer->name, name))
+			return layer;
+	}
+
+	/* Autovivify modifier layers as required. */
+
+	if (!parse_modset(name, &mods)) {
+		struct layer *layer = create_layer(name, mods, 0);
+
+		config->layers[config->nr_layers++] = layer;
+		return layer;
+	}
+
+	return NULL;
+}
+
+static int parse_header(const char *s,
+			char name[MAX_LAYER_NAME_LEN],
+			char type[MAX_LAYER_NAME_LEN]) 
+{
+	char *d;
+	size_t typelen, namelen;
 	size_t len = strlen(s);
-	uint32_t *macro = macros[nmacros];
 
-	char *tok;
-	size_t sz = 0;
+	if (!(d = strchr(s, ':'))) {
+		if (len >= MAX_LAYER_NAME_LEN)
+			return -1;
+		else {
+			strcpy(name, s);
+			type[0] = 0;
+			return 0;
+		}
+	}
 
-	assert(nmacros < MAX_MACROS);
+	namelen = d - s;
+	typelen = len - namelen - 1;
+	if (namelen >= MAX_LAYER_NAME_LEN || typelen >= MAX_LAYER_NAME_LEN)
+		return -1;
 
-	if (strstr(s, "macro(") != s || s[len - 1] != ')') {
-		free(_s);
+	memcpy(name, s, namelen);
+	memcpy(type, s+namelen+1, typelen);
+
+	name[namelen] = 0;
+	type[typelen] = 0;
+
+	return 0;
+}
+
+static void parse_id_section(struct config *config, struct ini_section *section) 
+{
+	size_t i;
+
+	for (i = 0; i < section->nr_entries; i++) {
+		struct ini_entry *ent = &section->entries[i];
+
+		uint16_t product_id, vendor_id;
+
+		/*  Applies to all device ids except the ones explicitly listed within the config. */
+
+		if (!strcmp(ent->line, "*")) {
+			if (fallback_config) {
+				fprintf(stderr, "WARNING: multiple fallback configs detected: %s, %s. Ignoring %s\n",
+					fallback_config->name,
+					config->name,
+					config->name);
+
+				return;
+			}
+
+			printf("Using %s as a fallback config.\n", config->name);
+			fallback_config = config;
+			continue;
+		}
+
+		if (sscanf (ent->line, "-%hx:%hx", &product_id, &vendor_id) == 2) {
+			if (fallback_config != config) {
+				fprintf(stderr, "ERROR: -<id> is not permitted in non fallback configs.\n");
+				continue;
+			}
+
+			config->device_ids[config->nr_device_ids++] = product_id << 16 | vendor_id;
+		} else if (sscanf(ent->line, "%hx:%hx", &product_id, &vendor_id) == 2) {
+			assert(config->nr_device_ids < MAX_DEVICE_IDS);
+			config->device_ids[config->nr_device_ids++] = product_id << 16 | vendor_id;
+		} else {
+			fprintf (stderr,
+				"ERROR %s:%zu: Invalid product id: %s\n",
+				config->name, ent->lnum, ent->line);
+		}
+	}
+}
+
+/*
+ * Ownership of the input string is forfeit, it will eventually be freed when
+ * the config is destroyed.
+ */
+
+static int parse_config(const char *config_name, char *str, struct config *config)
+{
+	size_t i, j;
+
+	struct ini ini;
+
+	struct ini_section *layer_sections[MAX_LAYERS];
+	struct layer *layers[MAX_LAYERS];
+	size_t nr_layers = 0;
+
+
+	if (ini_parse(str, &ini, NULL) < 0) {
+		fprintf(stderr, "ERROR: %s is not a valid config (missing [main]?)\n", config_name);
+		return -1;
+	}
+
+	config->nr_layers = 1;
+	config->nr_device_ids = 0;
+
+	config->layers[0] = create_layer("main", 0, 1);
+
+	assert(strlen(config_name) < MAX_CONFIG_NAME);
+	strcpy(config->name, config_name);
+
+	/* 
+	 * First pass, create layers so they are available
+	 * for lookup during descriptor parsing.
+	 */
+
+	for (i = 0; i < ini.nr_sections; i++) {
+		struct ini_section *section = &ini.sections[i];
+		uint16_t mods;
+		struct layer *layer;
+		char name[MAX_LAYER_NAME_LEN], type[MAX_LAYER_NAME_LEN];
+
+		if (!strcmp(section->name, "ids")) {
+			parse_id_section(config, section);
+			continue;
+		} 
+
+		if (parse_header(section->name, name, type) < 0) {
+			fprintf(stderr,
+				"ERROR %s:%zu: Invalid header.\n",
+				config_name,
+				section->lnum);
+			continue;
+		}
+
+		layer = lookup_layer(name, (void*)config);
+
+		if (!layer) { //If the layer doesn't exist, create it.
+			if (!strcmp(type, "layout")) {
+				layer = create_layer(name, 0, 1);
+			} else if (!parse_modset(type, &mods)) {
+				layer = create_layer(name, mods, 0);
+			} else if (strcmp(type, "")) {
+				fprintf(stderr,
+					"WARNING %s:%zu: \"%s\" is not a valid layer type "
+					" (must be \"layout\" or a valid modifier set).\n",
+					config_name, section->lnum, type);
+				continue;
+			}
+
+			config->layers[config->nr_layers++] = layer;
+		}
+
+		layers[nr_layers] = layer;
+		layer_sections[nr_layers++] = section;
+	}
+
+	/* Parse each entry section entry and build the layer keymap. */
+
+	for (i = 0; i < nr_layers; i++) {
+		struct ini_section *section = layer_sections[i];
+		struct layer *layer = layers[i];
+
+		/* Populate the layer described by the section. */
+
+		for (j = 0; j < section->nr_entries; j++) {
+			struct ini_entry *ent = &section->entries[j];
+
+			char *k, *v;
+			uint16_t code;
+			uint16_t mod;
+
+			struct descriptor desc;
+
+			if (parse_kvp(ent->line, &k, &v) < 0) {
+				fprintf(stderr,
+					"ERROR %s:%zu: Invalid key value pair.\n",
+					config_name, ent->lnum);
+				continue;
+			}
+
+			code = lookup_keycode(k);
+
+			if (!code) {
+				fprintf(stderr,
+					"ERROR %s:%zu: %s is not a valid key.\n",
+					config_name, ent->lnum, k);
+				continue;
+			}
+
+			if (parse_descriptor(v, &desc, lookup_layer, config) < 0) {
+				fprintf(stderr, "ERROR %s:%zu: %s\n", config_name,
+					ent->lnum, errstr);
+				continue;
+			}
+
+			layer_set_descriptor(layer, code, &desc);
+		}
+	}
+
+	return 0;
+}
+
+static void post_process_config(const struct config *config)
+{
+	size_t i;
+	uint16_t code;
+
+	/* 
+	 * Convert all modifier keycodes into their corresponding layer
+	 * counterparts for consistency. This allows us to avoid explicitly
+	 * accounting for modifier layer/modifier keycode overlap within the
+	 * remapping logic and provides the user the ability to remap stock
+	 * modifiers using their eponymous layer names.
+	 */
+
+	for (i = 0; i < config->nr_layers; i++) {
+		struct layer *layer = config->layers[i];
+
+		for (code = 0; code < KEY_MAX; code++) {
+			struct descriptor *d = layer_get_descriptor(layer, code);
+
+			if (d && d->op == OP_KEYSEQ) {
+				uint16_t key = d->args[0].sequence.code;
+				struct layer *modlayer = NULL;
+
+				switch(key) {
+				case KEY_RIGHTSHIFT:
+				case KEY_LEFTSHIFT:
+					modlayer = lookup_layer("S", (void*)config);
+					break;
+				case KEY_RIGHTALT:
+					modlayer = lookup_layer("G", (void*)config);
+					break;
+				case KEY_RIGHTCTRL:
+				case KEY_LEFTCTRL:
+					modlayer = lookup_layer("C", (void*)config);
+					break;
+				case KEY_RIGHTMETA:
+				case KEY_LEFTMETA:
+					modlayer = lookup_layer("M", (void*)config);
+					break;
+				case KEY_LEFTALT:
+					modlayer = lookup_layer("A", (void*)config);
+					break;
+				}
+
+				if (modlayer) {
+					d->op = OP_LAYER;
+					d->args[0].layer = modlayer;
+				}
+			}
+
+		}
+	}
+}
+
+struct config *add_config(const char *config_name, char *str)
+{
+	struct config *config = malloc(sizeof(struct config));
+
+	if (parse_config(config_name, str, config) < 0) {
+		free(config);
 		return NULL;
 	}
 
-	_s[len - 1] = 0;
+	post_process_config(config);
 
-	for (tok = strtok(_s + 6, " "); tok; tok = strtok(NULL, " ")) {
-		uint32_t seq;
-		len = strlen(tok);
+	config->next = configs;
+	configs = config;
 
-		if ((seq = parse_keyseq(tok))) {
-			macro[sz++] = seq;
-			assert(sz < MAX_MACRO_SIZE);
-		} else if (len > 1 && tok[len - 1] == 's'
-			   && tok[len - 2] == 'm') {
-			int len = atoi(tok);
-			assert(len <= MAX_TIMEOUT_LEN);
-
-			macro[sz++] = TIMEOUT_KEY(len);
-		} else {
-			char *c;
-
-			for (c = tok; *c; c++) {
-				char s[2];
-
-				s[0] = *c;
-				s[1] = 0;
-
-				if (!(seq = parse_keyseq(s))) {
-					free(_s);
-					return NULL;
-				}
-
-				macro[sz++] = seq;
-				assert(sz < MAX_MACRO_SIZE);
-			}
-		}
-	}
-
-	free(_s);
-
-	*szp = sz;
-	nmacros++;
-	return macro;
+	return config;
 }
 
-static int parse_kvp(char *s, char **_k, char **_v)
+void free_configs()
 {
-	char *v = NULL, *k = NULL;
+	struct config *config = configs;
 
-	while (*s && isspace(*s))
-		s++;
-	if (!*s)
-		return -1;
-	k = s;
-
-	if (*s == '=')
-		s++;		//Allow the first character to be = as a special case.
-
-	while (*s && !isspace(*s) && *s != '=')
-		s++;
-	if (!*s)
-		return -1;
-
-	while (*s && *s != '=') {
-		*s = 0;
-		s++;
-	}
-	if (!*s)
-		return -1;
-	*s++ = 0;
-
-	while (*s && isspace(*s))
-		*s++ = 0;
-	if (!*s)
-		return -1;
-	v = s;
-
-	*_k = k;
-	*_v = v;
-	return 0;
-}
-
-static int parse_fn(char *s, char **fn_name, char *args[MAX_ARGS],
-		    size_t *nargs)
-{
-	int openparen = 0;
-
-	*fn_name = s;
-	*nargs = 0;
-
-	while (*s && *s != ')') {
-		switch (*s) {
-		case '(':
-			openparen++;
-			*s = '\0';
-			s++;
-
-			while (*s && isspace(*s))
-				s++;
-
-			if (!*s)
-				return -1;
-
-			if (*s == ')') {	//No args
-				*s = '\0';
-				return 0;
-			}
-
-			args[(*nargs)++] = s;
-
-			break;
-		case ',':
-			*s = '\0';
-			s++;
-			while (*s && isspace(*s))
-				s++;
-
-			if (!*s)
-				return -1;
-
-			args[(*nargs)++] = s;
-			break;
-		}
-
-		s++;
-	}
-
-	if (*s != ')')
-		return -1;
-
-	*s = '\0';
-
-	return 0;
-}
-
-static int parse_descriptor(const char *_s, struct key_descriptor *desc)
-{
-	uint32_t seq;
-
-	char *s = strdup(_s);
-	char *fn;
-	char *args[MAX_ARGS];
-	size_t nargs, sz;
-	uint32_t *macro;
-
-	if ((seq = parse_keyseq(s))) {
-		keyseq_to_desc(seq, desc);
-
-		goto cleanup;
-	}
-
-	if ((macro = parse_macro_fn(s, &sz))) {
-		desc->action = ACTION_MACRO;
-		desc->arg.macro = macro;
-		desc->arg2.sz = sz;
-
-		goto cleanup;
-	}
-
-	if (parse_fn(s, &fn, args, &nargs)) {
-		err("%s is not a valid key sequence or action.", s);
-		goto fail;
-	}
-
-	if (!strcmp(fn, "layer") && nargs == 1) {
-		int idx = lookup_layer(args[0]);
-
-		if (idx < 0) {
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		desc->action = ACTION_LAYER;
-		desc->arg.layer = idx;
-
-		goto cleanup;
-	} else if (!strcmp(fn, "layert") && nargs == 1) {
-		int idx = lookup_layer(args[0]);
-
-		if (idx < 0) {
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		desc->action = ACTION_LAYER_TOGGLE;
-		desc->arg.layer = idx;
-
-		goto cleanup;
-	} else if (!strcmp(fn, "layout") && nargs > 0) {
-		int idx;
-
-		if ((idx = lookup_layer(args[0])) < 0) {
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		desc->action = ACTION_LAYOUT;
-		desc->arg.layer = idx;
-
-		if (nargs == 1) {
-			desc->arg2.layer = idx;
-		} else {
-			if ((idx = lookup_layer(args[1])) < 0) {
-				err("%s is not a valid layer.", args[1]);
-				goto fail;
-			}
-
-			desc->action = ACTION_LAYOUT;
-			desc->arg2.layer = idx;
-		}
-
-
-		goto cleanup;
-	} else if (!strcmp(fn, "oneshot") && nargs == 1) {
-		int idx;
-
-		if ((idx = lookup_layer(args[0])) < 0) {
-
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		desc->action = ACTION_ONESHOT;
-		desc->arg.layer = idx;
-
-		goto cleanup;
-	} else if (!strcmp(fn, "overload") && nargs == 2) {
-		int idx;
-
-		if ((idx = lookup_layer(args[0])) < 0) {
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		if (!(seq = parse_keyseq(args[1]))) {
-			err("%s is not a valid key sequence.", args[1]);
-			goto fail;
-		}
-
-		desc->action = ACTION_OVERLOAD;
-		desc->arg.keyseq = seq;
-		desc->arg2.layer = idx;
-
-		goto cleanup;
-	} else if (!strcmp(fn, "swap")) {
-		int idx;
-
-		if ((idx = lookup_layer(args[0])) < 0) {
-			err("%s is not a valid layer.", args[0]);
-			goto fail;
-		}
-
-		desc->action = ACTION_SWAP;
-		desc->arg.layer = idx;
-		desc->arg2.keyseq = 0;
-
-		if (nargs == 2) {
-			if (!(desc->arg2.keyseq = parse_keyseq(args[1]))) {
-				err("%s is not a valid key sequence.",
-				    args[1]);
-				goto fail;
-			}
-		}
-
-		goto cleanup;
-	} else {
-		err("%s is not a valid action or key.", _s);
-		goto fail;
-	}
-
-
-      cleanup:
-	free(s);
-	return 0;
-
-      fail:
-	free(s);
-	return -1;
-}
-
-static void build_layer_table()
-{
-	ssize_t len;
-	char *line = NULL;
-	size_t line_sz = 0;
-	FILE *fh = fopen(path, "r");
-
-	if (!fh) {
-		perror("fopen");
-		exit(-1);
-	}
-
-	lnum = 0;
-	nlayers = 0;
-
-	create_main_layer();
-	while ((len = getline(&line, &line_sz, fh)) != -1) {
-		char name[256];
-		char pname[256];
-
-		lnum++;
-		if (line[len - 1] == '\n')
-			line[--len] = 0;
-
-		if (!parse_layer_heading(line, name, pname)) {
-			uint16_t mods;
-
-			if (!parse_modset(pname, &mods))
-				create_layer(name, "", mods);
-			else
-				create_layer(name, pname, 0);
-		}
-	}
-
-	free(line);
-	fclose(fh);
-}
-
-static int parse_layer_entry(char *s, uint16_t * code,
-			     struct key_descriptor *desc)
-{
-	uint32_t seq;
-	char *k, *v;
-
-	if (parse_kvp(s, &k, &v)) {
-		err("Invalid key value pair.");
-		return -1;
-	}
-
-	if (!(seq = parse_keyseq(k))) {
-		err("'%s' is not a valid key.", k);
-		return -1;
-	}
-
-	if ((seq >> 16) != 0) {
-		err("key cannot contain modifiers.");
-		return -1;
-	}
-
-	if (parse_descriptor(v, desc))
-		return -1;
-
-	*code = seq & 0xFF;
-	return 0;
-}
-
-void post_process_config(struct keyboard_config *cfg,
-			 const char *layout_name,
-			 const char *modlayout_name)
-{
-	cfg->default_layout = -1;
-	cfg->default_modlayout = -1;
-
-	int i;
-	for (i = 0; i < nlayers; i++) {
-		struct layer_table_ent *ent = &layer_table[i];
-
-		if (!strcmp(ent->name, layout_name))
-			cfg->default_layout = i;
-
-		if (!strcmp(ent->name, modlayout_name))
-			cfg->default_modlayout = i;
-
-		if (ent->pname[0]) {
-			int j;
-
-			for (j = 0; j < nlayers; j++) {
-				struct layer_table_ent *ent2 =
-				    &layer_table[j];
-
-				if (!strcmp(ent->pname, ent2->name)) {
-					int k;
-
-					struct layer *dst = ent->layer;
-					struct layer *src = ent2->layer;
-
-					for (k = 0; k < KEY_CNT; k++)
-						if (dst->keymap[k].
-						    action ==
-						    ACTION_UNDEFINED)
-							dst->keymap[k] =
-							    src->keymap[k];
-				}
-			}
-		}
-	}
-
-	if (cfg->default_layout == -1) {
-		fprintf(stderr, "%s is not a valid default layout",
-			layout_name);
-		cfg->default_layout = 0;
-	}
-
-	if (cfg->default_modlayout == -1) {
-		fprintf(stderr,
-			"%s is not a valid default modifier layout\n",
-			modlayout_name);
-		cfg->default_modlayout = 0;
-	}
-}
-
-static void parse(struct keyboard_config *cfg)
-{
-	int i;
-	char *line = NULL;
-	size_t n = 0;
-	ssize_t len;
-	struct layer *layer;
-
-	char layout_name[256];
-	char modlayout_name[256];
-
-	build_layer_table();
-
-	FILE *fh = fopen(path, "r");
-	if (!fh) {
-		perror("fopen");
-		exit(-1);
-	}
-
-	lnum = 0;
-	layer = layer_table[0].layer;
-
-	strcpy(layout_name, "main");
-	strcpy(modlayout_name, "main");
-
-	while ((len = getline(&line, &n, fh)) != -1) {
-		char name[256];
-		char type[256];
-
-		uint16_t code;
-		struct key_descriptor desc;
-
-		size_t nargs;
-		char *fnname;
-		char *args[MAX_ARGS];
-
-
-		lnum++;
-		char *s = line;
-
-		while (len && isspace(s[0])) {	//Trim leading whitespace
-			s++;
-			len--;
-		}
-
-		if (len && s[len - 1] == '\n')	//Strip tailing newline (not present on EOF)
-			s[--len] = '\0';
-
-		if (len == 0 || s[0] == '#')
-			continue;
-
-		if (!parse_layer_heading(s, name, type)) {
-			int idx = lookup_layer(name);
-			assert(idx > 0);
-			layer = layer_table[idx].layer;
-		} else if (strchr(s, '=')) {
-			if (!parse_layer_entry(s, &code, &desc))
-				layer->keymap[code] = desc;
-			else
-				err("Invalid layer entry.");
-		} else if (!parse_fn(s, &fnname, args, &nargs)) {
-			if (!strcmp(fnname, "layout")) {
-				if (nargs == 1) {
-					strcpy(layout_name, args[0]);
-					strcpy(modlayout_name, args[0]);
-				} else if (nargs == 2) {
-					strcpy(layout_name, args[0]);
-					strcpy(modlayout_name, args[1]);
-				}
-			}
-		}
-
-		free(line);
-		line = NULL;
-		n = 0;
-	}
-
-	free(line);
-	fclose(fh);
-
-	post_process_config(cfg, layout_name, modlayout_name);
-
-	for (i = 0; i < nlayers; i++)
-		cfg->layers[i] = layer_table[i].layer;
-
-	cfg->nlayers = nlayers;
-
-	return;
-}
-
-void config_free()
-{
-	struct keyboard_config *cfg = configs;
-
-	while (cfg) {
+	while (config) {
 		size_t i;
-		struct keyboard_config *tmp = cfg;
+		struct config *tmp;
 
-		cfg = cfg->next;
+		for (i = 0; i < config->nr_layers; i++)
+			free_layer(config->layers[i]);
 
-		for (i = 0; i < tmp->nlayers; i++) {
-			struct layer *layer = tmp->layers[i];
-
-			free(layer->keymap);
-			free(layer);
-		}
-
+		tmp = config;
+		config = config->next;
 		free(tmp);
-	};
-}
-
-void config_generate()
-{
-	struct dirent *ent;
-	DIR *dh = opendir(CONFIG_DIR);
-
-	if (!dh) {
-		perror("opendir");
-		exit(-1);
 	}
 
-	while ((ent = readdir(dh))) {
-		struct keyboard_config *cfg;
+	fallback_config = NULL;
+	configs = NULL;
+}
 
-		int len = strlen(ent->d_name);
-		if (len <= 4 || strcmp(ent->d_name + len - 4, ".cfg"))
-			continue;
+int read_config_dir(const char *dir)
+{
+	free_configs();
 
+	DIR *dh = opendir(dir);
+	struct dirent *de;
 
-		sprintf(path, "%s/%s", CONFIG_DIR, ent->d_name);
+	if (!dh)
+		return -1;
 
-		cfg = calloc(1, sizeof(struct keyboard_config));
+	while ((de = readdir(dh))) {
+		size_t len = strlen(de->d_name);
 
-		strcpy(cfg->name, ent->d_name);
-		cfg->name[len - 4] = '\0';
+		if (len > 4 && !strcmp(de->d_name+len-4, ".cfg")) {
+			fprintf(stderr, "NOTE: %s looks like an old (v1) config. See the man page for details on the current config format.\n", de->d_name);
+		}
 
-		parse(cfg);
+		if (len > 5 && !strcmp(de->d_name+len-5, ".conf")) {
+			char path[PATH_MAX];
+			char *data;
 
-		cfg->next = configs;
-		configs = cfg;
+			sprintf(path, "%s/%s", dir, de->d_name);
+
+			fprintf(stderr, "Parsing %s\n", path);
+			data = read_file(path);
+
+			add_config(path, data);
+			free(data);
+		}
 	}
 
 	closedir(dh);
+	return 0;
+}
+
+struct config *lookup_config(uint32_t device_id)
+{
+	struct config *config = configs;
+	int excluded = 0;
+
+	while (config) {
+		size_t i;
+
+		for (i = 0; i < config->nr_device_ids; i++) {
+			if (config->device_ids[i] == device_id) {
+				if (fallback_config == config)
+					excluded++;
+				else
+					return config;
+			}
+		}
+
+		config = config->next;
+	}
+
+	if (fallback_config && !excluded)
+		return fallback_config;
+
+	return NULL;
 }
