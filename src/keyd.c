@@ -51,19 +51,16 @@
 #include "config.h"
 #include "keyboard.h"
 #include "keyd.h"
+#include "vkbd.h"
 
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
-#define VIRTUAL_POINTER_NAME "keyd virtual pointer"
-#define IS_MOUSE_BTN(code) (((code) >= BTN_LEFT && (code) <= BTN_TASK) ||\
-			    ((code) >= BTN_0 && (code) <= BTN_9))
 #define MAX_KEYBOARDS 256
 
 #define dbg(fmt, ...) { if(debug) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 #define dbg2(fmt, ...) { if(debug > 1) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
 
 static int debug = 0;
-static int vkbd = -1;
-static int vptr = -1;
+static struct vkbd *vkbd = NULL;
 
 static struct udev *udev;
 static struct udev_monitor *udevmon;
@@ -213,123 +210,15 @@ static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
 	udev_unref(udev);
 }
 
-static int create_virtual_pointer()
-{
-	uint16_t code;
-	struct uinput_setup usetup;
-
-	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-	if (fd < 0) {
-		perror("open");
-		exit(-1);
-	}
-
-	ioctl(fd, UI_SET_EVBIT, EV_REL);
-	ioctl(fd, UI_SET_EVBIT, EV_KEY);
-	ioctl(fd, UI_SET_EVBIT, EV_SYN);
-
-	ioctl(fd, UI_SET_RELBIT, REL_X);
-	ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
-	ioctl(fd, UI_SET_RELBIT, REL_HWHEEL);
-	ioctl(fd, UI_SET_RELBIT, REL_Y);
-	ioctl(fd, UI_SET_RELBIT, REL_Z);
-
-	for (code = BTN_LEFT; code <= BTN_TASK; code++)
-		ioctl(fd, UI_SET_KEYBIT, code);
-
-	for (code = BTN_0; code <= BTN_9; code++)
-		ioctl(fd, UI_SET_KEYBIT, code);
-
-	memset(&usetup, 0, sizeof(usetup));
-	usetup.id.bustype = BUS_USB;
-	usetup.id.product = 0x1FAC;
-	usetup.id.vendor = 0x0ADE;
-	strcpy(usetup.name, VIRTUAL_POINTER_NAME);
-
-	ioctl(fd, UI_DEV_SETUP, &usetup);
-	ioctl(fd, UI_DEV_CREATE);
-
-	return fd;
-}
-
-static int create_virtual_keyboard()
-{
-	size_t i;
-	struct uinput_setup usetup;
-
-	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-	if (fd < 0) {
-		perror("open");
-		exit(-1);
-	}
-
-	ioctl(fd, UI_SET_EVBIT, EV_KEY);
-	ioctl(fd, UI_SET_EVBIT, EV_SYN);
-
-	for (i = 0; i < KEY_MAX; i++) {
-		if (keycode_table[i].name && !IS_MOUSE_BTN(i))
-			ioctl(fd, UI_SET_KEYBIT, i);
-	}
-
-	memset(&usetup, 0, sizeof(usetup));
-	usetup.id.bustype = BUS_USB;
-	usetup.id.product = 0x0FAC;
-	usetup.id.vendor = 0x0ADE;
-	strcpy(usetup.name, VIRTUAL_KEYBOARD_NAME);
-
-	ioctl(fd, UI_DEV_SETUP, &usetup);
-	ioctl(fd, UI_DEV_CREATE);
-
-	return fd;
-}
-
-static void syn(int fd)
-{
-	static struct input_event ev = {
-		.type = EV_SYN,
-		.code = 0,
-		.value = 0,
-	};
-
-	write(fd, &ev, sizeof(ev));
-}
-
 static void send_repetitions()
 {
 	size_t i;
-	struct input_event ev = {
-		.type = EV_KEY,
-		.value = 2,
-		.time.tv_sec = 0,
-		.time.tv_usec = 0
-	};
 
 	/* Inefficient, but still reasonably fast (<100us) */
 	for (i = 0; i < sizeof keystate / sizeof keystate[0]; i++) {
-		if (keystate[i]) {
-			ev.code = i;
-			write(vkbd, &ev, sizeof(ev));
-			syn(vkbd);
-		}
+		if (keystate[i])
+			send_key(i, 2);
 	}
-}
-
-
-void send_key(int code, int pressed)
-{
-	keystate[code] = pressed;
-
-	struct input_event ev;
-
-	ev.type = EV_KEY;
-	ev.code = code;
-	ev.value = pressed;
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
-
-	write(vkbd, &ev, sizeof(ev));
-
-	syn(vkbd);
 }
 
 #define SETMOD(mods, mod, key, key2) \
@@ -397,10 +286,8 @@ static void await_keyboard_neutrality(char **devs, int n)
 			if (FD_ISSET(fds[i], &fdset)) {
 				while (read(fds[i], &ev, sizeof ev) > 0) {
 					if (ev.type == EV_KEY) {
-						keystate[ev.code] =
-						    ev.value;
-						dbg("keystate[%d]: %d",
-						    ev.code, ev.value);
+						keystate[ev.code] = ev.value;
+						dbg("keystate[%d]: %d", ev.code, ev.value);
 					}
 				}
 			}
@@ -420,6 +307,12 @@ static void await_keyboard_neutrality(char **devs, int n)
 	dbg("Keyboard neutrality achieved");
 }
 
+void send_key(int code, int state)
+{
+	keystate[code] = state;
+	vkbd_send(vkbd, code, state);
+}
+
 static int manage_keyboard(const char *devnode)
 {
 	int fd;
@@ -430,7 +323,7 @@ static int manage_keyboard(const char *devnode)
 	uint16_t  vendor_id, product_id;
 
 	/* Don't manage keyd's devices. */
-	if (!strcmp(name, VIRTUAL_KEYBOARD_NAME) || !strcmp(name, VIRTUAL_POINTER_NAME))
+	if (!strcmp(name, VIRTUAL_KEYBOARD_NAME))
 		return -1;
 
 	for (kbd = keyboards; kbd; kbd = kbd->next) {
@@ -666,6 +559,7 @@ static int monitor_loop()
 			perror("open");
 			monitor_exit(0);
 		}
+		free(devnodes[i]);
 		fds[nfds++] = fd;
 	}
 
@@ -793,10 +687,7 @@ static void main_loop()
 					while (read(fd, &ev, sizeof(ev)) > 0) {
 						switch (ev.type) {
 						case EV_KEY:
-							if (IS_MOUSE_BTN (ev.code)) {
-								write(vptr, &ev, sizeof(ev)); /* Pass mouse buttons through the virtual pointer unimpeded. */
-								syn(vptr);
-							} else if (ev.value == 2) {
+							if (ev.value == 2) {
 								/* Wayland and X both ignore repeat events but VTs seem to require them. */
 								send_repetitions ();
 							} else {
@@ -809,8 +700,11 @@ static void main_loop()
 							}
 							break;
 						case EV_REL: /* Pointer motion events */
-							write(vptr, &ev, sizeof(ev));
-							syn(vptr);
+							if (ev.code == REL_X)
+								vkbd_move_mouse(vkbd, ev.value, 0);
+							else if (ev.code == REL_Y)
+								vkbd_move_mouse(vkbd, 0, ev.value);
+
 							break;
 						case EV_SYN:
 							break;
@@ -836,6 +730,7 @@ static void cleanup()
 		free(tmp);
 	}
 
+	free_vkbd(vkbd);
 	udev_unref(udev);
 	udev_monitor_unref(udevmon);
 }
@@ -946,9 +841,7 @@ int main(int argc, char *argv[])
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	read_config_dir(CONFIG_DIR);
-
-	vkbd = create_virtual_keyboard();
-	vptr = create_virtual_pointer();
+	vkbd = vkbd_init(VIRTUAL_KEYBOARD_NAME);
 
 	main_loop();
 }

@@ -205,7 +205,7 @@ signal.signal(signal.SIGALRM, on_timeout)
 signal.alarm(20)
 
 vkbd = VirtualKeyboard('test keyboard', vendor_id=0x2fac, product_id=0x2ade)
-stream = KeyStream(product=0x0fac, vendor=0x0ade)
+stream = KeyStream(product=0x0ade, vendor=0x0fac)
 
 # Grab the virtual keyboard so we don't
 # cause pandemonium.
@@ -213,7 +213,6 @@ stream = KeyStream(product=0x0fac, vendor=0x0ade)
 stream.grab()
 
 exit_on_fail = False
-verbose_flag = False
 
 
 def diff(output, expected):
@@ -250,15 +249,13 @@ def sleep(ms):
             return
 
 
-def run_test2(name, input, output):
+def run_test(name, input, output, verbose):
     def printerr(s):
         print(f'{name}: \x1b[31mERROR\x1b[0m: {s}')
 
-        if verbose_flag:
+        if verbose:
             sys.stdout.write('Input:\n%s\n\n%-20s %s\n%s' %
                              (input, "Expected Output:", "Output:", diff(result, expected)))
-        #            print('Input:\n%s\n\nExpected Output:\n%s\n\nGot:\n%s\n' %
-        #                  (input, '\n'.join(output), '\n'.join(actual_output)))
 
     elements = []
 
@@ -347,8 +344,6 @@ gc.collect()
 gc.disable()
 os.nice(-20)
 
-verbose_flag = args.verbose
-
 tests = []
 failed = False
 
@@ -358,7 +353,7 @@ for file in args.files:
 
     tests.append((name, input, output))
 
-    if not run_test2(name, input, output):
+    if not run_test(name, input, output, args.verbose):
         if args.exit_on_fail:
             exit(-1)
 
@@ -368,7 +363,3 @@ if failed:
     exit(-1)
 
 #tests = tests * 1000
-# random.shuffle(tests)
-# for name, input, output in tests:
-#    if not run_test2(name, input, output):
-#        exit(-1)

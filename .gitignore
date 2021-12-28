@@ -4,5 +4,6 @@
 *.out
 tags
 bin/
+*.o
 *.gch
 __pycache__

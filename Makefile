@@ -1,5 +1,4 @@
 .PHONY: all clean install uninstall debug man
-
 DESTDIR=
 PREFIX=/usr
 
@@ -18,12 +17,12 @@ CFLAGS+=-DVERSION=\"$(VERSION)\" \
 	-I/usr/local/include\
 	-L/usr/local/lib\
 
-all:
+all: vkbd-uinput
+vkbd-%:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev
+	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -ludev
 debug:
-	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c -o bin/keyd -ludev -pedantic -Wall -Wextra -g
+	CFLAGS='-pedantic -Wall -Wextra -g' $(MAKE)
 man:
 	pandoc -s -t man man.md | gzip > keyd.1.gz
 clean:
