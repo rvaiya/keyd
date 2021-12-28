@@ -13,7 +13,7 @@ struct keymap_entry {
 	struct keymap_entry *next;
 };
 
-/* 
+/*
  * A layer is a map from keycodes to descriptors. It may optionally contain one
  * or more modifiers which are applied to the base layout in the event that no
  * matching descriptor is found in the keymap. For consistency, modifiers are

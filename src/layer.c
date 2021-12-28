@@ -67,7 +67,6 @@ struct layer *create_layer(const char *name, uint16_t mods, int is_layout)
 {
 	uint16_t code;
 	struct layer *layer;
-	struct descriptor *descriptors;
 
 	layer = calloc(1, sizeof(struct layer));
 	layer->mods = mods;

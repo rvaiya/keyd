@@ -1,4 +1,8 @@
-# v2.0-beta
+# v2.0.1-beta
+
+ - Added + syntax to macros to allow for simultaenously held keys.
+
+# v2.0.0-beta
 
 Major version update. 
 

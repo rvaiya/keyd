@@ -31,6 +31,8 @@ struct key_sequence {
 struct macro_entry {
 	enum {
 		MACRO_KEYSEQUENCE,
+		MACRO_HOLD,
+		MACRO_RELEASE,
 		MACRO_TIMEOUT
 	} type;
 
@@ -40,8 +42,8 @@ struct macro_entry {
 	} data;
 };
 
-/* 
- * A series of key sequences optionally punctuated by 
+/*
+ * A series of key sequences optionally punctuated by
  * timeouts
  */
 struct macro {

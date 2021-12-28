@@ -28,19 +28,19 @@ struct ini {
 
 /*
  * Reads a file of the form:
- * 
+ *
  *  [section]
- *  
+ *
  *  # Comment
- * 
+ *
  *  entry1
  *  entry2
- * 
+ *
  *  [section2]
  *  ...
- * 
+ *
  *  Stripping comments and empty lines along the way.
- *  Each entry is a non comment, non empty line 
+ *  Each entry is a non comment, non empty line
  *  sripped of leading whitespace. If a default
  *  section name is supplied then entries not
  *  listed under an explicit heading will be

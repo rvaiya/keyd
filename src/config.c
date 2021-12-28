@@ -189,7 +189,7 @@ static struct layer *lookup_layer(const char *name, void *_config)
 
 static int parse_header(const char *s,
 			char name[MAX_LAYER_NAME_LEN],
-			char type[MAX_LAYER_NAME_LEN]) 
+			char type[MAX_LAYER_NAME_LEN])
 {
 	char *d;
 	size_t typelen, namelen;
@@ -219,7 +219,7 @@ static int parse_header(const char *s,
 	return 0;
 }
 
-static void parse_id_section(struct config *config, struct ini_section *section) 
+static void parse_id_section(struct config *config, struct ini_section *section)
 {
 	size_t i;
 
@@ -292,7 +292,7 @@ static int parse_config(const char *config_name, char *str, struct config *confi
 	assert(strlen(config_name) < MAX_CONFIG_NAME);
 	strcpy(config->name, config_name);
 
-	/* 
+	/*
 	 * First pass, create layers so they are available
 	 * for lookup during descriptor parsing.
 	 */
@@ -306,7 +306,7 @@ static int parse_config(const char *config_name, char *str, struct config *confi
 		if (!strcmp(section->name, "ids")) {
 			parse_id_section(config, section);
 			continue;
-		} 
+		}
 
 		if (parse_header(section->name, name, type) < 0) {
 			fprintf(stderr,
@@ -351,7 +351,6 @@ static int parse_config(const char *config_name, char *str, struct config *confi
 
 			char *k, *v;
 			uint16_t code;
-			uint16_t mod;
 
 			struct descriptor desc;
 
@@ -389,7 +388,7 @@ static void post_process_config(const struct config *config)
 	size_t i;
 	uint16_t code;
 
-	/* 
+	/*
 	 * Convert all modifier keycodes into their corresponding layer
 	 * counterparts for consistency. This allows us to avoid explicitly
 	 * accounting for modifier layer/modifier keycode overlap within the

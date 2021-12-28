@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <time.h>
 #include "keyboard.h"
 #include "keyd.h"
 #include "descriptor.h"
@@ -254,24 +255,46 @@ static void kbd_swap_layer(struct keyboard *kbd,
 	}
 }
 
-#include <time.h>
-
 static void kbd_execute_macro(struct keyboard *kbd, struct macro *macro)
 {
 	size_t i;
+	int hold_start = -1;
 
 	for (i = 0; i < macro->sz; i++) {
-		struct macro_entry *ent = &macro->entries[i]; 
+		struct macro_entry *ent = &macro->entries[i];
 
-		if (ent->type == MACRO_KEYSEQUENCE) {
+		switch (ent->type) {
+		case MACRO_HOLD:
+			if (hold_start == -1) {
+				hold_start = i;
+				set_mods(0);
+			}
+
+			send_key(ent->data.sequence.code, 1);
+
+			break;
+		case MACRO_RELEASE:
+			if (hold_start != -1) {
+				size_t j;
+
+				for (j = hold_start; j < i; j++) {
+					struct macro_entry *ent = &macro->entries[j];
+					send_key(ent->data.sequence.code, 0);
+				}
+			}
+			break;
+		case MACRO_KEYSEQUENCE:
 			set_mods(ent->data.sequence.mods);
 
 			send_key(ent->data.sequence.code, 1);
 			send_key(ent->data.sequence.code, 0);
-		} else
+			break;
+		case MACRO_TIMEOUT:
 			usleep(ent->data.timeout*1E3);
-	}
+			break;
+		}
 
+	}
 	kbd_reify_mods(kbd);
 }
 
@@ -295,7 +318,6 @@ long kbd_process_key_event(struct keyboard *kbd,
 			   uint16_t code,
 			   int pressed)
 {
-	int i;
 	const struct descriptor *d;
 	const struct layer *dl;
 	static int oneshot_latch = 0;
@@ -320,7 +342,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 	if (pending_overload) {
 		struct layer *layer = pending_overload->args[0].layer;
 		const struct key_sequence *sequence = &pending_overload->args[1].sequence;
-		size_t timeout = pending_overload->args[2].timeout;
+		long timeout = pending_overload->args[2].timeout;
 
 		if ((get_time() - overload_ts) >= timeout) {
 			kbd_activate_layer(kbd, layer, 0);

@@ -1,0 +1,19 @@
+6 down
+e down
+e up
+6 up
+
+control down
+control up
+control down
+control up
+o down
+n down
+o up
+n up
+control down
+1 down
+control up
+1 up
+control down
+control up

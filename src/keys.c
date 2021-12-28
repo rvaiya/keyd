@@ -23,20 +23,20 @@
 #include <stdint.h>
 #include "keys.h"
 
-uint16_t keycode_to_mod(uint16_t code) 
+uint16_t keycode_to_mod(uint16_t code)
 {
 	switch (code) {
-	case KEY_LEFTSHIFT: 
-	case KEY_RIGHTSHIFT: 
+	case KEY_LEFTSHIFT:
+	case KEY_RIGHTSHIFT:
 		return MOD_SHIFT;
-	case KEY_LEFTALT: 
+	case KEY_LEFTALT:
 		return MOD_ALT;
-	case KEY_RIGHTALT: 
+	case KEY_RIGHTALT:
 		return MOD_ALT_GR;
-	case KEY_RIGHTCTRL: 
+	case KEY_RIGHTCTRL:
 		return MOD_CTRL;
-	case KEY_LEFTMETA: 
-	case KEY_RIGHTMETA: 
+	case KEY_LEFTMETA:
+	case KEY_RIGHTMETA:
 		return MOD_SUPER;
 	}
 

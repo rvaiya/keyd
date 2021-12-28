@@ -129,7 +129,6 @@ static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
 
 static uint32_t evdev_device_id(const char *devnode)
 {
-	static char name[256];
 	struct input_id info;
 
 	int fd = open(devnode, O_RDONLY);
@@ -370,7 +369,7 @@ static void await_keyboard_neutrality(char **devs, int n)
 			maxfd = fds[i];
 	}
 
-	/* 
+	/*
 	 * There is a race condition here since it is possible for a key down
 	 * event to be generated before keyd is launched, in that case we hope a
 	 * repeat event is generated within the first 300ms. If we miss the
@@ -484,7 +483,7 @@ static void scan_keyboards(int wait)
 	char *devs[MAX_KEYBOARDS];
 
 	get_keyboard_nodes(devs, &n);
-	if (wait) 
+	if (wait)
 		await_keyboard_neutrality(devs, n);
 
 	for (i = 0; i < n; i++) {
@@ -493,10 +492,9 @@ static void scan_keyboards(int wait)
 	}
 }
 
-/* TODO: optimize */ 
+/* TODO: optimize */
 static void reload_config()
 {
-	struct keyboard *tmp;
 	struct keyboard *kbd = keyboards;
 
 	while (kbd) {
@@ -741,7 +739,7 @@ static void main_loop()
 		tv.tv_sec = (timeout/1E3) / 1E6;
 		tv.tv_usec = (long)(timeout/1E3) % (long)1E6;
 
-		if ((ret=select(maxfd + 1, &fds, NULL, NULL, timeout > 0 ? &tv : NULL)) >= 0) { 
+		if ((ret=select(maxfd + 1, &fds, NULL, NULL, timeout > 0 ? &tv : NULL)) >= 0) {
 			long time = get_time();
 			long elapsed;
 

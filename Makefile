@@ -7,7 +7,7 @@ LOCK_FILE="/var/lock/keyd.lock"
 LOG_FILE="/var/log/keyd.log"
 CONFIG_DIR="/etc/keyd"
 
-VERSION=2.0.0-beta
+VERSION=2.0.1-beta
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
 
 CFLAGS+=-DVERSION=\"$(VERSION)\" \

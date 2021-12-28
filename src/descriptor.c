@@ -110,14 +110,14 @@ static int parse_key_sequence(const char *s, struct key_sequence *seq)
 		const struct keycode_table_ent *ent = &keycode_table[code];
 
 		if (ent->name) {
-			if (ent->shifted_name && 
+			if (ent->shifted_name &&
 			    !strcmp(ent->shifted_name, c)) {
 
 				seq->mods |= MOD_SHIFT;
 				seq->code = code;
 
 				return 0;
-			} else if (!strcmp(ent->name, c) || 
+			} else if (!strcmp(ent->name, c) ||
 				   (ent->alt_name && !strcmp(ent->alt_name, c))) {
 
 				seq->code = code;
@@ -154,6 +154,8 @@ static struct macro *parse_macro_fn(char *s)
 			assert(sz < MAX_MACRO_SIZE);
 
 			ent.type = MACRO_KEYSEQUENCE;
+
+			assert(macro->sz < MAX_MACRO_SIZE);
 			macro->entries[macro->sz++] = ent;
 		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
 			int len = atoi(tok);
@@ -162,23 +164,42 @@ static struct macro *parse_macro_fn(char *s)
 			ent.data.timeout = len;
 
 			assert(macro->sz < MAX_MACRO_SIZE);
-
 			macro->entries[macro->sz++] = ent;
 		} else {
 			char *c;
 
-			for (c = tok; *c; c++) {
-				char s[2];
+			if (strchr(tok, '+')) {
+				char *saveptr;
+				char *key;
 
-				s[0] = *c;
-				s[1] = 0;
+				for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
+					if (parse_key_sequence(key, &ent.data.sequence) < 0)
+						return NULL;
 
-				if (parse_key_sequence(s, &ent.data.sequence) < 0)
-					return NULL;
+					ent.type = MACRO_HOLD;
 
-				ent.type = MACRO_KEYSEQUENCE;
+					assert(macro->sz < MAX_MACRO_SIZE);
+					macro->entries[macro->sz++] = ent;
+				}
+
+				ent.type = MACRO_RELEASE;
 				assert(macro->sz < MAX_MACRO_SIZE);
 				macro->entries[macro->sz++] = ent;
+			} else {
+				for (c = tok; *c; c++) {
+					char s[2];
+
+					s[0] = *c;
+					s[1] = 0;
+
+					if (parse_key_sequence(s, &ent.data.sequence) < 0)
+						return NULL;
+
+					ent.type = MACRO_KEYSEQUENCE;
+
+					assert(macro->sz < MAX_MACRO_SIZE);
+					macro->entries[macro->sz++] = ent;
+				}
 			}
 		}
 	}
@@ -188,7 +209,7 @@ static struct macro *parse_macro_fn(char *s)
 	return macro;
 }
 
-/* 
+/*
  * Modifies the input string, consumes a function which which is used for
  * resolving layer names as required.
  */

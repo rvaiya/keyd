@@ -12,18 +12,18 @@
 
 keyd is a system wide key remapping daemon which supports features like
 layering, oneshot modifiers, and macros. In its most basic form it can be used
-to define a custom key layout that persists accross display server boundaries
+to define a custom key layout that persists across display server boundaries
 (e.g wayland/X/tty).
 
 The program is intended to run as a systemd service but is capable of running
-as a standalone daemon. The default behaviour is to run in the forground and print
+as a standalone daemon. The default behaviour is to run in the foreground and print
 to stderr, unless **-d** is supplied, in which case in which case log output
 will be stored in */var/log/keyd.log*.
 
 **NOTE**
 
-Becuase keyd modifies your primary input device it is possible to render your
-machine unusuable with a bad config file. If you find yourself in this
+Because keyd modifies your primary input device it is possible to render your
+machine unusable with a bad config file. If you find yourself in this
 situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd
 to terminate.
 
@@ -141,7 +141,7 @@ Layouts also have the additional property of being affected by the active modifi
 set. That is, unlike layouts, key sequences mapped within them are not
 interpreted literally.
 
-If you wish to use an alternative letter arrangement, this is the appropriate
+If you wish to use an alternative letter arrangement this is the appropriate
 place to define it.
 
 E.G
@@ -181,9 +181,9 @@ For example:
 Will cause the leftalt key to behave as alt in all instances except when
 alt+1 is pressed, in which case the key sequence `C-A-f1` will be emitted.
 
-By default each modifier is mapped to an eponymously named layer.
+By default each modifier key is mapped to an eponymously named modifier layer.
 
-Thus, the above config can be shortened to:
+Thus the above config can be shortened to:
 
 	[A]
 
@@ -239,7 +239,7 @@ distinct from `layout()` which should be used for letter layouts.
 
 : Activates the given layer while held and emits the given key sequence when
 tapped. A timeout in milliseconds may optionally be supplied to disambiguate
-between a tap and a hold. 
+a tap and a hold. 
 
 	If a timeout is present depression of the corresponding key is only interpreted
 as a layer activation in the event that it is sustained for more than
@@ -267,6 +267,7 @@ Where `<macro>` has the form `<token1> [<token2>...]` where each token is one of
 
 - a valid key sequence.
 - a contiguous group of characters each of which is a valid key sequence.
+- a group of key codes delimited by + to be depressed as a unit.
 - a timeout of the form `<time>ms` (where `<time>` < 1024).
 
 Examples:
@@ -279,6 +280,15 @@ Examples:
 
 	# Identical to the above
 	macro(Hello space World)
+
+	# Produces control + b
+	macro(control + b)
+
+	# Produces the sequence <control down> <b down> <control up> <b up>
+	macro(control+b)
+
+	# Produces the sequence <control down> <control up> <b down> <b up>
+	macro(control b)
 
 # EXAMPLES
 
