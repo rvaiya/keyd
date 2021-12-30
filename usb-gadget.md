@@ -11,7 +11,7 @@ In that kind of setup Linux USB HID gadget driver can be used to emulate HID dev
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
-    make vkbd-usb-gadget && sudo make install && sudo make install-usb-gadget
+    make vkbd-usb-gadget && sudo make install-usb-gadget
     sudo systemctl enable usb-gadget && sudo systemctl start usb-gadget
     sudo systemctl enable keyd && sudo systemctl start keyd
 
