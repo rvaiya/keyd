@@ -766,7 +766,7 @@ static void daemonize()
 	info("Daemonizing...");
 	info("Log output will be stored in %s", LOG_FILE);
 
-	fd = open(LOG_FILE, O_CREAT | O_APPEND | O_WRONLY);
+	fd = open(LOG_FILE, O_CREAT | O_APPEND | O_WRONLY, 0600);
 
 	if (fd < 0) {
 		perror("Failed to open log file");
