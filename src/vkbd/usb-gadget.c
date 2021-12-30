@@ -14,8 +14,8 @@ struct vkbd {
 };
 
 struct hid_report {
-	uint16_t mask;
-	uint16_t code;
+	uint16_t hid_mods;
+	uint16_t hid_code;
 	uint32_t fill;
 };
 
@@ -40,52 +40,66 @@ struct vkbd *vkbd_init(const char *name)
 
 uint16_t hid_code(uint16_t code)
 {
-	int codes = sizeof(evdev_to_hid)/sizeof(evdev_to_hid[0]);
-	for(int i = 0; i < codes/2; i++) {
-		if(code == evdev_to_hid[2*i]) {
-			return evdev_to_hid[2*i+1];
-		}
+	if(hid_table[code]) {
+		return hid_table[code];
 	}
+
 	return 0;
 }
 
-void send_hid_report (const struct vkbd *vkbd, uint16_t code, uint16_t mods) {
+void send_hid_report (const struct vkbd *vkbd, uint16_t code, uint16_t mods)
+{
 
 	struct hid_report report;
 
-	report.code = hid_code(code);
-	report.mask = mods;
+	report.hid_code = hid_code(code);
+	report.hid_mods = mods;
 	report.fill = 0;
 
 	write(vkbd->fd,&report,sizeof(report));
 
 }
 
-static int get_modifier(const char *name)
+static int get_modifier(int code)
 {
-
-	if (!strcmp(name, "leftshift") || !strcmp(name, "rightshift")) {
+	switch (code) {
+	case KEY_LEFTSHIFT:
 		return HID_SHIFT;
-	} else	if (!strcmp(name, "leftcontrol") || !strcmp(name, "rightcontrol") ) {
+		break;
+	case KEY_RIGHTSHIFT:
+		return HID_RIGHTSHIFT;
+		break;
+	case KEY_LEFTCTRL:
 		return HID_CTRL;
-	} else	if (!strcmp(name, "leftalt")) {
+		break;
+	case KEY_RIGHTCTRL:
+		return HID_RIGHTCTRL;
+		break;
+	case KEY_LEFTALT:
 		return HID_ALT;
-	} else	if (!strcmp(name, "rightalt")) {
+		break;
+	case KEY_RIGHTALT:
 		return HID_ALT_GR;
-	} else	if (!strcmp(name, "leftmeta") || !strcmp(name, "rightmeta") ) {
+		break;
+	case KEY_LEFTMETA:
 		return HID_SUPER;
+		break;
+	case KEY_RIGHTMETA:
+		return HID_RIGHTSUPER;
+		break;
+	default:
+		return 0;
+		break;
 	}
-
-	return 0;
 
 }
 
-static int set_modifier_state(const char *name, int state)
+static int set_modifier_state(int code, int state)
 {
-	uint16_t mod = get_modifier(name);
+	uint16_t mod = get_modifier(code);
 
 	if(mod) {
-		if (state == 1) {
+		if (state) {
 			mods |= mod;
 		} else if (state == 0) {
 			mods &= ~mod;
@@ -99,8 +113,8 @@ static int set_modifier_state(const char *name, int state)
 
 void vkbd_send(const struct vkbd *vkbd, int code, int state)
 {
-	if(!set_modifier_state(keycode_table[code].name, state)) {
-		if(state) {
+	if(!set_modifier_state(code, state)) {
+		if(state ) {
 			send_hid_report(vkbd, code, mods);
 		} else {
 			send_hid_report(vkbd, 0, 0);
