@@ -1,3 +1,17 @@
+# v2.1.0-beta
+
+ NOTE: This might break some configs (see below)
+
+ - Change default modifier mappings to their full names (i.e `control =
+   layer(control)` instead of `control = layer(C)` in an unmodified key map)`.
+
+ - Modifier names are now syntactic sugar for assigning both associated key
+   codes.  E.G `control` corresponds to both `leftcontrol` and `rightcontrol`
+   when assigned instead of just the former.  (Note: this also means it is no
+   longer a valid right hand value)
+
+ - Fix v1 overload regression (#74)
+
 # v2.0.1-beta
 
  - Added + syntax to macros to allow for simultaenously held keys.
