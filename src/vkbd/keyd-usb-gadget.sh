@@ -1,6 +1,6 @@
 #!/bin/bash
 modprobe libcomposite
-cd /sys/kernel/config/usb_gadget
+cd /sys/kernel/config/usb_gadget || exit
 mkdir g1
 cd g1
 mkdir configs/c.1

@@ -1,4 +1,4 @@
-.PHONY: all clean install install-usb-gadget uninstall uninstall-usb-gadget debug man
+.PHONY: all clean install install-usb-gadget install-vkbd-usb-gadget uninstall uninstall-usb-gadget uninstall-vkbd-usb-gadget debug man
 DESTDIR=
 PREFIX=/usr
 
@@ -36,16 +36,18 @@ install:
 	install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
-install-usb-gadget:
-	install -m644 usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system
-	install -m755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin
+install-vkbd-usb-gadget:
+	install -m644 keyd-usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system
+	install -m755 src/vkbd/keyd-usb-gadget.sh $(DESTDIR)$(PREFIX)/bin
+install-usb-gadget: install install-vkbd-usb-gadget
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
 		bin/keyd $(DESTDIR)$(PREFIX)/bin/keyd\
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd.1.gz
-uninstall-usb-gadget:
-	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/usb-gadget.service\
-		$(DESTDIR)$(PREFIX)/bin/usb-gadget.sh
+uninstall-vkbd-usb-gadget:
+	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service\
+		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
+uninstall-usb-gadget: uninstall uninstall-vkbd-usb-gadget
 test: all
 	@cd t; \
 	for f in *.sh; do \
