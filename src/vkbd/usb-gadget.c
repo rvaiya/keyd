@@ -88,7 +88,7 @@ static int set_modifier_state(const char *name, int state)
 		if (state == 1) {
 			mods |= mod;
 		} else if (state == 0) {
-			mods ^= mod;
+			mods &= ~mod;
 		}
 	}
 
