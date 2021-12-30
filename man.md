@@ -138,7 +138,7 @@ layout. Every config has at least one layout called *main*, but additional
 layouts may be defined and subsequently activated using the `layout()` action.
 
 Layouts also have the additional property of being affected by the active modifier
-set. That is, unlike layouts, key sequences mapped within them are not
+set. That is, unlike layers, key sequences mapped within them are not
 interpreted literally.
 
 If you wish to use an alternative letter arrangement this is the appropriate
