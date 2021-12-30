@@ -214,16 +214,16 @@ will cause capslock to behave as meta and alt when held.
 
 In order to achieve this (un)holy union, the following lookup rules are used:
 
-	- If one or more layers is active then:
-		- If an explicit mapping exists within the most recently active layer:
-			- Use the defined mapping.
-		- Else:
-			- If the layer has one or more modifiers:
-				Apply the corresponding modifiers to the layout.
-			- Else:
-				Do nothing.
-	- Else:
-		Use the layout mapping.
+	if len(active_layers) > 0:
+		if key in most_recent_layer:
+			action = most_recent_layer[key]
+		else if has_modifiers(most_recent_layer):
+			for layer in active_layers:
+				activate_modifiers(layer)
+
+			action = layout[key]
+	else:
+		action = layout[key]
 
 The upshot of all this is that things should mostly just work™. The
 majority of users needn't be explicitly conscious of the lookup rules
