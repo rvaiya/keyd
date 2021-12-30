@@ -101,7 +101,7 @@ static int set_modifier_state(int code, int state)
 	if(mod) {
 		if (state) {
 			mods |= mod;
-		} else if (state == 0) {
+		} else {
 			mods &= ~mod;
 		}
 	}
