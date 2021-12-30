@@ -451,8 +451,10 @@ long kbd_process_key_event(struct keyboard *kbd,
 		} else if (last_pressed_keycode == code) {
 			kbd_deactivate_layer(kbd, layer);
 
-			kbd_process_keyseq(kbd, 0, sequence, 1);
-			kbd_process_keyseq(kbd, 0, sequence, 0);
+			kbd_process_keyseq(kbd, 1, sequence, 1);
+			kbd_process_keyseq(kbd, 1, sequence, 0);
+
+			kbd_reify_mods(kbd);
 		} else {
 			kbd_deactivate_layer(kbd, layer);
 		}
