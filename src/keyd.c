@@ -221,25 +221,24 @@ static void send_repetitions()
 	}
 }
 
-#define SETMOD(mods, mod, key, key2) \
-	if (mods & mod) { \
-		if (!keystate[key] && !keystate[key2]) \
-			send_key(key, 1); \
-	} else { \
-		if (keystate[key]) \
-			send_key(key, 0); \
-\
-		if (keystate[key2]) \
-			send_key(key2, 0); \
-	}
-
 void set_mods(uint16_t mods)
 {
-	SETMOD(mods, MOD_CTRL, KEY_LEFTCTRL, KEY_RIGHTCTRL)
-	SETMOD(mods, MOD_SHIFT, KEY_LEFTSHIFT, KEY_RIGHTSHIFT)
-	SETMOD(mods, MOD_SUPER, KEY_LEFTMETA, KEY_RIGHTMETA)
-	SETMOD(mods, MOD_ALT, KEY_LEFTALT, 0)
-	SETMOD(mods, MOD_ALT_GR, KEY_RIGHTALT, 0)
+	size_t i;
+
+	for (i = 0; i < sizeof modifier_table / sizeof modifier_table[0]; i++) {
+		struct modifier_table_ent *m = &modifier_table[i];
+
+		if (m->mask & mods) {
+			if (!keystate[m->code1] && !keystate[m->code2])
+				send_key(m->code1, 1);
+		} else {
+			if (keystate[m->code1])
+				send_key(m->code1, 0);
+
+			if (keystate[m->code2])
+				send_key(m->code2, 0);
+		}
+	}
 }
 
 /* Block on the given keyboard nodes until no keys are depressed. */
@@ -762,10 +761,18 @@ static void exit_signal_handler(int sig)
 
 static void daemonize()
 {
-	int fd = open(LOG_FILE, O_APPEND | O_WRONLY);
+	int fd;
 
-	info("Daemonizing.");
+	info("Daemonizing...");
 	info("Log output will be stored in %s", LOG_FILE);
+
+	fd = open(LOG_FILE, O_CREAT | O_APPEND | O_WRONLY);
+
+	if (fd < 0) {
+		perror("Failed to open log file");
+		exit(-1);
+	}
+
 
 	if (fork())
 		exit(0);

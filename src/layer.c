@@ -42,8 +42,12 @@ void layer_set_descriptor(struct layer *layer,
 			  uint16_t code,
 			  const struct descriptor *descriptor)
 {
-	struct keymap_entry *ent = layer->_keymap;
+	struct keymap_entry *ent;
 
+	if (!code)
+		return;
+
+	ent = layer->_keymap;
 	while (ent) {
 		if (ent->code == code) {
 			ent->descriptor = *descriptor;

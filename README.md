@@ -132,12 +132,12 @@ following config:
 
 	[main]
 
-	leftshift = oneshot(S)
-	leftalt = oneshot(A)
-	rightalt = oneshot(G)
-	rightshift = oneshot(A)
-	leftmeta = oneshot(M)
-	rightmeta = oneshot(M)
+	shift = oneshot(shift)
+	meta = oneshot(meta)
+	control = oneshot(control)
+
+	leftalt = oneshot(alt)
+	rightalt = oneshot(altgr)
 
 	capslock = overload(C, esc)
 	insert = S-insert

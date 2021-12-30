@@ -1,0 +1,25 @@
+control down
+a down
+a up
+b down
+b up
+control up
+rightcontrol down
+a down
+a up
+rightcontrol up
+
+control down
+control up
+b down
+b up
+control down
+b down
+b up
+control up
+control down
+control up
+b down
+b up
+control down
+control up

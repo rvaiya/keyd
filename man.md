@@ -135,7 +135,7 @@ for the duration of the corresponding key stroke.
 The *layout* is a special kind of layer from which mappings are drawn if no
 other layers are active. By default all keys are mapped to themselves within a
 layout. Every config has at least one layout called *main*, but additional
-layouts may be defined and subsequently activated using the `layout()` action.  
+layouts may be defined and subsequently activated using the `layout()` action.
 
 Layouts also have the additional property of being affected by the active modifier
 set. That is, unlike layouts, key sequences mapped within them are not
@@ -185,19 +185,30 @@ By default each modifier key is mapped to an eponymously named modifier layer.
 
 Thus the above config can be shortened to:
 
-	[A]
+	[alt]
 
 	1 = C-A-f1
 
-since leftalt and rightalt are already assigned to `layer(A)`.
+since leftalt and rightalt are already assigned to `layer(alt)`.
 
-Additionally, any set of valid modifiers is also a valid layer. For
-example, the layer `M-C` corresponds to a layer which behaves like the
-modifiers meta and control, which means the following:
+Additionally, left hand values which are modifier names are expanded to both
+associated keycodes.
+
+E.G
+	control = esc
+
+is the equivalent of
+
+	rightcontrol = esc
+	leftcontrol = esc
+
+Finally any set of valid modifiers is also a valid layer. For example, the
+layer `M-C` corresponds to a layer which behaves like the modifiers meta and
+control, which means the following:
 
 	capslock = layer(M-A)
 
-will cause capslock to behave as meta and alt when held. 
+will cause capslock to behave as meta and alt when held.
 
 ### Lookup Rules
 
@@ -239,7 +250,7 @@ distinct from `layout()` which should be used for letter layouts.
 
 : Activates the given layer while held and emits the given key sequence when
 tapped. A timeout in milliseconds may optionally be supplied to disambiguate
-a tap and a hold. 
+a tap and a hold.
 
 	If a timeout is present depression of the corresponding key is only interpreted
 as a layer activation in the event that it is sustained for more than
@@ -319,9 +330,6 @@ Invert the behaviour of the shift key without breaking modifier behaviour.
 	*
 
 	[main]
-	leftshift = layer(shift)
-	rightshift = layer(shift)
-
 	1 = !
 	2 = @
 	3 = #
@@ -333,7 +341,7 @@ Invert the behaviour of the shift key without breaking modifier behaviour.
 	9 = (
 	0 = )
 
-	[shift:S]
+	[shift]
 	0 = 0
 	1 = 1
 	2 = 2
@@ -353,10 +361,12 @@ activates it until it is pressed again, and holding it produces expected
 behaviour.
 
 	[main]
+
 	leftcontrol = oneshot(control)
 	rightcontrol = oneshot(control)
 
 	[control:C]
+
 	toggle(control)
 
 # Example 4
@@ -365,14 +375,12 @@ Meta behaves as normal except when \` is pressed, after which the alt_tab layer
 is activated for the duration of the leftmeta keypress. Subsequent actuations
 of \` will thus produce A-tab instead of M-\`.
 
-	[main]
-	leftmeta = layer(meta)
-	rightmeta = layer(meta)
+	[meta]
 
-	[meta:M]
 	` = swap(alt_tab, A-tab)
 
 	[alt_tab:A]
+
 	tab = A-S-tab
 	` = A-tab
 

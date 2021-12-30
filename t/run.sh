@@ -2,21 +2,30 @@
 
 # TODO: make this more robust
 
+cleanup() {
+	sudo pkill keyd
+	sleep .5s
+	sudo systemctl restart keyd
+
+	trap - EXIT
+	exit
+}
+
+trap cleanup INT EXIT
+
+cd "$(dirname $0)"
+
 sudo cp test.conf /etc/keyd
 sudo pkill keyd
-sleep 1s
+sleep .5s
+sudo ../bin/keyd -d || exit
+sleep .5s
 
-cd $(dirname $0)
-sudo ../bin/keyd -d
-if [ $? -ne 0 ]; then
-	echo "Failed to start keyd"
-	sudo systemctl restart keyd
-	exit -1
+if [ $# -ne 0 ]; then
+	test_files="$(echo "$@"|sed -e 's/ /.t /g').t"
+	sudo ./runner.py -v $test_files
+	exit
 fi
-sleep 1s
 
-sudo ./runner.py -v *.t
+sudo ./runner.py -ev *.t || exit
 sudo ./runner.py -ev $(seq 100|sed -e 's@.*@overload-timeout.t@')
-sudo pkill keyd
-sleep 1s
-sudo systemctl restart keyd

@@ -41,13 +41,27 @@
 
 #define KEY_NOOP 0x27b
 
-//Used for macros, bit of a kludge.
 uint16_t keycode_to_mod(uint16_t code);
 
 struct keycode_table_ent {
 	const char *name;
 	const char *alt_name;
 	const char *shifted_name;
+};
+
+static struct modifier_table_ent {
+	const char *name;
+	uint16_t mask;
+
+	uint16_t code1;
+	uint16_t code2; /* May be 0. */
+} modifier_table[] = {
+	{"control", MOD_CTRL, KEY_LEFTCTRL, KEY_RIGHTCTRL},
+	{"shift", MOD_SHIFT, KEY_LEFTSHIFT, KEY_RIGHTSHIFT},
+	{"meta", MOD_SUPER, KEY_LEFTMETA, KEY_RIGHTMETA},
+
+	{"alt", MOD_ALT, KEY_LEFTALT, 0},
+	{"altgr", MOD_ALT_GR, KEY_RIGHTALT, 0},
 };
 
 static const struct keycode_table_ent keycode_table[] = {
@@ -79,7 +93,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_LEFTBRACE] = { "[", "leftbrace", "{" },
 	[KEY_RIGHTBRACE] = { "]", "rightbrace", "}" },
 	[KEY_ENTER] = { "enter", NULL, NULL },
-	[KEY_LEFTCTRL] = { "control", "leftcontrol", NULL },
+	[KEY_LEFTCTRL] = { "leftcontrol", "", NULL },
 	[KEY_A] = { "a", NULL, "A" },
 	[KEY_S] = { "s", NULL, "S" },
 	[KEY_D] = { "d", NULL, "D" },
@@ -92,7 +106,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_SEMICOLON] = { ";", "semicolon", ":" },
 	[KEY_APOSTROPHE] = { "'", "apostrophe", "\"" },
 	[KEY_GRAVE] = { "`", "grave", "~" },
-	[KEY_LEFTSHIFT] = { "shift", "leftshift", NULL },
+	[KEY_LEFTSHIFT] = { "leftshift", "", NULL },
 	[KEY_BACKSLASH] = { "\\", "backslash", "|" },
 	[KEY_Z] = { "z", NULL, "Z" },
 	[KEY_X] = { "x", NULL, "X" },
@@ -106,7 +120,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_SLASH] = { "/", "slash", "?" },
 	[KEY_RIGHTSHIFT] = { "rightshift", NULL, NULL },
 	[KEY_KPASTERISK] = { "kpasterisk", NULL, NULL },
-	[KEY_LEFTALT] = { "alt", "leftalt", NULL },
+	[KEY_LEFTALT] = { "leftalt", "", NULL },
 	[KEY_SPACE] = { "space", NULL, NULL },
 	[KEY_CAPSLOCK] = { "capslock", NULL, NULL },
 	[KEY_F1] = { "f1", NULL, NULL },
@@ -174,7 +188,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_HANGEUL] = { "hangeul", NULL, NULL },
 	[KEY_HANJA] = { "hanja", NULL, NULL },
 	[KEY_YEN] = { "yen", NULL, NULL },
-	[KEY_LEFTMETA] = { "meta", "leftmeta", NULL },
+	[KEY_LEFTMETA] = { "leftmeta", "", NULL },
 	[KEY_RIGHTMETA] = { "rightmeta", NULL, NULL },
 	[KEY_COMPOSE] = { "compose", NULL, NULL },
 	[KEY_STOP] = { "stop", NULL, NULL },
