@@ -7,22 +7,17 @@
 #include "../keys.h"
 #include "usb-gadget.h"
 
-uint16_t mods = 0;
-uint8_t keys[] = {
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
-};
+static uint8_t mods = 0;
+
+static uint8_t keys[6] = {0};
 
 struct vkbd {
 	int fd;
 };
 
 struct hid_report {
-	uint16_t hid_mods;
+	uint8_t hid_mods;
+	uint8_t reserved;
 	uint8_t hid_code[6];
 };
 
@@ -31,6 +26,7 @@ static int create_virtual_keyboard(void)
 
 	int fd = open("/dev/hidg0", O_WRONLY | O_NONBLOCK);
 	if (fd < 0) {
+		perror("open");
 		exit(-1);
 	}
 
@@ -47,9 +43,8 @@ struct vkbd *vkbd_init(const char *name)
 
 uint16_t hid_code(uint16_t code)
 {
-	if(hid_table[code]) {
+	if(hid_table[code])
 		return hid_table[code];
-	}
 
 	return 0;
 }
@@ -59,16 +54,16 @@ void send_hid_report (const struct vkbd *vkbd)
 
 	struct hid_report report;
 
-	for (int i = 0; i < 6; i++) {
-		report.hid_code[i] = hid_code(keys[i]);
-	}
+	for (int i = 0; i < 6; i++)
+		report.hid_code[i] = keys[i];
+
 	report.hid_mods = mods;
 
 	write(vkbd->fd,&report,sizeof(report));
 
 }
 
-static int get_modifier(int code)
+static uint8_t get_modifier(int code)
 {
 	switch (code) {
 	case KEY_LEFTSHIFT:
@@ -102,39 +97,39 @@ static int get_modifier(int code)
 
 }
 
-static int set_modifier_state(int code, int state)
+static int update_modifier_state(int code, int state)
 {
 	uint16_t mod = get_modifier(code);
 
 	if(mod) {
-		if (state) {
+		if (state)
 			mods |= mod;
-		} else {
+		else
 			mods &= ~mod;
-		}
+		return 0;
 	}
 
-	return mod;
+	return -1;
 
 }
 
-void set_key_state(int code, int state)
+void update_key_state(int code, int state)
 {
+	int i;
 	int set = 0;
 
-	for (int i = 0; i < 6; i++) {
+	for (i = 0; i < 6; i++) {
 		if(keys[i] == code) {
 			set = 1;
-			if(state == 0) {
+			if(state == 0)
 				keys[i] = 0;
-			}
 		}
 	}
-	if(!set) {
-		for (int i = 0; i < 6; i++) {
-			if(keys[i] == 0 && state && !set) {
-				set = 1;
+	if(state && !set) {
+		for (i = 0; i < 6; i++) {
+			if(keys[i] == 0) {
 				keys[i] = code;
+				break;
 			}
 		}
 	}
@@ -143,9 +138,9 @@ void set_key_state(int code, int state)
 
 void vkbd_send(const struct vkbd *vkbd, int code, int state)
 {
-	if(!set_modifier_state(code, state)) {
-		set_key_state(code, state);
-	}
+	if(update_modifier_state(code, state) < 0)
+		update_key_state(hid_code(code), state);
+
 	send_hid_report(vkbd);
 }
 
