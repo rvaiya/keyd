@@ -143,8 +143,9 @@ void set_key_state(int code, int state)
 
 void vkbd_send(const struct vkbd *vkbd, int code, int state)
 {
-	set_modifier_state(code, state);
-	set_key_state(code, state);
+	if(!set_modifier_state(code, state)) {
+		set_key_state(code, state);
+	}
 	send_hid_report(vkbd);
 }
 
