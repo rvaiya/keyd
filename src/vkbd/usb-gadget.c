@@ -101,7 +101,7 @@ static void update_key_state(uint16_t code, int state)
 {
 	int i;
 	int set = 0;
-	uint8_t hid_code = hide_table[code];
+	uint8_t hid_code = hid_table[code];
 
 	for (i = 0; i < 6; i++) {
 		if (keys[i] == hid_code) {
