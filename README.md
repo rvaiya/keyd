@@ -63,6 +63,13 @@ Some of the more interesting ones include:
     make && sudo make install
     sudo systemctl enable keyd && sudo systemctl start keyd
 
+## SBC support
+
+Experimental support for single board computers (SBCs) via usb-gadget
+has been added courtesy of Giorgi Chavchanidze.
+
+See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
+
 ## Packages
 
 Third party packages for the some distributions also exist. If you wish to add

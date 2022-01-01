@@ -37,7 +37,7 @@ install:
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
 install-usb-gadget: install
-	install -m644 usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service
+	install -m644 src/vkbd/usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service
 	install -m755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
