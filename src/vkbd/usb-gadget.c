@@ -33,23 +33,15 @@ static int create_virtual_keyboard(void)
 	return fd;
 }
 
-struct vkbd *vkbd_init(const char *name)
+static uint16_t hid_code(uint16_t code)
 {
-	struct vkbd *vkbd = calloc(1, sizeof vkbd);
-	vkbd->fd = create_virtual_keyboard();
-
-	return vkbd;
-}
-
-uint16_t hid_code(uint16_t code)
-{
-	if(hid_table[code])
+	if (hid_table[code])
 		return hid_table[code];
 
 	return 0;
 }
 
-void send_hid_report (const struct vkbd *vkbd)
+static void send_hid_report(const struct vkbd *vkbd)
 {
 
 	struct hid_report report;
@@ -59,7 +51,7 @@ void send_hid_report (const struct vkbd *vkbd)
 
 	report.hid_mods = mods;
 
-	write(vkbd->fd,&report,sizeof(report));
+	write(vkbd->fd, &report, sizeof(report));
 
 }
 
@@ -101,7 +93,7 @@ static int update_modifier_state(int code, int state)
 {
 	uint16_t mod = get_modifier(code);
 
-	if(mod) {
+	if (mod) {
 		if (state)
 			mods |= mod;
 		else
@@ -113,21 +105,21 @@ static int update_modifier_state(int code, int state)
 
 }
 
-void update_key_state(int code, int state)
+static void update_key_state(int code, int state)
 {
 	int i;
 	int set = 0;
 
 	for (i = 0; i < 6; i++) {
-		if(keys[i] == code) {
+		if (keys[i] == code) {
 			set = 1;
-			if(state == 0)
+			if (state == 0)
 				keys[i] = 0;
 		}
 	}
-	if(state && !set) {
+	if (state && !set) {
 		for (i = 0; i < 6; i++) {
-			if(keys[i] == 0) {
+			if (keys[i] == 0) {
 				keys[i] = code;
 				break;
 			}
@@ -135,10 +127,18 @@ void update_key_state(int code, int state)
 	}
 }
 
+struct vkbd *vkbd_init(const char *name)
+{
+	struct vkbd *vkbd = calloc(1, sizeof vkbd);
+	vkbd->fd = create_virtual_keyboard();
+
+	return vkbd;
+}
+
 
 void vkbd_send(const struct vkbd *vkbd, int code, int state)
 {
-	if(update_modifier_state(code, state) < 0)
+	if (update_modifier_state(code, state) < 0)
 		update_key_state(hid_code(code), state);
 
 	send_hid_report(vkbd);
@@ -146,7 +146,7 @@ void vkbd_send(const struct vkbd *vkbd, int code, int state)
 
 void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 {
-	// Not implemented
+	/* Not implemented */
 }
 
 void free_vkbd(struct vkbd *vkbd)
