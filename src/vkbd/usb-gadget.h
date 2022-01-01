@@ -162,7 +162,9 @@ static const uint16_t hid_table[] = {
 	[KEY_F21] = 0x70,
 	[KEY_F22] = 0x71,
 	[KEY_F23] = 0x72,
-	[KEY_F24] = 0x73
+	[KEY_F24] = 0x73,
+
+	[KEY_MAX] = 0
 };
 
 #endif

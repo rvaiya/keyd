@@ -22,7 +22,7 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 	printf("mouse movement: x: %d, y: %d\n", x, y);
 }
 
-void vkbd_send(const struct vkbd *vkbd, int code, int state)
+void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	printf("key: %s, state: %d\n", keycode_table[code].name, state);
 }

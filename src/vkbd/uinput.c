@@ -92,7 +92,7 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 	write(vkbd->fd, &ev, sizeof(ev));
 }
 
-void vkbd_send(const struct vkbd *vkbd, int code, int state)
+void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	struct input_event ev;
 

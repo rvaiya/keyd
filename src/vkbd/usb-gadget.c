@@ -33,14 +33,6 @@ static int create_virtual_keyboard(void)
 	return fd;
 }
 
-static uint16_t hid_code(uint16_t code)
-{
-	if (hid_table[code])
-		return hid_table[code];
-
-	return 0;
-}
-
 static void send_hid_report(const struct vkbd *vkbd)
 {
 
@@ -105,13 +97,14 @@ static int update_modifier_state(int code, int state)
 
 }
 
-static void update_key_state(int code, int state)
+static void update_key_state(uint16_t code, int state)
 {
 	int i;
 	int set = 0;
+	uint8_t hid_code = hide_table[code];
 
 	for (i = 0; i < 6; i++) {
-		if (keys[i] == code) {
+		if (keys[i] == hid_code) {
 			set = 1;
 			if (state == 0)
 				keys[i] = 0;
@@ -120,7 +113,7 @@ static void update_key_state(int code, int state)
 	if (state && !set) {
 		for (i = 0; i < 6; i++) {
 			if (keys[i] == 0) {
-				keys[i] = code;
+				keys[i] = hid_code;
 				break;
 			}
 		}
@@ -136,10 +129,10 @@ struct vkbd *vkbd_init(const char *name)
 }
 
 
-void vkbd_send(const struct vkbd *vkbd, int code, int state)
+void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	if (update_modifier_state(code, state) < 0)
-		update_key_state(hid_code(code), state);
+		update_key_state(code, state);
 
 	send_hid_report(vkbd);
 }
