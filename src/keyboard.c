@@ -347,8 +347,10 @@ long kbd_process_key_event(struct keyboard *kbd,
 		if ((get_time() - overload_ts) >= timeout) {
 			kbd_activate_layer(kbd, layer, 0);
 		} else {
-			kbd_process_keyseq(kbd, 0, sequence, 1);
-			kbd_process_keyseq(kbd, 0, sequence, 0);
+			kbd_process_keyseq(kbd, 1, sequence, 1);
+			kbd_process_keyseq(kbd, 1, sequence, 0);
+
+			kbd_reify_mods(kbd);
 		}
 
 		pending_overload = NULL;
