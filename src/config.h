@@ -13,6 +13,7 @@ struct config {
 
 	/* The first two layers are the default main and modifier layouts. */
 	struct layer *layers[MAX_LAYERS];
+	struct layer *default_layout;
 
 	size_t nr_device_ids;
 	size_t nr_layers;

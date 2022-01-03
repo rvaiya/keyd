@@ -163,6 +163,16 @@ static char *read_file(const char *path)
 	return data;
 }
 
+static struct layer *config_add_layer(struct config *config,
+				      const char *name,
+				      uint16_t mods)
+{
+	struct layer *layer = create_layer(name, mods);
+	config->layers[config->nr_layers++] = layer;
+
+	return layer;
+}
+
 static struct layer *lookup_layer(const char *name, void *_config)
 {
 	struct config *config = (struct config *) (_config);
@@ -178,14 +188,48 @@ static struct layer *lookup_layer(const char *name, void *_config)
 
 	/* Autovivify modifier layers as required. */
 
-	if (!parse_modset(name, &mods)) {
-		struct layer *layer = create_layer(name, mods, 0);
-
-		config->layers[config->nr_layers++] = layer;
-		return layer;
-	}
+	if (!parse_modset(name, &mods))
+		return config_add_layer(config, name, mods);
 
 	return NULL;
+}
+
+
+static struct layer *config_add_layout(struct config *config, const char *name)
+{
+	uint16_t code;
+	size_t i;
+
+	struct layer *layout = config_add_layer(config, name, 0);
+	layout->is_layout = 1;
+
+	for (code = 0; code < KEY_MAX; code++) {
+		struct descriptor d;
+
+		d.op = OP_KEYSEQ;
+		d.args[0].sequence.code = code;
+		d.args[0].sequence.mods = 0;
+
+		layer_set_descriptor(layout, code, &d);
+	}
+
+	for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
+		struct modifier_table_ent *m = &modifier_table[i];
+
+		struct layer *layer;
+		struct descriptor d;
+
+		layer = lookup_layer(m->name, (void*)config);
+		assert(layer);
+
+		d.op = OP_LAYER;
+		d.args[0].layer = layer;
+
+		layer_set_descriptor(layout, m->code1, &d);
+		layer_set_descriptor(layout, m->code2, &d);
+	}
+
+	return layout;
 }
 
 static int parse_header(const char *s,
@@ -267,33 +311,18 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 struct config *create_config(const char *name) 
 {
 	size_t i;
-	struct layer *main;
 	struct config *config;
 
 	config = calloc(1, sizeof(struct config));
 	strncpy(config->name, name, sizeof(config->name)-1);
 
-	main = create_layer("main", 0, 1);
-
-	config->nr_layers = 0;
-	config->layers[config->nr_layers++] = main;
-
 	for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
 		struct modifier_table_ent *m = &modifier_table[i];
 
-		struct layer *layer;
-		struct descriptor d;
-
-		layer = create_layer(m->name, m->mask, 0);
-
-		d.op = OP_LAYER;
-		d.args[0].layer = layer;
-
-		layer_set_descriptor(main, m->code1, &d);
-		layer_set_descriptor(main, m->code2, &d);
-
-		config->layers[config->nr_layers++] = layer;
+		config_add_layer(config, m->name, m->mask);
 	}
+
+	config->default_layout = config_add_layout(config, "main");
 
 	return config;
 }
@@ -346,9 +375,9 @@ static int parse_config(struct config *config, char *str)
 
 		if (!layer) { /* If the layer doesn't exist, create it. */
 			if (!strcmp(type, "layout"))
-				layer = create_layer(name, 0, 1);
+				layer = config_add_layout(config, name);
 			else if (!parse_modset(type, &mods))
-				layer = create_layer(name, mods, 0);
+				layer = config_add_layer(config, name, mods);
 			else if (strcmp(type, "")) {
 				fprintf(stderr,
 					"WARNING %s:%zu: \"%s\" is not a valid layer type "
@@ -356,8 +385,6 @@ static int parse_config(struct config *config, char *str)
 					config->name, section->lnum, type);
 				continue;
 			}
-
-			config->layers[config->nr_layers++] = layer;
 		}
 
 		layers[n] = layer;
@@ -423,7 +450,6 @@ static int parse_config(struct config *config, char *str)
 			}
 
 			layer_set_descriptor(layer, code, &desc);
-
 		}
 	}
 

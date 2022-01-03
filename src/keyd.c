@@ -358,7 +358,7 @@ static int manage_keyboard(const char *devnode)
 
 	kbd = calloc(1, sizeof(struct keyboard));
 	kbd->fd = fd;
-	kbd->layout = config->layers[0];
+	kbd->layout = config->default_layout;
 
 	strcpy(kbd->devnode, devnode);
 

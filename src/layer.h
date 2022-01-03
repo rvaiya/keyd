@@ -29,7 +29,7 @@ struct layer {
 	struct keymap_entry *_keymap;
 };
 
-struct layer *create_layer(const char *name, uint16_t mods, int populate);
+struct layer *create_layer(const char *name, uint16_t mods);
 void free_layer(struct layer *layer);
 
 struct descriptor *layer_get_descriptor(const struct layer *layer, uint16_t code);

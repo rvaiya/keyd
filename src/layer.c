@@ -67,27 +67,15 @@ void layer_set_descriptor(struct layer *layer,
 	layer->_keymap = ent;
 }
 
-struct layer *create_layer(const char *name, uint16_t mods, int is_layout)
+struct layer *create_layer(const char *name, uint16_t mods)
 {
 	uint16_t code;
 	struct layer *layer;
 
 	layer = calloc(1, sizeof(struct layer));
 	layer->mods = mods;
-	layer->is_layout = is_layout;
 	strcpy(layer->name, name);
 
-	if (is_layout) {
-		for (code = 0; code < KEY_MAX; code++) {
-			struct descriptor d;
-
-			d.op = OP_KEYSEQ;
-			d.args[0].sequence.code = code;
-			d.args[0].sequence.mods = 0;
-
-			layer_set_descriptor(layer, code, &d);
-		}
-	}
 
 	return layer;
 }
