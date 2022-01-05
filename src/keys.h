@@ -94,6 +94,7 @@ static const struct keycode_table_ent keycode_table[] = {
 	[KEY_RIGHTBRACE] = { "]", "rightbrace", "}" },
 	[KEY_ENTER] = { "enter", NULL, NULL },
 	[KEY_LEFTCTRL] = { "leftcontrol", "", NULL },
+	[84] = { "iso-level3-shift", NULL, NULL }, //Oddly missing from input-event-codes.h, appears to be used as altgr in an english keymap on X
 	[KEY_A] = { "a", NULL, "A" },
 	[KEY_S] = { "s", NULL, "S" },
 	[KEY_D] = { "d", NULL, "D" },
