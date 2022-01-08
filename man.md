@@ -243,8 +243,9 @@ unless they are doing something unorthodox (e.g nesting hybrid layers).
 
 ## IPC
 
-Unlike other remapping tools keyd employs a client-server model. This
-makes the keymap a 'living' entity that can be modified at runtime.
+To facilitate extensibility, keyd employs a client-server model. Thus the
+keymap can be conceived of as a 'living entity' that can be modified at
+runtime.
 
 In addition to allowing the user to try new bindings on the fly, this
 enables the user to fully leverage keyd's expressive power from other programs
@@ -273,9 +274,9 @@ bindings will be dropped).
 
 Examples:
 
-	$ keyd -e '1 = a' # Map
-	$ keyd -e 'dvorak.1 = a'
-	$ keyd -e 'control.1 = macro(Hello space World)'
+	$ keyd -e 'rightshift = layout(dvorak)'      # Map rightshift to layout(dvorak) in [main].
+	$ keyd -e 'dvorak.rightshift = layout(main)' # Map rightshift to layout(main) in [dvorak].
+	$ keyd -e 'reset'                            # Reset the state of the keymap so it reflects /etc/keyd/.
 
 By default expressions apply to the most recently active keyboard.
 
@@ -298,11 +299,7 @@ For example:
 
 	[Alacritty]
 
-	rightshift = layer(mylayer)
-	control.1 = macro(Inside space alacritty)
-
-	mylayer.a = C-c
-	insert = S-insert
+	control.1  = macro(Inside space alacritty)
 
 	[chromium]
 
@@ -312,16 +309,16 @@ Will remap `C-1` to the the string 'Inside alacritty' when a window with class
 'Alacritty' is active and 'Inside chrome' when a window with class 'chromium'
 is active.
 
-Application classes can be obtained by running `keyd-application-mapper` with
-the `-m` flag. At the moment X, sway and gnome are supported.
+Application classes can be obtained by running `keyd-application-mapper -m`.
+At the moment X, sway and gnome are supported.
 
-In order for this to work the user must have access to */var/run/keyd.socket*
-(i.e be a member of the *keyd* group)
+In order for this script to work the user must have access to */var/run/keyd.socket*
+(i.e be a member of the *keyd* group).
 
 ### A note on security
 
-Any user which can interact with programs that directly control input devices
-should be assumed to have full access to the entire system.
+Any user which can interact with a program that directly controls input devices
+should be assumed to have full access to the system.
 
 While keyd is slightly better at providing some degree of isolation than other
 remappers (by dint of mediating access through an IPC mechanism rather than

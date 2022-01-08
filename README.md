@@ -15,36 +15,37 @@ for something a bit more stable you may be interested the [v1](https://github.co
 *NOTE: For those migrating their configs from v1, please see the
 [changelog](CHANGELOG.md) for a list of changes.*
 
+# Goals
+
+  - Speed       (a hand tuned input loop written in C that takes <<1ms)
+  - Simplicity  (a [config format](#sample-config) that is intuitive)
+  - Consistency (modifiers that [play nicely with layers](man.md#modifiers) by default)
+  - Modularity  (a UNIXy core extensible through the use of an [IPC](man.md#IPC) mechanism)
+
 # Features
 
 keyd has several unique features many of which are traditionally only
 found in custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware)
-as well as some additional ones.
+as well as some which are unique to keyd.
 
 Some of the more interesting ones include:
 
 - Layers (with support for [hybrid modifiers](man.md#modifiers)).
-- Display server agnostic [application remapping](man.md#application-support) (Currently supports X, sway, and gnome).
 - Key overloading (different behaviour on tap/hold).
-- Per keyboard configuration.
-- Instantaneous remapping (no flashing required).
-- VT support (works everywhere).
-- A [simple](#sample-config) and intuitive config format.
+- Keyboard specific configuration.
+- Instantaneous remapping (no more flashing :)).
+- A client-server model that facilitates scripting and display server agnostic application remapping. (Currently ships with support for X, sway, and gnome).
+- System wide config (work in a VT)
 - First class support for modifier overloading.
-
-### Goals
-
-  - Speed       (a non garbage-collected input loop that takes <<1ms)
-  - Simplicity  (a config format that is intuitive)
-  - Correctness (modifiers that play nicely with layers by default)
 
 ### keyd is for people who:
 
  - Would like to experiment with custom [layers](https://beta.docs.qmk.fm/using-qmk/software-features/feature_layers) (i.e custom shift keys)
    and oneshot modifiers.
- - Like tiny daemons that adhere to the Unix philosophy.
- - Want a keyboard config format which is easy to grok.
  - Want to have multiple keyboards with different layouts on the same machine.
+ - Want to be able to remap `C-1` without breaking modifier semantics.
+ - Want a keyboard config format which is easy to grok.
+ - Like tiny daemons that adhere to the Unix philosophy.
  - Want to put the control and escape keys where God intended.
  - Wish to be able to switch to a VT to debug something without breaking their keymap.
 
@@ -99,7 +100,8 @@ E.G
 	keyd-application-mapper
 
 
-Class names can be discovered with `keyd-application-mapper -m`.
+Class names are discoverable with `keyd-application-mapper -m`.
+See the man page for more details.
 
 ## SBC support
 
