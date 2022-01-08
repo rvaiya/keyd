@@ -6,7 +6,27 @@
 
 # SYNOPSIS
 
-**keyd** [**-m**] [**-l**] [**-d**]
+**keyd** [options]
+
+# OPTIONS
+
+`-m, --monitor`
+: Start keyd in monitor mode.  Mainly useful for discovering key codes and debugging.
+
+`-e, --expression <expression> [<expression>...]`
+: Modify bindings of the currently active keyboard. See *Expressions* for details.
+
+`-l, --list`
+: List all internal key names.
+
+`-d, --daemonize`
+: Start keyd as a daemon logging out all output to */var/log/keyd.log*.
+
+`-v, --version`
+: Print the current version and exit.
+
+`-h, --help`
+: Print help and exit.
 
 # DESCRIPTION
 
@@ -26,14 +46,6 @@ Because keyd modifies your primary input device it is possible to render your
 machine unusable with a bad config file. If you find yourself in this
 situation the sequence *\<backspace\>+\<backslash\>+\<enter\>* will force keyd
 to terminate.
-
-# OPTIONS
-
-**-m**: Monitor and print keyboard events to stdout.
-
-**-l**: List all valid key names.
-
-**-d**: Fork and run in the background.
 
 # CONFIGURATION
 
@@ -229,6 +241,97 @@ The upshot of all this is that things should mostly just work™. The
 majority of users needn't be explicitly conscious of the lookup rules
 unless they are doing something unorthodox (e.g nesting hybrid layers).
 
+## IPC
+
+Unlike other remapping tools keyd employs a client-server model. This 
+makes the keymap a 'living' entity that can be modified at runtime.
+
+In addition to allowing the user to try new bindings on the fly, this 
+enables the user to fully leverage keyd's expressive power from other programs
+without incurring a performance penalty.
+
+For instance, the user may use this functionality to write a script which
+alters the keymap when they switch between different tmux sessions.  
+
+The application remapping tool (keyd-application-mapper) which ships with keyd
+is a good example of this. It is a small python script which performs
+event detection for the various platforms (e.g X/sway/gnome, etc) and feeds the
+desired mappings to the core using `-e`.
+
+### Expressions
+
+The `-e` flag accepts one or more *expressions*, each of which must have one of the following forms:
+
+	[<layer>.]<key> = <action>|<key sequence>
+	reset
+
+Where `<layer>` is the name of an (existing) layer in which the key is to be bound. 
+
+As a special case an expression may be the string 'reset' in which case the
+current keymap will revert to its original state (all dynamically applied
+bindings will be dropped).
+
+Examples:
+
+	$ keyd -e '1 = a' # Map
+	$ keyd -e 'dvorak.1 = a'
+	$ keyd -e 'control.1 = macro(Hello space World)'
+
+By default expressions apply to the most recently active keyboard.
+
+### Application Support
+
+keyd ships with a python script called `keyd-application-mapper` which
+reads a file called *~/.keyd-mappings* and applies the supplied mappings 
+whenever a window of the relevant class comes into focus. 
+
+The file has the following form:
+
+	[<application class>]
+
+	<expression 1>
+	<expression 2...>
+
+Where each expression is a valid argument to `-e`.
+
+For example:
+
+	[Alacritty]
+
+	rightshift = layer(mylayer)
+	control.1 = macro(Inside space alacritty)
+
+	mylayer.a = C-c
+	insert = S-insert
+
+	[chromium]
+
+	control.1 = macro(Inside space chrome)
+
+Will remap `C-1` to the the string 'Inside alacritty' when a window with class
+'Alacritty' is active and 'Inside chrome' when a window with class 'chromium'
+is active.
+
+Application classes can be obtained by running `keyd-application-mapper` with
+the `-m` flag. At the moment X, sway and gnome are supported.
+
+In order for this to work the user must have access to */var/run/keyd.socket*
+(i.e be a member of the *keyd* group)
+
+### A note on security
+
+Any user which can interact with programs that directly control input devices
+should be assumed to have full access to the entire system.
+
+While keyd is slightly better at providing some degree of isolation than other
+remappers (by dint of mediating access through an IPC mechanism rather than
+granting users blanket access to /dev/input/* and /dev/uinput), it still
+provides the opportunity for abuse and should be treated with due deference.
+
+Specifically, access to */var/run/keyd.socket* should only be granted to
+trusted users and the group `keyd` should be regarded with the same reverence
+as `wheel`.
+
 ## ACTIONS
 
 **oneshot(\<layer\>)**
@@ -362,10 +465,9 @@ behaviour.
 
 	[main]
 
-	leftcontrol = oneshot(control)
-	rightcontrol = oneshot(control)
+	control = oneshot(control)
 
-	[control:C]
+	[control]
 
 	toggle(control)
 
@@ -384,6 +486,27 @@ of \` will thus produce A-tab instead of M-\`.
 	tab = A-S-tab
 	` = A-tab
 
+# Example 5
+
+	# Uses the compose key functionality of the display server to generate
+	# international glyphs.  # For this to work 'setxkbmap -option
+	# compose:menu' must # be run after keyd has started.
+
+	# A list of sequences can be found in /usr/share/X11/locale/en_US.UTF-8/Compose 
+	# on most systems.
+
+
+	[main]
+
+	rightalt = layer(dia)
+
+	[dia]
+
+	# Map o to ö
+	o = macro(compose o ")
+
+	# Map e to €
+	e = macro(compose c =)
 
 # AUTHOR
 

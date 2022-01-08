@@ -29,9 +29,9 @@
 
 struct descriptor *layer_get_descriptor(const struct layer *layer, uint16_t code)
 {
-	struct keymap_entry *ent;
+	struct layer_entry *ent;
 
-	for (ent = layer->_keymap; ent; ent = ent->next)
+	for (ent = layer->entries; ent; ent = ent->next)
 		if (ent->code == code)
 			return &ent->descriptor;
 
@@ -42,29 +42,31 @@ void layer_set_descriptor(struct layer *layer,
 			  uint16_t code,
 			  const struct descriptor *descriptor)
 {
-	struct keymap_entry *ent;
+	struct layer_entry **ent, *new;
 
 	if (!code)
 		return;
 
-	ent = layer->_keymap;
-	while (ent) {
-		if (ent->code == code) {
-			ent->descriptor = *descriptor;
-			return;
+	ent = &layer->entries;
+	while (*ent) {
+		if ((*ent)->code == code) {
+			struct layer_entry *tmp = *ent;
+			*ent = (*ent)->next;
+			free(tmp);
+			continue;
 		}
 
-		ent = ent->next;
+		ent = &(*ent)->next;
 	}
 
-	ent = malloc(sizeof(struct keymap_entry));
+	new = malloc(sizeof(struct layer_entry));
 
-	ent->code = code;
-	ent->descriptor = *descriptor;
+	new->code = code;
+	new->descriptor = *descriptor;
 
-	ent->next = layer->_keymap;
+	new->next = layer->entries;
 
-	layer->_keymap = ent;
+	layer->entries = new;
 }
 
 struct layer *create_layer(const char *name, uint16_t mods)
@@ -80,12 +82,35 @@ struct layer *create_layer(const char *name, uint16_t mods)
 	return layer;
 }
 
+struct layer *layer_copy(const struct layer *layer)
+{
+	struct layer_entry *ent;
+	struct layer *nl;
+
+	nl = malloc(sizeof(struct layer));
+	*nl = *layer;
+
+	nl->entries = NULL;
+
+	for (ent = layer->entries; ent; ent = ent->next) {
+		struct layer_entry *ne = malloc(sizeof(struct layer_entry));
+
+		ne->code = ent->code;
+		ne->descriptor = ent->descriptor;
+
+		ne->next = nl->entries;
+		nl->entries = ne;
+	}
+
+	return nl;
+}
+
 void free_layer(struct layer *layer)
 {
-	struct keymap_entry *ent = layer->_keymap;
+	struct layer_entry *ent = layer->entries;
 
 	while (ent) {
-		struct keymap_entry *tmp = ent;
+		struct layer_entry *tmp = ent;
 		ent = ent->next;
 		free(tmp);
 	}

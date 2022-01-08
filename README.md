@@ -6,51 +6,62 @@ result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
 
-# UPDATE (v2.0.0-beta)
+# UPDATE (v2-beta)
 
-master is currently tracking `v2.0.0-beta`. If you are looking for something 
-a bit more stable you may be interested the [v1](https://github.com/rvaiya/keyd/tree/v1)
-branch.
+master is currently tracking `v2-beta`. Things should be reasonably backwards
+compatible but may occasionally break before v2 leaves beta. If you are looking
+for something a bit more stable you may be interested the [v1](https://github.com/rvaiya/keyd/tree/v1) branch.
 
-*If you are migrating your config from v1, please see the
+*NOTE: For those migrating their configs from v1, please see the
 [changelog](CHANGELOG.md) for a list of changes.*
 
 # Features
 
 keyd has several unique features many of which are traditionally only
-found in custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware).
+found in custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware)
+as well as some additional ones.
+
 Some of the more interesting ones include:
 
-- Layers.
+- Layers (with support for [hybrid modifiers](man.md#modifiers)).
+- Display server agnostic application remapping (Currently supports X, sway, and gnome).
 - Key overloading (different behaviour on tap/hold).
 - Per keyboard configuration.
 - Instantaneous remapping (no flashing required).
-- A simple and intuitive config format.
-- Being display server agnostic (works on wayland and virtual console alike).
+- VT support (works everywhere).
+- A [simple](#sample-config) and intuitive config format.
+- First class support for modifier overloading.
 
-## Why would anyone want this?
+### Goals
+
+  - Speed       (a non garbage-collected input loop that takes <<1ms)
+  - Simplicity  (a config format that is intuitive)
+  - Correctness (modifiers that play nicely with layers by default)
 
 ### keyd is for people who:
 
- - Would like to experiment with [layers](https://beta.docs.qmk.fm/using-qmk/software-features/feature_layers) (i.e custom shift keys).
- - Want to have multiple keyboards with different logical layouts on the same machine.
- - Want to put the control and escape keys where God intended.
- - Would like the ability to easily generate keycodes in other languages.
- - Constantly fiddle with their key layout.
- - Want an inuitive keyboard config format which is simple to grok.
- - Wish to be able to switch to a VT to debug something without breaking their keymap.
+ - Would like to experiment with custom [layers](https://beta.docs.qmk.fm/using-qmk/software-features/feature_layers) (i.e custom shift keys)
+   and oneshot modifiers.
  - Like tiny daemons that adhere to the Unix philosophy.
+ - Want a keyboard config format which is easy to grok.
+ - Want to have multiple keyboards with different layouts on the same machine.
+ - Want to put the control and escape keys where God intended.
+ - Wish to be able to switch to a VT to debug something without breaking their keymap.
 
 ### What keyd isn't:
 
  - A tool for launching arbitrary system commands as root.
  - A tool for programming individual key up/down events.
- - A tool for generating unicode characters (though macros can be used to send the requisite keystrokes)
 
 # Dependencies
 
  - Your favourite C compiler
  - libudev
+
+## Optional
+
+ - python      (for application specific remapping)
+ - python-xlib (only for X support)
 
 # Installation
 
@@ -62,6 +73,33 @@ Some of the more interesting ones include:
     cd keyd
     make && sudo make install
     sudo systemctl enable keyd && sudo systemctl start keyd
+
+
+## Remapping (experimental)
+
+- Add yourself to the keyd group:
+
+	usermod -aG keyd <user>
+
+- Populate `~/.keyd-mappings`:
+
+E.G
+
+	[Alacritty]
+
+	alt.] = macro(C-g n)
+	alt.[ = macro(C-g p)
+
+	[Chromium]
+
+	alt.[ = C-S-tab
+	alt.] = macro(C-tab)
+
+- Run:
+	keyd-application-mapper
+
+
+Class names can be discovered with `keyd-application-mapper -m`.
 
 ## SBC support
 
@@ -93,8 +131,8 @@ members, no personal responsibility is taken for them.
 
 [main]
 
-# Turns capslock into an escape key when pressed and a control key when held.
-capslock = overload(C, esc)
+# Maps capslock to escape when pressed and control when held.
+capslock = overload(control, esc)
 
 # Remaps the escape key to capslock
 esc = capslock
@@ -105,10 +143,8 @@ esc = capslock
 4. See the [man page](man.md) for a comprehensive list of config options.
 
 *Note*: It is possible to render your machine unusable with a bad config file.
-Before proceeding ensure you have some way of killing keyd if things go wrong
-(e.g ssh). It is recommended that you avoid experimenting in default.cfg (see
-the man page for keyboard specific configuraiton) so you can plug in another
-keyboard which is unaffected by the changes.
+Should you find yourself in this position, the special key sequence
+`backspace+backslash+enter` should cause keyd to terminate.
 
 # Sample Config
 
@@ -149,8 +185,8 @@ following config:
 	capslock = overload(C, esc)
 	insert = S-insert
 
-This remaps all modifiers to 'oneshot' keys and overloads the capslock key to
-function as both escape (when tapped) and control (when held). Thus to produce
+This overloads the capslock key to function as both escape (when tapped) and
+control (when held) and remaps all modifiers to 'oneshot' keys. Thus to produce
 the letter A you can now simply tap shift and then a instead of having to hold
 it. Finally it remaps insert to S-insert (paste on X11).
 
@@ -160,8 +196,7 @@ it. Finally it remaps insert to S-insert (paste on X11).
 
 xmodmap and friends are display server level tools with limited functionality.
 keyd is a system level solution which implements advanced features like
-layering and
-[oneshot](https://beta.docs.qmk.fm/using-qmk/software-features/one_shot_keys)
+layering and [oneshot](https://beta.docs.qmk.fm/using-qmk/software-features/one_shot_keys)
 modifiers.  While some X tools offer similar functionality I am not aware of
 anything that is as flexible as keyd.
 
@@ -185,7 +220,7 @@ a simple language agnostic config format.
 
 If you feel something is missing or find a bug you are welcome to file an issue
 on github. keyd has a minimalist (but sane) design philosophy which
-intentionally omits certain features (e.g unicode/execing arbitrary executables
+intentionally omits certain features (e.g execing arbitrary executables
 as root). Things which already exist in custom keyboard firmware like QMK are
 good candidates for inclusion.
 

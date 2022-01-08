@@ -29,11 +29,9 @@
 #include "layer.h"
 #include "keys.h"
 #include "error.h"
+#include "config.h"
 
 #define MAX_ARGS 5
-
-static struct macro macros[MAX_MACROS];
-static size_t nr_macros = 0;
 
 static int parse_fn(char *s,
 		    char **name,
@@ -130,22 +128,19 @@ static int parse_key_sequence(const char *s, struct key_sequence *seq)
 	return -1;
 }
 
-static struct macro *parse_macro_fn(char *s)
+static int parse_macro_fn(struct macro *macro, char *s)
 {
 	size_t len = strlen(s);
-	struct macro *macro;
 
 	char *tok;
 	size_t sz = 0;
 
-	assert(nr_macros < MAX_MACROS);
-	macro = &macros[nr_macros];
-
 	if (strstr(s, "macro(") != s || s[len-1] != ')')
-		return NULL;
+		return -1;
 
 	s[len-1] = 0;
 
+	macro->sz = 0;
 	for (tok = strtok(s + 6, " "); tok; tok = strtok(NULL, " ")) {
 		struct macro_entry ent;
 		len = strlen(tok);
@@ -155,16 +150,15 @@ static struct macro *parse_macro_fn(char *s)
 
 			ent.type = MACRO_KEYSEQUENCE;
 
-			assert(macro->sz < MAX_MACRO_SIZE);
-			macro->entries[macro->sz++] = ent;
+			macro->entries[sz++] = ent;
 		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
 			int len = atoi(tok);
 
 			ent.type = MACRO_TIMEOUT;
 			ent.data.timeout = len;
 
-			assert(macro->sz < MAX_MACRO_SIZE);
-			macro->entries[macro->sz++] = ent;
+			assert(sz < MAX_MACRO_SIZE);
+			macro->entries[sz] = ent;
 		} else {
 			char *c;
 
@@ -173,18 +167,19 @@ static struct macro *parse_macro_fn(char *s)
 				char *key;
 
 				for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
-					if (parse_key_sequence(key, &ent.data.sequence) < 0)
-						return NULL;
+					if (parse_key_sequence(key, &ent.data.sequence) < 0) {
+						return -1;
+					}
 
 					ent.type = MACRO_HOLD;
 
-					assert(macro->sz < MAX_MACRO_SIZE);
-					macro->entries[macro->sz++] = ent;
+					assert(sz < MAX_MACRO_SIZE);
+					macro->entries[sz++] = ent;
 				}
 
 				ent.type = MACRO_RELEASE;
-				assert(macro->sz < MAX_MACRO_SIZE);
-				macro->entries[macro->sz++] = ent;
+				assert(sz < MAX_MACRO_SIZE);
+				macro->entries[sz++] = ent;
 			} else {
 				for (c = tok; *c; c++) {
 					char s[2];
@@ -192,21 +187,35 @@ static struct macro *parse_macro_fn(char *s)
 					s[0] = *c;
 					s[1] = 0;
 
-					if (parse_key_sequence(s, &ent.data.sequence) < 0)
-						return NULL;
+					if (parse_key_sequence(s, &ent.data.sequence) < 0) {
+						return -1;
+					}
 
 					ent.type = MACRO_KEYSEQUENCE;
 
-					assert(macro->sz < MAX_MACRO_SIZE);
-					macro->entries[macro->sz++] = ent;
+					assert(sz < MAX_MACRO_SIZE);
+					macro->entries[sz++] = ent;
 				}
 			}
 		}
 	}
 
-	nr_macros++;
+	macro->sz = sz;
+	return 0;
+}
 
-	return macro;
+static int config_get_free_macro_idx(struct config *config)
+{
+	size_t i;
+
+	/* Scan the macro table for a free entry. */
+	for (i = 0; i < sizeof(config->macros)/sizeof(config->macros[0]); i++)
+		if (!config->macros[i].sz)
+			return i;
+
+	die("Max macros exceeded in %s\n", config->name);
+
+	return -1;
 }
 
 /*
@@ -215,26 +224,24 @@ static struct macro *parse_macro_fn(char *s)
  */
 int parse_descriptor(char *s,
 		     struct descriptor *desc,
-		     struct layer *(*layer_lookup_fn)(const char *name, void *arg),
-		     void *layer_lookup_fn_arg)
+		     struct config *config)
 {
 	struct key_sequence seq;
 
 	char *fn;
 	char *args[MAX_ARGS];
 	size_t nargs = 0;
-	struct macro *macro;
+	int macro_idx = config_get_free_macro_idx(config);
 
 	if (!parse_key_sequence(s, &seq)) {
 		desc->op = OP_KEYSEQ;
 
 		desc->args[0].sequence = seq;
-	} else if ((macro = parse_macro_fn(s))) {
+	} else if (!parse_macro_fn(&config->macros[macro_idx], s)) {
 		desc->op = OP_MACRO;
-
-		desc->args[0].macro = macro;
+		desc->args[0].idx = macro_idx;
 	} else if (!parse_fn(s, &fn, args, &nargs)) {
-		struct layer *layer;
+		int layer_idx;
 
 		if (!strcmp(fn, "layer"))
 			desc->op = OP_LAYER;
@@ -263,19 +270,26 @@ int parse_descriptor(char *s,
 			return -1;
 		}
 
-		layer = layer_lookup_fn(args[0], layer_lookup_fn_arg);
+		layer_idx = config_lookup_layer(config, args[0]);
+		if (layer_idx == -1) {
+			uint16_t mods;
 
-		if (!layer) {
-			err("\"%s\" is not a valid layer", args[0]);
-			return -1;
+			/* Autovivify modifier layers. */
+			if (!parse_modset(args[0], &mods)) {
+				layer_idx = config_create_layer(config, args[0], mods);
+				assert(layer_idx > 0);
+			} else {
+				err("\"%s\" is not a valid layer", args[0]);
+				return -1;
+			}
 		}
 
-		if (desc->op == OP_LAYOUT && !layer->is_layout) {
+		if (desc->op == OP_LAYOUT && !config->layers[layer_idx]->is_layout) {
 			err("\"%s\" must be a valid layout.", args[0]);
 			return -1;
 		}
 
-		desc->args[0].layer = layer;
+		desc->args[0].idx = layer_idx;
 		desc->args[1].sequence = (struct key_sequence){0};
 
 		if (nargs > 1) {

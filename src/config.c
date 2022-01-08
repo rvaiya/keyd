@@ -36,8 +36,10 @@
 #include "config.h"
 #include <string.h>
 
-static struct config *fallback_config = NULL;
 static struct config *configs = NULL;
+
+int config_add_mapping(struct config *config, const char *layer, const char *str);
+int config_add_layer(struct config *config, const char *str);
 
 /*
  * Parse a value of the form 'key = value'. The value may contain =
@@ -66,6 +68,9 @@ static int parse_kvp(char *s, char **key, char **value)
 			while (*c && *c == ' ')
 				c++;
 
+			if (!*s)
+				return -1;
+
 			*key = s;
 			*value = c;
 
@@ -85,57 +90,40 @@ static int parse_kvp(char *s, char **key, char **value)
 	return -1;
 }
 
-static int parse_modset(const char *s, uint16_t * mods)
+/* Return up to two keycodes associated with the given name. */
+static int lookup_keycodes(const char *name, uint16_t *code1, uint16_t *code2)
 {
-	*mods = 0;
+	size_t i;
 
-	while (*s) {
-		switch (*s) {
-		case 'C':
-			*mods |= MOD_CTRL;
-			break;
-		case 'M':
-			*mods |= MOD_SUPER;
-			break;
-		case 'A':
-			*mods |= MOD_ALT;
-			break;
-		case 'S':
-			*mods |= MOD_SHIFT;
-			break;
-		case 'G':
-			*mods |= MOD_ALT_GR;
-			break;
-		default:
-			return -1;
-			break;
-		}
+	/*
+	 * If the name is a modifier like 'control' we associate it with both
+	 * corresponding key codes (e.g 'rightcontrol'/'leftcontrol')
+	 */
+	for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
+		struct modifier_table_ent *m = &modifier_table[i];
 
-		if (s[1] == 0)
+		if (!strcmp(m->name, name)) {
+			*code1 = m->code1;
+			*code2 = m->code2;
+
 			return 0;
-		else if (s[1] != '-')
-			return -1;
-
-		s += 2;
+		}
 	}
-
-	return 0;
-}
-
-static uint32_t lookup_keycode(const char *name)
-{
-	int i;
 
 	for (i = 0; i < KEY_MAX; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
 
 		if (ent->name &&
 		    (!strcmp(ent->name, name) ||
-		     (ent->alt_name && !strcmp(ent->alt_name, name))))
-			return i;
+		     (ent->alt_name && !strcmp(ent->alt_name, name)))) {
+			*code1 = i;
+			*code2 = 0;
+
+			return 0;
+		}
 	}
 
-	return 0;
+	return -1;
 }
 
 static char *read_file(const char *path)
@@ -163,44 +151,38 @@ static char *read_file(const char *path)
 	return data;
 }
 
-static struct layer *config_add_layer(struct config *config,
-				      const char *name,
-				      uint16_t mods)
+int config_create_layer(struct config *config, const char *name, uint16_t mods)
 {
 	struct layer *layer = create_layer(name, mods);
+	assert(config->nr_layers+1 <= MAX_LAYERS);
+
 	config->layers[config->nr_layers++] = layer;
 
-	return layer;
+	return config->nr_layers-1;
 }
 
-static struct layer *lookup_layer(const char *name, void *_config)
+int config_lookup_layer(struct config *config, const char *name)
 {
-	struct config *config = (struct config *) (_config);
 	size_t i;
-	uint16_t mods;
 
 	for (i = 0; i < config->nr_layers; i++) {
-		struct layer *layer = config->layers[i];
-
-		if (!strcmp(layer->name, name))
-			return layer;
+		if (!strcmp(config->layers[i]->name, name))
+			return i;
 	}
 
-	/* Autovivify modifier layers as required. */
-
-	if (!parse_modset(name, &mods))
-		return config_add_layer(config, name, mods);
-
-	return NULL;
+	return -1;
 }
 
 
-static struct layer *config_add_layout(struct config *config, const char *name)
+/* Returns the index within the layer table of the newly created layout. */
+int config_create_layout(struct config *config, const char *name)
 {
 	uint16_t code;
-	size_t i;
+	struct layer *layout;
 
-	struct layer *layout = config_add_layer(config, name, 0);
+	int layout_idx = config_create_layer(config, name, 0);
+	layout = config->layers[layout_idx];
+		
 	layout->is_layout = 1;
 
 	for (code = 0; code < KEY_MAX; code++) {
@@ -213,55 +195,13 @@ static struct layer *config_add_layout(struct config *config, const char *name)
 		layer_set_descriptor(layout, code, &d);
 	}
 
-	for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
-		struct modifier_table_ent *m = &modifier_table[i];
+	config_add_mapping(config, name, "shift = layer(shift)");
+	config_add_mapping(config, name, "control = layer(control)");
+	config_add_mapping(config, name, "meta = layer(meta)");
+	config_add_mapping(config, name, "alt = layer(alt)");
+	config_add_mapping(config, name, "altgr = layer(altgr)");
 
-		struct layer *layer;
-		struct descriptor d;
-
-		layer = lookup_layer(m->name, (void*)config);
-		assert(layer);
-
-		d.op = OP_LAYER;
-		d.args[0].layer = layer;
-
-		layer_set_descriptor(layout, m->code1, &d);
-		layer_set_descriptor(layout, m->code2, &d);
-	}
-
-	return layout;
-}
-
-static int parse_header(const char *s,
-			char name[MAX_LAYER_NAME_LEN],
-			char type[MAX_LAYER_NAME_LEN])
-{
-	char *d;
-	size_t typelen, namelen;
-	size_t len = strlen(s);
-
-	if (!(d = strchr(s, ':'))) {
-		if (len >= MAX_LAYER_NAME_LEN)
-			return -1;
-		else {
-			strcpy(name, s);
-			type[0] = 0;
-			return 0;
-		}
-	}
-
-	namelen = d - s;
-	typelen = len - namelen - 1;
-	if (namelen >= MAX_LAYER_NAME_LEN || typelen >= MAX_LAYER_NAME_LEN)
-		return -1;
-
-	memcpy(name, s, namelen);
-	memcpy(type, s+namelen+1, typelen);
-
-	name[namelen] = 0;
-	type[typelen] = 0;
-
-	return 0;
+	return layout_idx;
 }
 
 static void parse_id_section(struct config *config, struct ini_section *section)
@@ -276,23 +216,15 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 		/*  Applies to all device ids except the ones explicitly listed within the config. */
 
 		if (!strcmp(ent->line, "*")) {
-			if (fallback_config) {
-				fprintf(stderr, "WARNING: multiple fallback configs detected: %s, %s. Ignoring %s\n",
-					fallback_config->name,
-					config->name,
-					config->name);
-
-				return;
-			}
-
-			printf("Using %s as a fallback config.\n", config->name);
-			fallback_config = config;
+			config->has_wildcard = 1;
 			continue;
 		}
 
 		if (sscanf (ent->line, "-%hx:%hx", &product_id, &vendor_id) == 2) {
-			if (fallback_config != config) {
-				fprintf(stderr, "ERROR: -<id> is not permitted in non fallback configs.\n");
+			if (!config->has_wildcard) {
+				fprintf(stderr,
+					"ERROR %s:%zu: -<id> is not permitted unless the ids section begins with *.\n",
+					config->name, ent->lnum);
 				continue;
 			}
 
@@ -308,159 +240,221 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 	}
 }
 
-struct config *create_config(const char *name) 
+struct config *create_config(const char *name)
 {
-	size_t i;
 	struct config *config;
 
 	config = calloc(1, sizeof(struct config));
 	strncpy(config->name, name, sizeof(config->name)-1);
 
-	for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
-		struct modifier_table_ent *m = &modifier_table[i];
+	/* Create the default modifier layers. */
 
-		config_add_layer(config, m->name, m->mask);
-	}
+	config_add_layer(config, "control:C");
+	config_add_layer(config, "meta:M");
+	config_add_layer(config, "shift:S");
+	config_add_layer(config, "altgr:G");
+	config_add_layer(config, "alt:A");
 
-	config->default_layout = config_add_layout(config, "main");
-
+	config->default_layout = config_create_layout(config, "main");
 	return config;
 }
 
-/*
- * Ownership of the input string is forfeit, it will eventually be freed when
- * the config is destroyed.
- */
-
-static int parse_config(struct config *config, char *str)
+void free_config(struct config *config)
 {
-	size_t i, j;
+	size_t i;
 
-	struct ini ini;
+	for (i = 0; i < config->nr_layers; i++)
+		free_layer(config->layers[i]);
 
-	struct ini_section *layer_sections[MAX_LAYERS];
-	struct layer *layers[MAX_LAYERS];
-	size_t n = 0;
+	free(config);
+}
 
-	if (ini_parse(str, &ini, NULL) < 0) {
-		fprintf(stderr, "ERROR: %s is not a valid config\n", config->name);
+/*
+ * Consumes a string of the form name:type and creates a layer
+ * within the provided config. If the layer already exists
+ * then its attributes will remain unchanged.
+ */
+int config_add_layer(struct config *config, const char *str)
+{
+	uint16_t mods;
+	char *name;
+	char *type;
+
+	static char s[512];
+
+	strncpy(s, str, sizeof(s)-1);
+
+	name = strtok(s, ":");
+	type = strtok(NULL, ":");
+
+	if (config_lookup_layer(config, name) != -1) {
+		err("%s already exists, cannot redefine it.", name);
 		return -1;
 	}
 
-	/*
-	 * First pass, create layers so they are available
-	 * for lookup during descriptor parsing.
-	 */
+	/* Create the layer. */
 
+	if (type) {
+		if (!strcmp(type, "layout"))
+			config_create_layout(config, name);
+		else if (!parse_modset(type, &mods))
+			config_create_layer(config, name, mods);
+		else {
+			fprintf(stderr,
+				"WARNING %s: \"%s\" is not a valid layer type "
+				" (must be \"layout\" or a valid modifier set).\n",
+				config->name, type);
+
+			return -1;
+		}
+	} else
+		config_create_layer(config, name, 0);
+
+	return 0;
+}
+
+int config_execute_expression(struct config *config, const char *exp)
+{
+	char *d, *layer, *mapping;
+	size_t len = strlen(exp);
+	static char s[1024];
+
+	assert(len < sizeof(s)-1);
+	memcpy(s, exp, len+1);
+
+	if (len > 1 && s[0] == '[' && s[len-1] == ']') {
+		s[len-1] = 0;
+		return config_add_layer(config, s+1);
+	}
+
+	d = strchr(s, '.');
+	if (d) {
+		*d = 0;
+
+		layer = s;
+		mapping = d+1;
+	} else {
+		layer = "main";
+		mapping = s;
+	}
+
+
+	return config_add_mapping(config, layer, mapping);
+}
+
+/*
+ * Consumes a string of the form `<key> = <descriptor>` and adds the
+ * corresponding mapping to the layer within the supplied config.
+ * The layer must exist or else be a valid modifier set.
+ */
+int config_add_mapping(struct config *config, const char *layer_name, const char *str)
+{
+	uint16_t code1, code2;
+	char *key, *descstr;
+	int idx;
+	char *s;
+	struct descriptor desc;
+	struct descriptor *d;
+
+	s = strdup(str);
+
+	if (parse_kvp(s, &key, &descstr) < 0) {
+		err("Invalid key value pair.");
+		goto fail;
+	}
+
+	if (lookup_keycodes(key, &code1, &code2) < 0) {
+		err("%s is not a valid keycode", key);
+		goto fail;
+	}
+
+	idx = config_lookup_layer(config, layer_name);
+	if(idx == -1) {
+		err("%s is not a valid layer", layer_name);
+		goto fail;
+	}
+
+	if (parse_descriptor(descstr, &desc, config) < 0)
+		goto fail;
+
+	/* Free space in the macro table if we no longer need it. TODO: optimize mem usage. */
+	if((d = layer_get_descriptor(config->layers[idx], code1)) && d->op == OP_MACRO) {
+		config->macros[d->args[0].idx].sz = 0;
+	}
+
+	if((d = layer_get_descriptor(config->layers[idx], code2)) && d->op == OP_MACRO) {
+		config->macros[d->args[0].idx].sz = 0;
+	}
+
+	layer_set_descriptor(config->layers[idx], code1, &desc);
+	layer_set_descriptor(config->layers[idx], code2, &desc);
+
+	free(s);
+	return 0;
+
+fail:
+	free(s);
+	return -1;
+}
+
+static struct config *parse_ini_string(const char *name, char *str)
+{
+	size_t i;
+
+	struct ini ini;
+	struct config *config = create_config(name);
+	struct ini_section *section;
+
+	if (ini_parse(str, &ini, NULL) < 0) {
+		fprintf(stderr, "ERROR: %s is not a valid config.", config->name);
+
+		free(config);
+		return NULL;
+	}
+
+	/* First pass: create all layers based on section headers.  */
 	for (i = 0; i < ini.nr_sections; i++) {
-		struct ini_section *section = &ini.sections[i];
-		uint16_t mods;
-		struct layer *layer;
-		char name[MAX_LAYER_NAME_LEN], type[MAX_LAYER_NAME_LEN];
+		section = &ini.sections[i];
 
 		if (!strcmp(section->name, "ids")) {
 			parse_id_section(config, section);
 			continue;
 		}
 
-		if (parse_header(section->name, name, type) < 0) {
-			fprintf(stderr,
-				"ERROR %s:%zu: Invalid header.\n",
-				config->name,
-				section->lnum);
+		if (config_lookup_layer(config, section->name) != -1)
 			continue;
-		}
 
-		layer = lookup_layer(name, (void*)config);
-
-		if (!layer) { /* If the layer doesn't exist, create it. */
-			if (!strcmp(type, "layout"))
-				layer = config_add_layout(config, name);
-			else if (!parse_modset(type, &mods))
-				layer = config_add_layer(config, name, mods);
-			else if (strcmp(type, "")) {
-				fprintf(stderr,
-					"WARNING %s:%zu: \"%s\" is not a valid layer type "
-					" (must be \"layout\" or a valid modifier set).\n",
-					config->name, section->lnum, type);
-				continue;
-			}
-		}
-
-		layers[n] = layer;
-		layer_sections[n] = section;
-
-		n++;
+		if (config_add_layer(config, section->name) < 0)
+			fprintf(stderr, "ERROR %s:%zd: %s\n", config->name, section->lnum, errstr);
 	}
 
-	/* Parse each section entry and build the layer keymap. */
+	/* Populate each layer. */
+	for (i = 0; i < ini.nr_sections; i++) {
+		size_t j;
+		char *name;
+		section = &ini.sections[i];
 
-	for (i = 0; i < n; i++) {
-		struct ini_section *section = layer_sections[i];
-		struct layer *layer = layers[i];
+		if (!strcmp(section->name, "ids"))
+		    continue;
 
-		/* Populate the layer described by the section. */
+		name = strtok(section->name, ":");
 
-		for (j = 0; j < section->nr_entries; j++) {
-			size_t i;
-			int is_mod;
+		for (j = 0; j < section->nr_entries;j++) {
 			struct ini_entry *ent = &section->entries[j];
 
-			char *k, *v;
-			uint16_t code;
-
-			struct descriptor desc;
-
-			if (parse_kvp(ent->line, &k, &v) < 0) {
-				fprintf(stderr,
-					"ERROR %s:%zu: Invalid key value pair.\n",
-					config->name, ent->lnum);
-				continue;
-			}
-
-			if (parse_descriptor(v, &desc, lookup_layer, config) < 0) {
-				fprintf(stderr, "ERROR %s:%zu: %s\n", config->name,
-					ent->lnum, errstr);
-				continue;
-			}
-
-			is_mod = 0;
-			for (i = 0; i < sizeof(modifier_table)/sizeof(modifier_table[0]); i++) {
-				struct modifier_table_ent *m = &modifier_table[i];
-
-				if (!strcmp(m->name, k)) {
-					layer_set_descriptor(layer, m->code1, &desc);
-					layer_set_descriptor(layer, m->code2, &desc);
-
-					is_mod++;
-					break;
-				}
-			}
-
-			if (is_mod)
-				continue;
-
-			code = lookup_keycode(k);
-
-			if (!code) {
-				fprintf(stderr,
-					"ERROR %s:%zu: %s is not a valid key.\n",
-					config->name, ent->lnum, k);
-				continue;
-			}
-
-			layer_set_descriptor(layer, code, &desc);
+			if (config_add_mapping(config, name, ent->line) < 0)
+				fprintf(stderr, "ERROR %s:%zd: %s\n", config->name, ent->lnum, errstr);
 		}
 	}
 
-	return 0;
+	return config;
 }
 
-struct config *add_config(const char *config_name, char *str)
+struct config *config_create_from_ini(const char *config_name, char *str)
 {
-	struct config *config = create_config(config_name);
+	struct config *config = parse_ini_string(config_name, str);
 
-	if (parse_config(config, str) < 0) {
+	if (!config) {
 		free(config);
 		return NULL;
 	}
@@ -476,18 +470,12 @@ void free_configs()
 	struct config *config = configs;
 
 	while (config) {
-		size_t i;
-		struct config *tmp;
-
-		for (i = 0; i < config->nr_layers; i++)
-			free_layer(config->layers[i]);
-
-		tmp = config;
+		struct config *tmp = config;
 		config = config->next;
-		free(tmp);
+
+		free_config(tmp);
 	}
 
-	fallback_config = NULL;
 	configs = NULL;
 }
 
@@ -514,10 +502,10 @@ int read_config_dir(const char *dir)
 
 			sprintf(path, "%s/%s", dir, de->d_name);
 
-			fprintf(stderr, "Parsing %s\n", path);
+			fprintf(stderr, "Parsing %s:\n", path);
 			data = read_file(path);
 
-			add_config(path, data);
+			config_create_from_ini(path, data);
 			free(data);
 		}
 	}
@@ -526,28 +514,46 @@ int read_config_dir(const char *dir)
 	return 0;
 }
 
+struct config *config_copy(struct config *config)
+{
+	size_t i;
+	struct config *nc = malloc(sizeof(struct config));
+
+	memcpy(nc, config, sizeof(struct config));
+
+	for (i = 0; i < config->nr_layers; i++)
+		nc->layers[i] = layer_copy(config->layers[i]);
+
+	nc->next = NULL;
+
+	return nc;
+}
+
 struct config *lookup_config(uint32_t device_id)
 {
 	struct config *config = configs;
-	int excluded = 0;
+	struct config *result = NULL;
 
 	while (config) {
 		size_t i;
 
-		for (i = 0; i < config->nr_device_ids; i++) {
-			if (config->device_ids[i] == device_id) {
-				if (fallback_config == config)
+		if (config->has_wildcard) {
+			int excluded = 0;
+			for (i = 0; i < config->nr_device_ids; i++)
+				if (config->device_ids[i] == device_id)
 					excluded++;
-				else
+
+			if (!excluded)
+				result = config;
+		} else {
+			for (i = 0; i < config->nr_device_ids; i++)
+				if (config->device_ids[i] == device_id)
 					return config;
-			}
 		}
 
 		config = config->next;
 	}
 
-	if (fallback_config && !excluded)
-		return fallback_config;
-
-	return NULL;
+	return result;
 }
+

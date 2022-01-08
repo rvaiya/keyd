@@ -47,11 +47,15 @@
 #include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <grp.h>
+
 #include "keys.h"
 #include "config.h"
 #include "keyboard.h"
 #include "keyd.h"
+#include "server.h"
 #include "vkbd.h"
+#include "error.h"
 
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
 #define MAX_KEYBOARDS 256
@@ -66,6 +70,7 @@ static struct udev *udev;
 static struct udev_monitor *udevmon;
 uint8_t keystate[KEY_CNT] = { 0 };
 static int sigfds[2];
+struct keyboard *active_keyboard = NULL;
 
 static struct keyboard *keyboards = NULL;
 
@@ -78,19 +83,6 @@ static void info(char *fmt, ...)
 	va_end(args);
 	fprintf(stderr, "\n");
 }
-
-static void _die(char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	fprintf(stderr, "\n");
-	exit(-1);
-}
-
-#define die(fmt, ...) _die("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__)
 
 static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
 {
@@ -306,10 +298,30 @@ static void await_keyboard_neutrality(char **devs, int n)
 	dbg("Keyboard neutrality achieved");
 }
 
+void reset_vkbd()
+{
+	uint16_t code;
+	for (code = 0; code < KEY_MAX; code++) {
+		if (keystate[code])
+			send_key(code, 0);
+	}
+}
+
 void send_key(int code, int state)
 {
 	keystate[code] = state;
 	vkbd_send(vkbd, code, state);
+}
+
+void reset_keyboards()
+{
+	struct keyboard *kbd;
+	for (kbd = keyboards; kbd; kbd = kbd->next) {
+		if (kbd->config != kbd->original_config) {
+			free_config(kbd->config);
+			kbd_reset(kbd);
+		}
+	}
 }
 
 static int manage_keyboard(const char *devnode)
@@ -358,6 +370,8 @@ static int manage_keyboard(const char *devnode)
 
 	kbd = calloc(1, sizeof(struct keyboard));
 	kbd->fd = fd;
+	kbd->config = config;
+	kbd->original_config = config;
 	kbd->layout = config->default_layout;
 
 	strcpy(kbd->devnode, devnode);
@@ -365,6 +379,7 @@ static int manage_keyboard(const char *devnode)
 	kbd->next = keyboards;
 	keyboards = kbd;
 
+	active_keyboard = kbd;
 	info("Managing %s (%04x:%04x) (%s)", evdev_device_name(devnode), vendor_id, product_id, config->name);
 	return 0;
 }
@@ -385,7 +400,7 @@ static void scan_keyboards(int wait)
 }
 
 /* TODO: optimize */
-static void reload_config()
+void reload_config()
 {
 	struct keyboard *kbd = keyboards;
 
@@ -585,6 +600,7 @@ static void main_loop()
 {
 	struct keyboard *kbd;
 	int monfd;
+	int sd;
 
 	long timeout = 0; /* in ns */
 	long last_ts = 0;
@@ -604,6 +620,7 @@ static void main_loop()
 	udev_monitor_enable_receiving(udevmon);
 
 	monfd = udev_monitor_get_fd(udevmon);
+	sd = create_server_socket();
 
 	pipe(sigfds);
 	signal(SIGUSR1, usr1);
@@ -618,9 +635,11 @@ static void main_loop()
 
 		FD_ZERO(&fds);
 		FD_SET(monfd, &fds);
+		FD_SET(sd, &fds);
 		FD_SET(sigfds[0], &fds);
 
 		maxfd = monfd > sigfds[0] ? monfd : sigfds[0];
+		maxfd = sd > maxfd ? sd : maxfd;
 
 		for (kbd = keyboards; kbd; kbd = kbd->next) {
 			int fd = kbd->fd;
@@ -647,6 +666,9 @@ static void main_loop()
 				if (timeout <= 0)
 					timeout_kbd = NULL;
 			}
+
+			if (FD_ISSET(sd, &fds))
+				server_process_connections(sd);
 
 			if (FD_ISSET(sigfds[0], &fds)) {
 				char c;
@@ -690,6 +712,7 @@ static void main_loop()
 								/* Wayland and X both ignore repeat events but VTs seem to require them. */
 								send_repetitions ();
 							} else {
+								active_keyboard = kbd;
 								timeout = kbd_process_key_event(kbd, ev.code, ev.value) * 1E6;
 
 								if (timeout > 0)
@@ -720,6 +743,8 @@ static void main_loop()
 
 static void cleanup()
 {
+	info("cleaning up and terminating...");
+
 	struct keyboard *kbd = keyboards;
 	free_configs();
 
@@ -732,31 +757,7 @@ static void cleanup()
 	free_vkbd(vkbd);
 	udev_unref(udev);
 	udev_monitor_unref(udevmon);
-}
-
-static void lock()
-{
-	int fd;
-
-	if ((fd = open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
-		perror("flock open");
-		exit(1);
-	}
-
-	if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-		info("Another instance of keyd is already running.");
-		exit(-1);
-	}
-}
-
-
-static void exit_signal_handler(int sig)
-{
-	info("%s received, cleaning up and terminating...",
-	     sig == SIGINT ? "SIGINT" : "SIGTERM");
-
-	cleanup();
-	exit(0);
+	unlink(SOCKET);
 }
 
 static void daemonize()
@@ -787,8 +788,24 @@ static void daemonize()
 	dup2(fd, 2);
 }
 
+static void chgid()
+{
+	struct group *g = getgrnam("keyd");
+
+	if (!g) {
+		fprintf(stderr, "WARNING: failed to set effective group to \"keyd\" (make sure the group exists)\n");
+	} else {
+		if (setgid(g->gr_gid)) {
+			perror("setgid");
+			exit(-1);
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
+	int daemonize_flag = 0;
+
 	if (getenv("KEYD_DEBUG"))
 		debug = atoi(getenv("KEYD_DEBUG"));
 
@@ -796,15 +813,45 @@ int main(int argc, char *argv[])
 	dbg2("Verbose debugging enabled.");
 
 	if (argc > 1) {
-		if (!strcmp(argv[1], "-v")) {
-			fprintf(stderr, "keyd version: %s (%s)\n", VERSION,
-				GIT_COMMIT_HASH);
+		if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version")) {
+			fprintf(stderr, "keyd version: %s (%s)\n", VERSION, GIT_COMMIT_HASH);
 			return 0;
-		} else if (!strcmp(argv[1], "-d")) {
+		} else if (!strcmp(argv[1], "-d") || !strcmp(argv[1], "--daemonize")) {
+			daemonize_flag++;
 			;;
-		} else if (!strcmp(argv[1], "-m")) {
+		} else if (!strcmp(argv[1], "-e") || !strcmp(argv[1], "--expression")) {
+			int i;
+			int rc = 0;
+			const int n = argc - 2;
+			argv+=2;
+
+			if (!n) {
+				fprintf(stderr, "ERROR: -e must be followed by one or more arguments.\n");
+				return -1;
+			}
+
+
+
+			if (n == 1 && !strcmp(argv[0], "ping"))
+				return client_send_message(MSG_PING, "");
+
+			for (i = 0; i < n; i++) {
+				const char *mapping = argv[i];
+
+				if (!strcmp(argv[i], "reset")) {
+					client_send_message(MSG_RESET, "");
+					continue;
+				}
+
+				if (client_send_message(MSG_MAPPING, mapping))
+				    rc = -1;
+			}
+
+			return rc;
+			;;
+		} else if (!strcmp(argv[1], "-m") || !strcmp(argv[1], "--monitor")) {
 			return monitor_loop();
-		} else if (!strcmp(argv[1], "-l")) {
+		} else if (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--list")) {
 			size_t i;
 
 			for (i = 0; i < KEY_MAX; i++)
@@ -828,23 +875,30 @@ int main(int argc, char *argv[])
 					argv[1]);
 
 			fprintf(stderr,
-				"Usage: %s [-m] [-l] [-d]\n\nOptions:\n"
-				"\t-m monitor mode\n" "\t-l list keys\n"
-				"\t-d fork and start as a daemon\n"
-				"\t-v print version\n"
-				"\t-h print this help message\n", argv[0]);
+				"Usage: %s [options]\n\n"
+				"Options:\n"
+				"\t-m, --monitor                                monitor mode\n"
+				"\t-e, --expression <mapping> [<mapping>...]    add the supplied mappings to the current config\n"
+				"\t-l, --list                                   list all key names\n"
+				"\t-d, --daemonize                              fork and start as a daemon\n"
+				"\t-v, --version                                print version\n"
+				"\t-h, --help                                   print this help message\n", argv[0]);
 
 			return 0;
 		}
 	}
 
-	lock();
+	chgid();
+	if (!access(SOCKET, F_OK))
+		die("ERROR: Another instance of keyd appears to be running.\n"
+		     "\tto force keyd to run, manually remove %s and try again.", SOCKET);
 
-	signal(SIGINT, exit_signal_handler);
-	signal(SIGTERM, exit_signal_handler);
-
-	if (argc > 1 && !strcmp(argv[1], "-d"))
+	if (daemonize_flag)
 		daemonize();
+
+	signal(SIGINT, exit);
+	signal(SIGTERM, exit);
+	atexit(cleanup);
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
 	read_config_dir(CONFIG_DIR);

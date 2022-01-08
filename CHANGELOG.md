@@ -1,3 +1,8 @@
+# v2.2.0-beta
+
+ - Added a new IPC mechanism for dynamically altering the keymap (-e).
+ - Added experimental support for app specific bindings.
+
 # v2.1.0-beta
 
  NOTE: This might break some configs (see below)
@@ -18,7 +23,7 @@
 
 # v2.0.0-beta
 
-Major version update. 
+Major version update.
 
 This breaks 1.x configs. The format may change slightly before leaving beta,
 but once it does should remain backwards compatible for the foreseeable future.
@@ -55,7 +60,7 @@ the file extension from `.cfg` to `.conf`, replacing `layert` with
 [main]
 ```
 
-to the top of the file. 
+to the top of the file.
 
 More involved configs may need additional changes, but should be possible
 to replicate using the new rules. If not, please file an issue on

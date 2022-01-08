@@ -42,6 +42,7 @@
 #define KEY_NOOP 0x27b
 
 uint16_t keycode_to_mod(uint16_t code);
+int 	 parse_modset(const char *s, uint16_t *mods);
 
 struct keycode_table_ent {
 	const char *name;
@@ -49,13 +50,15 @@ struct keycode_table_ent {
 	const char *shifted_name;
 };
 
-static struct modifier_table_ent {
+struct modifier_table_ent {
 	const char *name;
 	uint16_t mask;
 
 	uint16_t code1;
 	uint16_t code2; /* May be 0. */
-} modifier_table[] = {
+};
+
+static struct modifier_table_ent modifier_table[] = {
 	{"control", MOD_CTRL, KEY_LEFTCTRL, KEY_RIGHTCTRL},
 	{"shift", MOD_SHIFT, KEY_LEFTSHIFT, KEY_RIGHTSHIFT},
 	{"meta", MOD_SUPER, KEY_LEFTMETA, KEY_RIGHTMETA},

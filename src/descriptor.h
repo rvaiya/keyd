@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define MAX_MACROS 256
-#define MAX_MACRO_SIZE 32
+struct config;
+
+#define MAX_MACRO_SIZE 256
 
 enum op {
 	OP_KEYSEQ,
@@ -58,24 +59,20 @@ struct descriptor {
 
 	union {
 		struct key_sequence sequence;
-		struct layer *layer;
-		struct macro *macro;
+		int idx;
 		size_t sz;
 		size_t timeout;
 	} args[3];
 };
 
 /*
- * Creates a descriptor from the given string which describes a key action. A
- * function which maps layer names to indices must also be supplied for layer
- * lookup. The function should return -1 to indicate the absence of layer.
- * Potentially modifies the input string in the process. layer_index_fn_arg
- * gets passed back to layer_index_fn unaltered.
+ * Creates a descriptor from the given string which describes a key action.
+ * Layer and macro indices are relative to the provided config.  Potentially
+ * modifies the input string in the process.
  */
 
 int parse_descriptor(char *s,
 		     struct descriptor *desc,
-		     struct layer *(*layer_lookup_fn)(const char *name, void *arg),
-		     void *layer_lookup_fn_arg);
+		     struct config *config);
 
 #endif
