@@ -1,0 +1,203 @@
+#!/usr/bin/python3
+
+import subprocess
+import argparse
+import os
+
+# Good enough for now :/.
+
+# TODO(ish): 
+#
+# Make assorted detection hacks cleaner. 
+# Profile and optimize.
+# Consider reimplmenting in perl or C.
+# Produce more useful error messages :P.
+
+CONFIG_PATH = os.getenv('HOME') + '/.keyd-mappings'
+
+def parse_config(path):
+    map = {}
+
+    for line in open(path):
+        line = line.strip()
+
+        if line.startswith('[') and line.endswith(']'):
+            window_class = line[1:-1]
+
+            bindings = []
+            map[window_class] = bindings
+        elif line == '':
+            continue
+        elif line.startswith('#'):
+            continue
+        else:
+            bindings.append(line)
+
+    return map
+
+
+class SwayWindowChangeDetector():
+    def __init__(self, on_window_change):
+        import os
+
+        self.on_window_change = on_window_change
+
+        if not os.getenv('SWAYSOCK'):
+            raise Exception('SWAYSOCK not found, is sway running?')
+
+    def run(self):
+        import json
+        import subprocess
+
+        swayproc = subprocess.Popen(
+            ['swaymsg',
+            	'--type',
+            	'subscribe',
+            	'--monitor',
+            	'--raw',
+            	'["window"]'], stdout=subprocess.PIPE)
+
+        for ev in swayproc.stdout:
+            data = json.loads(ev)
+
+            try:
+                if data['container']['focused'] == True:
+                    cls = data['container']['window_properties']['class']
+                    self.on_window_change([cls])
+            except:
+                self.on_window_change([data['container']['app_id']])
+                pass
+
+
+class XWindowChangeDetector():
+    def __init__(self, on_window_change):
+        import os
+
+        self.on_window_change = on_window_change
+
+        if not os.getenv('DISPLAY'):
+            raise Exception('DISPLAY not set, is X running?')
+
+    # TODO: make this less kludgy
+    def run(self):
+        import time
+        import Xlib
+        import Xlib.display
+
+        dpy = Xlib.display.Display()
+
+        class_cache = {}
+
+        def get_class(win):
+            hsh = str(win)
+            if hsh not in class_cache:
+                try:
+                    cls = win.get_wm_class()
+                    if not cls:
+                        return []
+                    class_cache[hsh] = cls
+                except:
+                    return []
+
+            return class_cache[hsh]
+
+        last = []
+        while True:
+            win = dpy.get_input_focus().focus
+
+            classes = get_class(win)
+
+            if classes != last:
+                self.on_window_change(classes)
+
+            last = classes
+            time.sleep(0.1)
+
+
+class GnomeWindowChangeDetector():
+	def __init__(self, on_window_change):
+		import dbus
+		import dbus.mainloop.glib
+
+		dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+		self.con = dbus.SessionBus()
+
+		self.introspect = self.get_dbus_object("org.gnome.Shell.Introspect",
+				"/org/gnome/Shell/Introspect")
+
+		self.shell = self.get_dbus_object(
+				"org.gnome.Shell", "/org/gnome/Shell")
+
+		self.on_window_change = on_window_change
+		self.introspect.connect_to_signal(
+				"RunningApplicationsChanged", lambda: self._on_window_change())
+
+	def get_dbus_object(self, interface, path):
+		import dbus
+		return dbus.Interface(self.con.get_object(interface, path), interface)
+
+	def get_window_class(self):
+		return self.shell.Eval('global.display.focus_window.get_wm_class()')[1].strip('"')
+
+	def _on_window_change(self):
+		self.on_window_change(self.get_window_class())
+
+	def run(self):
+		import dbus
+		from gi.repository import GLib
+
+		loop = GLib.MainLoop()
+		loop.run()
+
+
+def get_detector(on_window_change):
+    detectors = [
+            ('Sway', SwayWindowChangeDetector),
+            ('Gnome', GnomeWindowChangeDetector),
+            ('X', XWindowChangeDetector),
+    ]
+
+    for name,detector in detectors:
+        try:
+            d = detector(on_window_change)
+            print(f'{name} detected')
+            return d
+        except:
+            pass
+
+    print('Could not detect app environment :(.')
+    exit(-1)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--monitor', default=False, action='store_true')
+args = parser.parse_args()
+
+if subprocess.run(['keyd', '-e', 'ping'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
+    print('Could not connect to keyd instance, make sure it is running and you are a member of `keyd`')
+    exit(-1)
+
+app_bindings = parse_config(CONFIG_PATH)
+last_mtime = os.path.getmtime(CONFIG_PATH)
+
+def on_window_change(classes):
+    global last_mtime
+    global app_bindings
+
+    mtime = os.path.getmtime(CONFIG_PATH)
+
+    if mtime != last_mtime:
+        print(CONFIG_PATH + ': Updated, reloading config...')
+        app_bindings = parse_config(CONFIG_PATH)
+        last_mtime = mtime
+
+    if args.monitor:
+        print(', '.join(classes))
+        return
+
+    for cls in classes:
+        if cls in app_bindings:
+            # Apply the bindings.
+            subprocess.run(['keyd', '-e', *app_bindings[cls]])
+
+get_detector(on_window_change).run()

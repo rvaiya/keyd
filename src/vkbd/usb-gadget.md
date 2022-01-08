@@ -1,8 +1,12 @@
 # USB HID gadget
 
-Linux devices with host and either USB OTG or device port can be used as USB to USB converter boards, with keyboard connected to USB host port and PC to USB OTG or device port.
+Linux devices with host and either USB OTG or device ports can be used as USB
+to USB converter boards, with the keyboard connected to the USB host port and
+the PC to the USB OTG or device port.
 
-In that kind of setup Linux USB HID gadget driver can be used to emulate HID device and `keyd` can be configured to translate evdev input events to HID reports.
+Under this kind of setup, the Linux USB HID gadget driver can be used to emulate
+a HID device and `keyd` can be configured to translate evdev input events to
+HID reports.
 
 
 # Installation
@@ -15,5 +19,8 @@ In that kind of setup Linux USB HID gadget driver can be used to emulate HID dev
     sudo systemctl enable usb-gadget && sudo systemctl start usb-gadget
     sudo systemctl enable keyd && sudo systemctl start keyd
 
-Device should show up on `lsusb` list as `1d6b:0104 Linux Foundation Multifunction Composite Gadget`.
-One can also see it in `/dev/input/by-id/` under `Tux_USB_Gadget_Keyboard` name.
+The device should show up as` 1d6b:0104 Linux Foundation Multifunction Composite Gadget`
+on the host machine. This can be observed on a linus host by checking the output of
+`lsof` or the existence of `/dev/input/by-id/Tux_USB_Gadget_Keyboard`.
+
+

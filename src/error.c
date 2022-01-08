@@ -20,4 +20,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
 char errstr[1024];
+
+void _die(char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+	fprintf(stderr, "\n");
+	exit(-1);
+}
+

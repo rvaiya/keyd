@@ -42,3 +42,41 @@ uint16_t keycode_to_mod(uint16_t code)
 
 	return 0;
 }
+
+int parse_modset(const char *s, uint16_t *mods)
+{
+	*mods = 0;
+
+	while (*s) {
+		switch (*s) {
+		case 'C':
+			*mods |= MOD_CTRL;
+			break;
+		case 'M':
+			*mods |= MOD_SUPER;
+			break;
+		case 'A':
+			*mods |= MOD_ALT;
+			break;
+		case 'S':
+			*mods |= MOD_SHIFT;
+			break;
+		case 'G':
+			*mods |= MOD_ALT_GR;
+			break;
+		default:
+			return -1;
+			break;
+		}
+
+		if (s[1] == 0)
+			return 0;
+		else if (s[1] != '-')
+			return -1;
+
+		s += 2;
+	}
+
+	return 0;
+}
+
