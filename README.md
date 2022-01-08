@@ -24,7 +24,7 @@ as well as some additional ones.
 Some of the more interesting ones include:
 
 - Layers (with support for [hybrid modifiers](man.md#modifiers)).
-- Display server agnostic application remapping (Currently supports X, sway, and gnome).
+- Display server agnostic [application remapping](man.md#application-support) (Currently supports X, sway, and gnome).
 - Key overloading (different behaviour on tap/hold).
 - Per keyboard configuration.
 - Instantaneous remapping (no flashing required).
@@ -75,7 +75,7 @@ Some of the more interesting ones include:
     sudo systemctl enable keyd && sudo systemctl start keyd
 
 
-## Remapping (experimental)
+## Application Specific Remapping (experimental)
 
 - Add yourself to the keyd group:
 
