@@ -465,9 +465,10 @@ long kbd_process_key_event(struct keyboard *kbd,
 			kbd_activate_layer(kbd, layer, 0);
 		} else if (last_pressed_keycode == code) {
 			kbd_deactivate_layer(kbd, layer);
+			verbatim = dl != kbd->layout;
 
-			kbd_process_keyseq(kbd, 1, sequence, 1);
-			kbd_process_keyseq(kbd, 1, sequence, 0);
+			kbd_process_keyseq(kbd, verbatim, sequence, 1);
+			kbd_process_keyseq(kbd, verbatim, sequence, 0);
 
 			kbd_reify_mods(kbd);
 		} else {
