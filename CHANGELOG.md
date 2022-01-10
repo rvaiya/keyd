@@ -1,3 +1,9 @@
+# v2.2.1-beta
+
+ - Moved application bindings into ~/.config/keyd/app.conf.
+ - Added -d to keyd-application-mapper.
+ - Fixed broken gnome support.
+
 # v2.2.0-beta
 
  - Added a new IPC mechanism for dynamically altering the keymap (-e).

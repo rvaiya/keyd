@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-**keyd** [options]
+**keyd** \[options\]
 
 # OPTIONS
 
@@ -243,9 +243,8 @@ unless they are doing something unorthodox (e.g nesting hybrid layers).
 
 ## IPC
 
-To facilitate extensibility, keyd employs a client-server model. Thus the
-keymap can be conceived of as a 'living entity' that can be modified at
-runtime.
+To facilitate extensibility keyd employs a client-server model. The keymap can
+thus be conceived of as a 'living entity' that can be modified at run time.
 
 In addition to allowing the user to try new bindings on the fly, this
 enables the user to fully leverage keyd's expressive power from other programs
@@ -268,7 +267,7 @@ The `-e` flag accepts one or more *expressions*, each of which must have one of 
 
 Where `<layer>` is the name of an (existing) layer in which the key is to be bound.
 
-As a special case an expression may be the string 'reset' in which case the
+As a special case, an expression may be the string 'reset', in which case the
 current keymap will revert to its original state (all dynamically applied
 bindings will be dropped).
 
@@ -282,9 +281,9 @@ By default expressions apply to the most recently active keyboard.
 
 ### Application Support
 
-keyd ships with a python script called `keyd-application-mapper` which
-reads a file called *~/.keyd-mappings* and applies the supplied mappings
-whenever a window of the relevant class comes into focus.
+keyd ships with a python script called `keyd-application-mapper` that
+reads a file called *~/.config/keyd/app.conf* and applies the supplied bindings
+whenever a window with a matching class comes into focus.
 
 The file has the following form:
 
@@ -293,37 +292,43 @@ The file has the following form:
 	<expression 1>
 	<expression 2...>
 
-Where each expression is a valid argument to `-e`.
+Where each expression is a valid argument to `-e` (see *Expressions*).
 
 For example:
 
-	[Alacritty]
+	[kitty]
 
-	control.1  = macro(Inside space alacritty)
+	control.1  = macro(Inside space kitty!)
+
+	[alacritty]
+
+	control.1  = macro(Inside space alacritty!)
 
 	[chromium]
 
-	control.1 = macro(Inside space chrome)
+	control.1 = macro(Inside space chrome!)
 
 Will remap `C-1` to the the string 'Inside alacritty' when a window with class
-'Alacritty' is active and 'Inside chrome' when a window with class 'chromium'
-is active.
+`alacritty` is active.
 
-Application classes can be obtained by running `keyd-application-mapper -m`.
+In order for this to work keyd must be running and the user must have access to
+*/var/run/keyd.socket* (i.e be a member of the *keyd* group). Application
+classes can be obtained with `keyd-application-mapper -m`.
+
+You will probably want to put `keyd-application-mapper -d` somewhere in the
+initialization path of your display server (e.g `~/.xinitrc`).
+
 At the moment X, sway and gnome are supported.
-
-In order for this script to work the user must have access to */var/run/keyd.socket*
-(i.e be a member of the *keyd* group).
 
 ### A note on security
 
 Any user which can interact with a program that directly controls input devices
 should be assumed to have full access to the system.
 
-While keyd is slightly better at providing some degree of isolation than other
-remappers (by dint of mediating access through an IPC mechanism rather than
-granting users blanket access to /dev/input/* and /dev/uinput), it still
-provides the opportunity for abuse and should be treated with due deference.
+While keyd offers slightly better isolation compared to other remappers by dint
+of mediating access through an IPC mechanism (rather than granting users
+blanket access to /dev/input/* and /dev/uinput), it still provides an
+opportunity for abuse and should be treated with due deference.
 
 Specifically, access to */var/run/keyd.socket* should only be granted to
 trusted users and the group `keyd` should be regarded with the same reverence

@@ -35,7 +35,7 @@ Some of the more interesting ones include:
 - Keyboard specific configuration.
 - Instantaneous remapping (no more flashing :)).
 - A client-server model that facilitates scripting and display server agnostic application remapping. (Currently ships with support for X, sway, and gnome).
-- System wide config (work in a VT)
+- System wide config (works in a VT)
 - First class support for modifier overloading.
 
 ### keyd is for people who:
@@ -75,51 +75,6 @@ Some of the more interesting ones include:
     make && sudo make install
     sudo systemctl enable keyd && sudo systemctl start keyd
 
-
-## Application Specific Remapping (experimental)
-
-- Add yourself to the keyd group:
-
-	usermod -aG keyd <user>
-
-- Populate `~/.keyd-mappings`:
-
-E.G
-
-	[Alacritty]
-
-	alt.] = macro(C-g n)
-	alt.[ = macro(C-g p)
-
-	[Chromium]
-
-	alt.[ = C-S-tab
-	alt.] = macro(C-tab)
-
-- Run:
-	keyd-application-mapper
-
-
-Class names are discoverable with `keyd-application-mapper -m`.
-See the man page for more details.
-
-## SBC support
-
-Experimental support for single board computers (SBCs) via usb-gadget
-has been added courtesy of Giorgi Chavchanidze.
-
-See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
-
-## Packages
-
-Third party packages for the some distributions also exist. If you wish to add
-yours to the list please file a PR. These are kindly maintained by community
-members, no personal responsibility is taken for them.
-
-### Arch
-
-[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
-
 # Quickstart
 
 1. Install keyd
@@ -147,6 +102,53 @@ esc = capslock
 *Note*: It is possible to render your machine unusable with a bad config file.
 Should you find yourself in this position, the special key sequence
 `backspace+backslash+enter` should cause keyd to terminate.
+
+## Application Specific Remapping (experimental)
+
+- Add yourself to the keyd group:
+
+	usermod -aG keyd <user>
+
+- Populate `~/.config/keyd/app.conf`:
+
+E.G
+
+	[alacritty]
+
+	alt.] = macro(C-g n)
+	alt.[ = macro(C-g p)
+
+	[chromium]
+
+	alt.[ = C-S-tab
+	alt.] = macro(C-tab)
+
+- Run:
+
+	keyd-application-mapper
+
+You will probably want to put `keyd-application-mapper -d` in your 
+initialization. 
+
+Window class names are discoverable with `keyd-application-mapper -m`.
+See the man page for more details.
+
+## SBC support
+
+Experimental support for single board computers (SBCs) via usb-gadget
+has been added courtesy of Giorgi Chavchanidze.
+
+See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
+
+## Packages
+
+Third party packages for the some distributions also exist. If you wish to add
+yours to the list please file a PR. These are kindly maintained by community
+members, no personal responsibility is taken for them.
+
+### Arch
+
+[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
 
 # Sample Config
 
