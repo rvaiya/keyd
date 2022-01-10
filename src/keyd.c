@@ -473,7 +473,7 @@ static void panic_check(uint16_t code, int state)
 	}
 
 	if (n == 3)
-		die("Termination key sequence triggered (backspace+backslash+enter), terminating.");
+		die("Termination key sequence triggered (backspace+escape+enter), terminating.");
 }
 
 
