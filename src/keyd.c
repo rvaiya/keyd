@@ -456,6 +456,27 @@ static void monitor_exit(int status)
 	exit(status);
 }
 
+static void panic_check(uint16_t code, int state)
+{
+	static int n = 0;
+
+	switch (code) {
+	case KEY_BACKSPACE:
+	case KEY_ENTER:
+	case KEY_ESC:
+		if (state == 1)
+			n++;
+		else if (state == 0)
+			n--;
+
+		break;
+	}
+
+	if (n == 3)
+		die("Termination key sequence triggered (backspace+backslash+enter), terminating.");
+}
+
+
 static void evdev_monitor_loop(int *fds, int sz)
 {
 	struct input_event ev;
@@ -712,6 +733,8 @@ static void main_loop()
 								/* Wayland and X both ignore repeat events but VTs seem to require them. */
 								send_repetitions ();
 							} else {
+								panic_check(ev.code, ev.value);
+
 								active_keyboard = kbd;
 								timeout = kbd_process_key_event(kbd, ev.code, ev.value) * 1E6;
 

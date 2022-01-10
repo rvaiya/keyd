@@ -44,7 +44,7 @@ will be stored in */var/log/keyd.log*.
 
 Because keyd modifies your primary input device it is possible to render your
 machine unusable with a bad config file. If you find yourself in this
-situation the sequence *\<backspace\>+\<rightshift\>+\<enter\>* will force keyd
+situation the sequence *\<backspace\>+\<escape\>+\<enter\>* will force keyd
 to terminate.
 
 # CONFIGURATION

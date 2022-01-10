@@ -32,28 +32,6 @@
 #define MACRO_REPEAT_TIMEOUT 400 /* In ms */
 #define MACRO_REPEAT_INTERVAL 20 /* In ms */
 
-static void kbd_panic_check(struct keyboard *kbd)
-{
-	size_t i;
-	size_t n;
-
-	n = 0;
-	for (i = 0; i < kbd->nr_active_keys; i++) {
-		switch (kbd->active_keys[i].code) {
-		case KEY_BACKSPACE:
-		case KEY_ENTER:
-		case KEY_RIGHTSHIFT:
-			n++;
-			break;
-		}
-	}
-
-	if (n == 3) {
-		fprintf(stderr, "Termination key sequence triggered (backspace+backslash+enter), terminating.\n");
-		exit(1);
-	}
-}
-
 static const struct descriptor *kbd_lookup_descriptor(struct keyboard *kbd,
 						      uint16_t code,
 						      int pressed,
@@ -343,8 +321,6 @@ long kbd_process_key_event(struct keyboard *kbd,
 	static const struct descriptor *pending_overload = 0;
 
 	long timeout = 0;
-
-	kbd_panic_check(kbd);
 
 	if (active_macro) {
 		if (!code) {

@@ -101,7 +101,7 @@ esc = capslock
 
 *Note*: It is possible to render your machine unusable with a bad config file.
 Should you find yourself in this position, the special key sequence
-`backspace+rightshift+enter` should cause keyd to terminate.
+`backspace+escape+enter` should cause keyd to terminate.
 
 ## Application Specific Remapping (experimental)
 

@@ -1,6 +1,6 @@
 # v2.2.2-beta
 
- - Change panic sequence to `backspace+enter+rightshift` (#94)
+ - Change panic sequence to `backspace+enter+escape` (#94)
  - Fix overload+modifer behaviour (#95)
 
 # v2.2.1-beta
