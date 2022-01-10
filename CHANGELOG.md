@@ -1,13 +1,18 @@
+# v2.2.2-beta
+
+ - Change panic sequence to `backspace+enter+rightshift` (#94)
+ - Fix overload+modifer behaviour (#95)
+
 # v2.2.1-beta
 
- - Moved application bindings into ~/.config/keyd/app.conf.
- - Added -d to keyd-application-mapper.
- - Fixed broken gnome support.
+ - Move application bindings into ~/.config/keyd/app.conf.
+ - Add -d to keyd-application-mapper.
+ - Fix broken gnome support.
 
 # v2.2.0-beta
 
- - Added a new IPC mechanism for dynamically altering the keymap (-e).
- - Added experimental support for app specific bindings.
+ - Add a new IPC mechanism for dynamically altering the keymap (-e).
+ - Add experimental support for app specific bindings.
 
 # v2.1.0-beta
 
@@ -21,11 +26,11 @@
    when assigned instead of just the former.  (Note: this also means it is no
    longer a valid right hand value)
 
- - Fix v1 overload regression (#74)
+ - Fixes v1 overload regression (#74)
 
 # v2.0.1-beta
 
- - Added + syntax to macros to allow for simultaenously held keys.
+ - Add + syntax to macros to allow for simultaenously held keys.
 
 # v2.0.0-beta
 
@@ -37,22 +42,22 @@ but once it does should remain backwards compatible for the foreseeable future.
 A non exhaustive list of changes can be found below. It is best to forget
 everything you know and read man page anew.
 
-- Eliminated layer inheritance in favour of simple types.
-(layouts are now defined with `:layout` instead of `:main`)
-- Macros are now repeatable.
-- Overload now accepts a hold threshold timeout.
-- Config files are now vendor/product id oriented.
-- SIGUSR1 now triggers a config reload.
-- Modifiers are layers by default and can be extended directly.
-- Config files now end in `.conf`.
-- `layert()` is now `toggle()`.
-- All layers are 'modifier layers' (terminological change)
-- Eliminated the dedicated modifer layout.
-- Modifiers no longer apply to key sequences defined within a layer.
-  (Layer entries are now always executed verbatim.)
+	- Eliminate layer inheritance in favour of simple types.
+	(layouts are now defined with `:layout` instead of `:main`)
+	- Macros are now repeatable.
+	- Overload now accepts a hold threshold timeout.
+	- Config files are now vendor/product id oriented.
+	- SIGUSR1 now triggers a config reload.
+	- Modifiers are layers by default and can be extended directly.
+	- Config files now end in `.conf`.
+	- `layert()` is now `toggle()`.
+	- All layers are 'modifier layers' (terminological change)
+	- Eliminate the dedicated modifer layout.
+	- Modifiers no longer apply to key sequences defined within a layer.
+	  (Layer entries are now always executed verbatim.)
 
-  The old behaviour was unintuitive and can be emulated using nested
-  layers if necessary.
+	  The old behaviour was unintuitive and can be emulated using nested
+	  layers if necessary.
 
 For most old configs transitioning should be a simple matter of changing
 the file extension from `.cfg` to `.conf`, replacing `layert` with
@@ -78,16 +83,16 @@ to replicate using the new rules. If not, please file an issue on
 
 # v1.1.0
 
-- Added layert() to facilitate semipermanent-activation of occluding layers.
-- Now resolve layer conflicts by picking the one which was most recently activated.
+- Add layert() to facilitate semipermanent-activation of occluding layers.
+- Resolve layer conflicts by picking the one which was most recently activated.
 
 # v1.0.0
 
 Major version update:
 
-- Introduces support for modifier layers.
-- Simplifies the config format.
-- Improves consistency/expected key behaviour.
+- Introduce support for modifier layers.
+- Simplify the config format.
+- Improve consistency/expected key behaviour.
 - Symbols can now be assigned directly place of their names (e.g `&` instead of `S-7`).
 - Macro support.
 
