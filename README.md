@@ -127,8 +127,8 @@ E.G
 
 	keyd-application-mapper
 
-You will probably want to put `keyd-application-mapper -d` in your 
-initialization. 
+You will probably want to put `keyd-application-mapper -d` somewhere in your 
+display server initialization logic (e.g ~/.xinitrc).
 
 Window class names are discoverable with `keyd-application-mapper -m`.
 See the man page for more details.

@@ -95,7 +95,7 @@ Every subsequent section of the file corresponds to a layer and has the form:
 
 Where `<type>` is either a valid modifier set (see *MODIFIERS*) or "layout".
 
-Each line within a layer is a mapping of the form:
+Each line within a layer is a binding of the form:
 
 	<key> = <action>|<keyseq>
 
@@ -144,7 +144,7 @@ for the duration of the corresponding key stroke.
 
 ## Layouts
 
-The *layout* is a special kind of layer from which mappings are drawn if no
+The *layout* is a special kind of layer from which bindings are drawn if no
 other layers are active. By default all keys are mapped to themselves within a
 layout. Every config has at least one layout called *main*, but additional
 layouts may be defined and subsequently activated using the `layout()` action.
@@ -221,6 +221,20 @@ control, which means the following:
 	capslock = layer(M-A)
 
 will cause capslock to behave as meta and alt when held.
+
+**NOTE**: While it is technically possible to use individual modifier key codes
+like `rightalt` and `rightcontrol` as target sequences, the user is strongly
+encouraged to avoid these as they can produce unintuitive results when paired
+with their layer counterparts.  To this end, it is best to think of modifiers
+as just a another kind of layer.  
+
+Thus instead of:
+
+	meta = rightcontrol 
+
+one should do:
+
+	meta = layer(control)
 
 ### Lookup Rules
 
@@ -509,6 +523,15 @@ of \` will thus produce A-tab instead of M-\`.
 
 	# Map e to €
 	e = macro(compose c =)
+
+# Example 6
+
+	# Tapping both shift keys will activate capslock.
+
+	[shift]
+
+	leftshift = capslock
+	rightshift = capslock
 
 # AUTHOR
 
