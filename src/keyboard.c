@@ -41,8 +41,8 @@ static void kbd_panic_check(struct keyboard *kbd)
 	for (i = 0; i < kbd->nr_active_keys; i++) {
 		switch (kbd->active_keys[i].code) {
 		case KEY_BACKSPACE:
-		case KEY_BACKSLASH:
 		case KEY_ENTER:
+		case KEY_RIGHTSHIFT:
 			n++;
 			break;
 		}
