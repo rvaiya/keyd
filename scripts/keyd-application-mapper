@@ -271,9 +271,13 @@ def on_window_change(cls):
         print(cls)
         return
 
+    expressions = ['reset']
+
     if cls in bindings:
-        # Apply the bindings.
-        subprocess.run(['keyd', '-e', *bindings[cls]])
+        expressions.extend(bindings[cls])
+
+    # Apply the bindings.
+    subprocess.run(['keyd', '-e', *expressions])
 
 
 mon = get_monitor(on_window_change)
