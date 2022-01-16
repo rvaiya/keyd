@@ -112,10 +112,12 @@ class XMonitor():
             self.dpy.next_event()
 
             try:
-                cls = self.dpy.get_input_focus().focus.get_wm_class()[1]
-                if cls != last_active_class:
-                    last_active_class = cls
-                    self.on_window_change(cls)
+                wm_class = self.dpy.get_input_focus().focus.get_wm_class()
+                if wm_class:
+                    cls = wm_class[1]
+                    if cls != last_active_class:
+                        last_active_class = cls
+                        self.on_window_change(cls)
             except:
                 import traceback
                 traceback.print_exc()
