@@ -327,7 +327,7 @@ Will remap `C-1` to the the string 'Inside alacritty' when a window with class
 
 In order for this to work keyd must be running and the user must have access to
 */var/run/keyd.socket* (i.e be a member of the *keyd* group). Application
-classes can be obtained with `keyd-application-mapper -m`.
+classes can be obtained with `keyd-application-mapper -v`.
 
 You will probably want to put `keyd-application-mapper -d` somewhere in the
 initialization path of your display server (e.g `~/.xinitrc`).

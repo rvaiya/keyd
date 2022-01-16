@@ -130,7 +130,7 @@ E.G
 You will probably want to put `keyd-application-mapper -d` somewhere in your 
 display server initialization logic (e.g ~/.xinitrc).
 
-Window class names are discoverable with `keyd-application-mapper -m`.
+Window class names are discoverable with `keyd-application-mapper -v`.
 See the man page for more details.
 
 ## SBC support
