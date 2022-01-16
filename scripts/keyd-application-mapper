@@ -242,7 +242,7 @@ def daemonize():
     if os.fork(): exit(0)
 
 opt = argparse.ArgumentParser()
-opt.add_argument('-m', '--monitor', default=False, action='store_true', help='print window class names in real time')
+opt.add_argument('-v', '--verbose', default=False, action='store_true', help='print window class names in real time (useful for debugging and discovering window classes)')
 opt.add_argument('-d', '--daemonize', default=False, action='store_true', help='fork and run in the background')
 args = opt.parse_args()
 
@@ -269,9 +269,8 @@ def on_window_change(cls):
         bindings = parse_config(CONFIG_PATH)
         last_mtime = mtime
 
-    if args.monitor:
-        print(cls)
-        return
+    if args.verbose:
+        print(f'Active window class: {cls}')
 
     if cls in bindings:
         # Apply the bindings.
