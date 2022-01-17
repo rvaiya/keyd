@@ -84,11 +84,11 @@ class SwayMonitor():
 
             try:
                 if data['container']['focused'] == True:
-                    cls = data['container']['window_properties']['class']
-                    self.on_window_change(cls)
+                    props = data['container']['window_properties']
+                    self.on_window_change(props['class'], props['title'])
             except:
                 cls = data['container']['app_id']
-                self.on_window_change(cls)
+                self.on_window_change(cls, "")
                 pass
 
 
@@ -108,16 +108,23 @@ class XMonitor():
 
     def run(self):
         last_active_class = ""
+        last_active_name = ""
         while True:
             self.dpy.next_event()
 
             try:
-                wm_class = self.dpy.get_input_focus().focus.get_wm_class()
+                focus = self.dpy.get_input_focus().focus
+                wm_class = focus.get_wm_class()
                 if wm_class:
+                    wm_name = focus.get_wm_name()
+                    if isinstance(wm_name, bytes):
+                        wm_name = wm_name.decode('ascii')
+
                     cls = wm_class[1]
-                    if cls != last_active_class:
+                    if cls != last_active_class or wm_name != last_active_name:
                         last_active_class = cls
-                        self.on_window_change(cls)
+                        last_active_name = wm_name
+                        self.on_window_change(cls, wm_name)
             except:
                 import traceback
                 traceback.print_exc()
@@ -163,7 +170,7 @@ class GnomeMonitor():
 
         function init() {
                 Shell.WindowTracker.get_default().connect('notify::focus-app', () => {
-                    send(`${global.display.focus_window.get_wm_class()}\n`);
+                    send(`${global.display.focus_window.get_wm_class()}\t${global.display.focus_window.get_wm_name()}\n`);
                 });
 
                 return { enable: ()=>{}, disable: ()=>{} };
@@ -194,9 +201,9 @@ class GnomeMonitor():
         run_or_die('gnome-extensions enable keyd', 'Failed to enable keyd extension.')
 
     def run(self):
-        for cls in open(self.fifo_path):
-            cls = cls.strip()
-            self.on_window_change(cls)
+        for line in open(self.fifo_path):
+            [cls, name] = line.strip().split('\t')
+            self.on_window_change(cls, name)
 
 def get_monitor(on_window_change):
     monitors = [
@@ -253,15 +260,16 @@ bindings = parse_config(CONFIG_PATH)
 ping_keyd()
 lock()
 
-def normalize_class(s):
+def normalize_identifier(s):
      return re.sub('[^A-Za-z0-9]', '-', s).strip('-').lower()
 
 last_mtime = os.path.getmtime(CONFIG_PATH)
-def on_window_change(cls):
+def on_window_change(cls, name):
     global last_mtime
     global bindings
 
-    cls = normalize_class(cls)
+    cls = normalize_identifier(cls)
+    name = normalize_identifier(name)
     mtime = os.path.getmtime(CONFIG_PATH)
 
     if mtime != last_mtime:
@@ -270,11 +278,19 @@ def on_window_change(cls):
         last_mtime = mtime
 
     if args.verbose:
-        print(f'Active window class: {cls}')
+        print(f'Active window: {cls}, {name}')
+
+    expressions = ['reset']
 
     if cls in bindings:
-        # Apply the bindings.
-        subprocess.run(['keyd', '-e', *bindings[cls]])
+        expressions.extend(bindings[cls])
+
+    pair = cls + '|' + name
+    if (pair) in bindings:
+        expressions.extend(bindings[pair])
+
+    # Apply the bindings.
+    subprocess.run(['keyd', '-e', *expressions])
 
 
 mon = get_monitor(on_window_change)
