@@ -299,7 +299,8 @@ keyd ships with a python script called **keyd-application-mapper** which
 reads a file called *~/.config/keyd/app.conf* and applies the supplied bindings
 whenever a window with a matching class comes into focus.
 
-You can think of each section as a set of application specific masks.
+You can think of each section as a set of application specific masks applied
+over the global rules defined in `/etc/keyd/*.conf`. 
 
 The config file has the following form:
 
@@ -319,8 +320,6 @@ and each `<expression>` is a valid argument to `-e` (see *Expressions*).
 to be matched and may optionally contain unix style wildcards (*). For example, 
 '`[gnome|*find*]`' will match any window with a class of 'gnome' and a title
 which contains 'find'.
-
-applied over the global rules defined in `/etc/keyd/*.conf`. 
 
 E.G
 

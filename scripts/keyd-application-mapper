@@ -245,7 +245,7 @@ class GnomeMonitor():
             self._install()
             run_or_die('gsettings set org.gnome.shell disable-user-extensions false');
 
-            print('Success! Please restart Gnome and rerun this script one more time.')
+            print('Success! Please restart Gnome and run this script one more time.')
             exit(0)
 
         if 'DISABLED' in run('gnome-extensions show keyd'):
