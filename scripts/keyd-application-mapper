@@ -46,10 +46,10 @@ def parse_config(path):
         line = line.strip()
 
         if line.startswith('[') and line.endswith(']'):
-            window_class = line[1:-1]
+            window_identifier = line[1:-1]
 
             bindings = []
-            map[window_class] = bindings
+            map[window_identifier] = bindings
         elif line == '':
             continue
         elif line.startswith('#'):
@@ -85,11 +85,11 @@ class SwayMonitor():
 
             try:
                 if data['container']['focused'] == True:
-                    cls = data['container']['window_properties']['class']
-                    self.on_window_change(cls)
+                    props = data['container']['window_properties']
+                    self.on_window_change(props['class'], props['title'])
             except:
                 cls = data['container']['app_id']
-                self.on_window_change(cls)
+                self.on_window_change(cls, "")
                 pass
 
 
@@ -109,6 +109,7 @@ class XMonitor():
 
     def run(self):
         last_active_class = ""
+        last_active_name = ""
         while True:
             self.dpy.next_event()
 
@@ -213,9 +214,9 @@ class GnomeMonitor():
         run_or_die('gnome-extensions enable keyd', 'Failed to enable keyd extension.')
 
     def run(self):
-        for cls in open(self.fifo_path):
-            cls = cls.strip()
-            self.on_window_change(cls)
+        for line in open(self.fifo_path):
+            [cls, name] = line.strip().split('\t')
+            self.on_window_change(cls, name)
 
 def get_monitor(on_window_change):
     monitors = [
@@ -272,15 +273,16 @@ map = parse_config(CONFIG_PATH)
 ping_keyd()
 lock()
 
-def normalize_class(s):
+def normalize_identifier(s):
      return re.sub('[^A-Za-z0-9]', '-', s).strip('-').lower()
 
 last_mtime = os.path.getmtime(CONFIG_PATH)
-def on_window_change(cls):
+def on_window_change(cls, name):
     global last_mtime
     global map
 
-    cls = normalize_class(cls)
+    cls = normalize_identifier(cls)
+    name = normalize_identifier(name)
     mtime = os.path.getmtime(CONFIG_PATH)
 
     if mtime != last_mtime:
