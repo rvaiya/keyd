@@ -158,7 +158,7 @@ static int parse_macro_fn(struct macro *macro, char *s)
 			ent.data.timeout = len;
 
 			assert(sz < MAX_MACRO_SIZE);
-			macro->entries[sz] = ent;
+			macro->entries[sz++] = ent;
 		} else {
 			char *c;
 
