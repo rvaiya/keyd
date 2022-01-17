@@ -1,3 +1,8 @@
+# v2.2.4-beta
+  - Add support for application mapping by title
+  - Fix macro timeouts
+  - Forbid modifier keycodes as lone right hand values in favour of layers
+
 # v2.2.3-beta
 
  - Enable hot swapping of depressed keybindings via -e

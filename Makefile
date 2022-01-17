@@ -7,7 +7,7 @@ SOCKET="/var/run/keyd.socket"
 LOG_FILE="/var/log/keyd.log"
 CONFIG_DIR="/etc/keyd"
 
-VERSION=2.2.3-beta
+VERSION=2.2.4-beta
 GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
 
 CFLAGS+=-DVERSION=\"$(VERSION)\" \
