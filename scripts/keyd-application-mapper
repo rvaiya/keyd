@@ -45,10 +45,10 @@ def parse_config(path):
         line = line.strip()
 
         if line.startswith('[') and line.endswith(']'):
-            window_class = line[1:-1]
+            window_identifier = line[1:-1]
 
             bindings = []
-            map[window_class] = bindings
+            map[window_identifier] = bindings
         elif line == '':
             continue
         elif line.startswith('#'):
