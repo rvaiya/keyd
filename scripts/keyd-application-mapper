@@ -315,11 +315,12 @@ ping_keyd()
 lock()
 
 def lookup_bindings(cls, title):
-    for cexp, texp, bindings in config:
+    bindings = []
+    for cexp, texp, b in config:
         if fnmatch(cls, cexp) and fnmatch(title, texp):
-            return bindings
+            bindings.extend(b)
 
-    return []
+    return bindings
 
 def normalize_class(s):
      return re.sub('[^A-Za-z0-9]+', '-', s).strip('-').lower()
