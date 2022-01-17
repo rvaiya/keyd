@@ -6,9 +6,10 @@
 
 struct config;
 
-#define MAX_MACRO_SIZE 256
+#define MAX_MACRO_SIZE 128
 
 enum op {
+	OP_UNDEFINED,
 	OP_KEYSEQ,
 
 	OP_ONESHOT,

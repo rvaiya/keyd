@@ -316,12 +316,9 @@ void send_key(int code, int state)
 void reset_keyboards()
 {
 	struct keyboard *kbd;
-	for (kbd = keyboards; kbd; kbd = kbd->next) {
-		if (kbd->config != kbd->original_config) {
-			free_config(kbd->config);
-			kbd_reset(kbd);
-		}
-	}
+
+	for (kbd = keyboards; kbd; kbd = kbd->next)
+		kbd_reset(kbd);
 }
 
 static int manage_keyboard(const char *devnode)
@@ -370,8 +367,11 @@ static int manage_keyboard(const char *devnode)
 
 	kbd = calloc(1, sizeof(struct keyboard));
 	kbd->fd = fd;
-	kbd->config = config;
-	kbd->original_config = config;
+
+	/* TODO: optimize */
+	kbd->config = *config;
+	kbd->original_config = *config;
+
 	kbd->layout = config->default_layout;
 
 	strcpy(kbd->devnode, devnode);

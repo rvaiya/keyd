@@ -17,7 +17,7 @@ struct active_layer {
 struct active_key {
 	uint16_t code;
 
-	const struct descriptor *d;
+	struct descriptor d;
 	int dl; /* The layer from which the descriptor was drawn. */
 };
 
@@ -30,8 +30,8 @@ struct keyboard {
 	struct active_layer active_layers[MAX_LAYERS];
 	size_t nr_active_layers;
 
-	struct config *original_config;
-	struct config *config;
+	struct config original_config;
+	struct config config;
 	int layout;
 
 	struct active_key active_keys[MAX_ACTIVE_KEYS];
@@ -42,7 +42,9 @@ struct keyboard {
 	struct keyboard *next;
 };
 
-long kbd_process_key_event(struct keyboard *kbd, uint16_t code, int pressed);
-void kbd_reset(struct keyboard *kbd);
+long	kbd_process_key_event(struct keyboard *kbd, uint16_t code, int pressed);
+
+void	kbd_reset(struct keyboard *kbd);
+int	kbd_execute_expression(struct keyboard *kbd, const char *exp);
 
 #endif

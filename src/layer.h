@@ -6,13 +6,6 @@
 
 #define MAX_LAYER_NAME_LEN 32
 
-struct layer_entry {
-	uint16_t code;
-	struct descriptor descriptor;
-
-	struct layer_entry *next;
-};
-
 /*
  * A layer is a map from keycodes to descriptors. It may optionally
  * contain one or more modifiers which are applied to the base layout in
@@ -26,14 +19,8 @@ struct layer {
 
 	int is_layout;
 	uint16_t mods;
-	struct layer_entry *entries;
+
+	struct descriptor keymap[KEY_MAX];
 };
-
-struct layer *create_layer(const char *name, uint16_t mods);
-void 	      free_layer(struct layer *layer);
-
-struct descriptor *layer_get_descriptor(const struct layer *layer, uint16_t code);
-void 		   layer_set_descriptor(struct layer *layer, uint16_t code, const struct descriptor *descriptor);
-struct layer	  *layer_copy(const struct layer *layer);
 
 #endif

@@ -13,20 +13,15 @@
 #include "keyboard.h"
 #include "error.h"
 
-static int execute_mapping(const char *s, char response[MAX_RESPONSE_SIZE])
+static int execute_mapping(const char *exp, char response[MAX_RESPONSE_SIZE])
 {
 	if (!active_keyboard) {
 		fprintf(stderr, "Failed to determine active keyboard\n");
 		return -1;
 	}
 
-	if (active_keyboard->config == active_keyboard->original_config) {
-		kbd_reset(active_keyboard);
-		active_keyboard->config = config_copy(active_keyboard->config);
-	}
-
-	if (config_execute_expression(active_keyboard->config, s)) {
-		sprintf(response, "ERROR parsing %s: %s\n", s, errstr);
+	if (kbd_execute_expression(active_keyboard, exp) < 0) {
+		sprintf(response, "ERROR parsing %s: %s\n", exp, errstr);
 		return -1;
 	}
 

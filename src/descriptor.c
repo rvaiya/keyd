@@ -284,7 +284,7 @@ int parse_descriptor(char *s,
 			}
 		}
 
-		if (desc->op == OP_LAYOUT && !config->layers[layer_idx]->is_layout) {
+		if (desc->op == OP_LAYOUT && !config->layers[layer_idx].is_layout) {
 			err("\"%s\" must be a valid layout.", args[0]);
 			return -1;
 		}

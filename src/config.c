@@ -153,10 +153,10 @@ static char *read_file(const char *path)
 
 int config_create_layer(struct config *config, const char *name, uint16_t mods)
 {
-	struct layer *layer = create_layer(name, mods);
-	assert(config->nr_layers+1 <= MAX_LAYERS);
+	struct layer *layer = &config->layers[config->nr_layers++];
 
-	config->layers[config->nr_layers++] = layer;
+	layer->mods = mods;
+	strncpy(layer->name, name, sizeof(layer->name)-1);
 
 	return config->nr_layers-1;
 }
@@ -166,7 +166,7 @@ int config_lookup_layer(struct config *config, const char *name)
 	size_t i;
 
 	for (i = 0; i < config->nr_layers; i++) {
-		if (!strcmp(config->layers[i]->name, name))
+		if (!strcmp(config->layers[i].name, name))
 			return i;
 	}
 
@@ -181,18 +181,16 @@ int config_create_layout(struct config *config, const char *name)
 	struct layer *layout;
 
 	int layout_idx = config_create_layer(config, name, 0);
-	layout = config->layers[layout_idx];
+	layout = &config->layers[layout_idx];
 		
 	layout->is_layout = 1;
 
 	for (code = 0; code < KEY_MAX; code++) {
-		struct descriptor d;
+		struct descriptor *d = &layout->keymap[code];
 
-		d.op = OP_KEYSEQ;
-		d.args[0].sequence.code = code;
-		d.args[0].sequence.mods = 0;
-
-		layer_set_descriptor(layout, code, &d);
+		d->op = OP_KEYSEQ;
+		d->args[0].sequence.code = code;
+		d->args[0].sequence.mods = 0;
 	}
 
 	config_add_mapping(config, name, "shift = layer(shift)");
@@ -257,16 +255,6 @@ struct config *create_config(const char *name)
 
 	config->default_layout = config_create_layout(config, "main");
 	return config;
-}
-
-void free_config(struct config *config)
-{
-	size_t i;
-
-	for (i = 0; i < config->nr_layers; i++)
-		free_layer(config->layers[i]);
-
-	free(config);
 }
 
 /*
@@ -352,49 +340,38 @@ int config_add_mapping(struct config *config, const char *layer_name, const char
 	uint16_t code1, code2;
 	char *key, *descstr;
 	int idx;
-	char *s;
-	struct descriptor desc;
-	struct descriptor *d;
+	struct descriptor d;
 
-	s = strdup(str);
+	static char s[1024];
+
+	strncpy(s, str, sizeof(s)-1);
 
 	if (parse_kvp(s, &key, &descstr) < 0) {
 		err("Invalid key value pair.");
-		goto fail;
+		return -1;
 	}
 
 	if (lookup_keycodes(key, &code1, &code2) < 0) {
-		err("%s is not a valid keycode", key);
-		goto fail;
+		err("%s is not a valid key.", key);
+		return -1;
 	}
 
 	idx = config_lookup_layer(config, layer_name);
 	if(idx == -1) {
 		err("%s is not a valid layer", layer_name);
-		goto fail;
+		return -1;
 	}
 
-	if (parse_descriptor(descstr, &desc, config) < 0)
-		goto fail;
+	if (parse_descriptor(descstr, &d, config) < 0)
+		return -1;
 
-	/* Free space in the macro table if we no longer need it. TODO: optimize mem usage. */
-	if((d = layer_get_descriptor(config->layers[idx], code1)) && d->op == OP_MACRO) {
-		config->macros[d->args[0].idx].sz = 0;
-	}
+	if (code1)
+		config->layers[idx].keymap[code1] = d;
 
-	if((d = layer_get_descriptor(config->layers[idx], code2)) && d->op == OP_MACRO) {
-		config->macros[d->args[0].idx].sz = 0;
-	}
+	if (code2)
+		config->layers[idx].keymap[code2] = d;
 
-	layer_set_descriptor(config->layers[idx], code1, &desc);
-	layer_set_descriptor(config->layers[idx], code2, &desc);
-
-	free(s);
 	return 0;
-
-fail:
-	free(s);
-	return -1;
 }
 
 static struct config *parse_ini_string(const char *name, char *str)
@@ -473,7 +450,7 @@ void free_configs()
 		struct config *tmp = config;
 		config = config->next;
 
-		free_config(tmp);
+		free(tmp);
 	}
 
 	configs = NULL;
@@ -512,21 +489,6 @@ int read_config_dir(const char *dir)
 
 	closedir(dh);
 	return 0;
-}
-
-struct config *config_copy(struct config *config)
-{
-	size_t i;
-	struct config *nc = malloc(sizeof(struct config));
-
-	memcpy(nc, config, sizeof(struct config));
-
-	for (i = 0; i < config->nr_layers; i++)
-		nc->layers[i] = layer_copy(config->layers[i]);
-
-	nc->next = NULL;
-
-	return nc;
 }
 
 struct config *lookup_config(uint32_t device_id)
