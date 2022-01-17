@@ -2,6 +2,7 @@
 DESTDIR=
 PREFIX=/usr
 
+LOCK_FILE="/var/run/keyd.lock"
 SOCKET="/var/run/keyd.socket"
 LOG_FILE="/var/log/keyd.log"
 CONFIG_DIR="/etc/keyd"
@@ -14,6 +15,7 @@ CFLAGS+=-DVERSION=\"$(VERSION)\" \
 	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
 	-DLOG_FILE=\"$(LOG_FILE)\" \
 	-DSOCKET=\"$(SOCKET)\" \
+	-DLOCK_FILE=\"$(LOCK_FILE)\" \
 	-I/usr/local/include \
 	-L/usr/local/lib\
 

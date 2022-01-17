@@ -811,6 +811,21 @@ static void daemonize()
 	dup2(fd, 2);
 }
 
+static void lock()
+{
+	int fd;
+
+	if ((fd = open(LOCK_FILE, O_CREAT | O_RDWR, 0600)) == -1) {
+		perror("flock open");
+		exit(1);
+	}
+
+	if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
+		fprintf(stderr, "ERROR: Another instance of keyd is already running.\n");
+		exit(-1);
+	}
+}
+
 static void chgid()
 {
 	struct group *g = getgrnam("keyd");
@@ -912,9 +927,7 @@ int main(int argc, char *argv[])
 	}
 
 	chgid();
-	if (!access(SOCKET, F_OK))
-		die("ERROR: Another instance of keyd appears to be running.\n"
-		     "\tto force keyd to run, manually remove %s and try again.", SOCKET);
+	lock();
 
 	if (daemonize_flag)
 		daemonize();
