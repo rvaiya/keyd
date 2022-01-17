@@ -1,3 +1,8 @@
+# v2.2.3-beta
+
+ - Enable hot swapping of depressed keybindings via -e
+ - Improve support for application remapping
+
 # v2.2.2-beta
 
  - Change panic sequence to `backspace+enter+escape` (#94)
