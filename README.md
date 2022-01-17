@@ -107,7 +107,7 @@ Should you find yourself in this position, the special key sequence
 
 - Add yourself to the keyd group:
 
-	usermod -aG keyd <user>
+	`usermod -aG keyd <user>`
 
 - Populate `~/.config/keyd/app.conf`:
 
@@ -128,9 +128,8 @@ E.G
 	keyd-application-mapper
 
 You will probably want to put `keyd-application-mapper -d` somewhere in your 
-display server initialization logic (e.g ~/.xinitrc).
+display server initialization logic (e.g ~/.xinitrc) unless you are running Gnome.
 
-Window class names are discoverable with `keyd-application-mapper -v`.
 See the man page for more details.
 
 ## SBC support

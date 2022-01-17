@@ -3,6 +3,7 @@
 import subprocess
 import argparse
 import os
+import shutil
 import re
 import sys
 import fcntl
@@ -17,8 +18,8 @@ import fcntl
 # Produce more useful error messages :P.
 
 CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
-LOCKFILE = os.getenv('HOME')+'/.config/keyd/lockfile'
-LOGFILE = os.getenv('HOME')+'/.config/keyd/log'
+LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
+LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
 def die(msg):
     sys.stderr.write('ERROR: ')
@@ -113,14 +114,16 @@ class XMonitor():
 
             try:
                 wm_class = self.dpy.get_input_focus().focus.get_wm_class()
-                if wm_class:
+
+                if wm_class == None:
+                    cls = 'root'
+                else:
                     cls = wm_class[1]
-                    if cls != last_active_class:
-                        last_active_class = cls
-                        self.on_window_change(cls)
+
+                if cls != last_active_class:
+                    last_active_class = cls
+                    self.on_window_change(cls)
             except:
-                import traceback
-                traceback.print_exc()
                 pass
 
 # :(
@@ -130,14 +133,17 @@ class GnomeMonitor():
 
         self.on_window_change = on_window_change
 
+        self.version = '1'
         self.extension_dir = os.getenv('HOME') + '/.local/share/gnome-shell/extensions/keyd'
         self.fifo_path = self.extension_dir + '/keyd.fifo'
 
     def _install(self):
+        shutil.rmtree(self.extension_dir, ignore_errors=True)
         os.makedirs(self.extension_dir, exist_ok=True)
 
         extension = '''
         const Shell = imports.gi.Shell;
+        const GLib = imports.gi.GLib;
 
         // We have to keep an explicit reference around to prevent garbage collection :/.
         let file = imports.gi.Gio.File.new_for_path('%s');
@@ -163,10 +169,16 @@ class GnomeMonitor():
 
         function init() {
                 Shell.WindowTracker.get_default().connect('notify::focus-app', () => {
-                    send(`${global.display.focus_window.get_wm_class()}\n`);
+                    const win = global.display.focus_window;
+                    const cls = win ? win.get_wm_class() : 'root';
+                    send(`${cls}\n`);
                 });
 
-                return { enable: ()=>{}, disable: ()=>{} };
+                return {
+                    enable: ()=>{ GLib.spawn_command_line_async('keyd-application-mapper -d'); },
+                    disable: ()=>{ GLib.spawn_command_line_async('pkill -f keyd-application-mapper'); }
+                };
+
         }
         ''' % (self.fifo_path)
 
@@ -179,15 +191,22 @@ class GnomeMonitor():
         }
         '''
 
+        open(self.extension_dir + '/version', 'w').write(self.version)
         open(self.extension_dir + '/metadata.json', 'w').write(metadata)
         open(self.extension_dir + '/extension.js', 'w').write(extension)
         os.mkfifo(self.fifo_path)
 
+    def _is_installed(self):
+        try:
+            return open(self.extension_dir + '/version', 'r').read() == self.version
+        except:
+            return False
+
     def init(self):
-        if not os.path.exists(self.extension_dir):
+        if not self._is_installed():
             print('keyd extension not found, installing...')
             self._install()
-            print('Success! Please restart Gnome and rerun this script.')
+            print('Success! Please restart Gnome.')
             exit(0)
 
         run_or_die('gsettings set org.gnome.shell disable-user-extensions false');
@@ -229,7 +248,7 @@ def ping_keyd():
 'could not connect to keyd instance, make sure it is running and you are a member of `keyd`')
 
 def daemonize():
-    print('Daemonizing...')
+    print(f'Daemonizing, log output will be stored in {LOGFILE}...')
 
     fh = open(LOGFILE, 'w')
 
@@ -242,14 +261,14 @@ def daemonize():
     if os.fork(): exit(0)
 
 opt = argparse.ArgumentParser()
-opt.add_argument('-v', '--verbose', default=False, action='store_true', help='print window class names in real time (useful for debugging and discovering window classes)')
+opt.add_argument('-q', '--quiet', default=False, action='store_true', help='suppress logging of the active window')
 opt.add_argument('-d', '--daemonize', default=False, action='store_true', help='fork and run in the background')
 args = opt.parse_args()
 
 if not os.path.exists(CONFIG_PATH):
     die('could not find app.conf, make sure it is in ~/.config/keyd/app.conf')
 
-bindings = parse_config(CONFIG_PATH)
+map = parse_config(CONFIG_PATH)
 ping_keyd()
 lock()
 
@@ -259,22 +278,21 @@ def normalize_class(s):
 last_mtime = os.path.getmtime(CONFIG_PATH)
 def on_window_change(cls):
     global last_mtime
-    global bindings
+    global map
 
     cls = normalize_class(cls)
     mtime = os.path.getmtime(CONFIG_PATH)
 
     if mtime != last_mtime:
         print(CONFIG_PATH + ': Updated, reloading config...')
-        bindings = parse_config(CONFIG_PATH)
+        map = parse_config(CONFIG_PATH)
         last_mtime = mtime
 
-    if args.verbose:
+    if not args.quiet:
         print(f'Active window class: {cls}')
 
-    if cls in bindings:
-        # Apply the bindings.
-        subprocess.run(['keyd', '-e', *bindings[cls]])
+    bindings = map.get(cls, [])
+    subprocess.run(['keyd', '-e', 'reset', *bindings])
 
 
 mon = get_monitor(on_window_change)

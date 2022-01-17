@@ -226,7 +226,7 @@ will cause capslock to behave as meta and alt when held.
 like `rightalt` and `rightcontrol` as target sequences, the user is strongly
 encouraged to avoid these as they can produce unintuitive results when paired
 with their layer counterparts.  To this end, it is best to think of modifiers
-as just a another kind of layer.  
+as just a another kind of layer.
 
 Thus instead of:
 
@@ -312,27 +312,37 @@ For example:
 
 	[kitty]
 
-	control.1  = macro(Inside space kitty!)
+	alt.] = C-tab
+	alt.[ = C-S-tab
+	alt.t = C-S-t
 
 	[alacritty]
 
-	control.1  = macro(Inside space alacritty!)
+	alt.1  = macro(Inside space alacritty!)
 
 	[chromium]
 
 	control.1 = macro(Inside space chrome!)
+	alt.] = C-tab
+	alt.[ = C-S-tab
+	alt.t = C-t
 
-Will remap `C-1` to the the string 'Inside alacritty' when a window with class
-`alacritty` is active.
+Will remap `A-1` to the the string 'Inside alacritty' when a window with class
+`alacritty` is active. You can think of each section as an application specific mask
+applied over the default configuration. 
 
-In order for this to work keyd must be running and the user must have access to
-*/var/run/keyd.socket* (i.e be a member of the *keyd* group). Application
-classes can be obtained with `keyd-application-mapper -v`.
+Application classes can be obtained by inspecting the log output while the
+daemon is running (e.g `tail -f ~/.config/keyd/app.log`).
 
-You will probably want to put `keyd-application-mapper -d` somewhere in the
-initialization path of your display server (e.g `~/.xinitrc`).
+If the script is run under Gnome, the extension will manage the lifecycle of
+the application remapper after it has been run for the first time. Otherwise
+you will need to put `keyd-application-mapper -d` somewhere in your display
+server initialization logic (e.g ~/.xinitrc or ~/.xsession)
 
-At the moment X, sway and gnome are supported.
+At the moment X, Sway and Gnome are supported.
+
+Note: In order for this to work, keyd must be running and the user must have access to
+*/var/run/keyd.socket* (i.e be a member of the *keyd* group). 
 
 ### A note on security
 
