@@ -7,6 +7,7 @@ import shutil
 import re
 import sys
 import fcntl
+from fnmatch import fnmatch
 
 # Good enough for now :/.
 
@@ -31,6 +32,9 @@ def assert_env(var):
     if not os.getenv(var):
         raise Exception(f'Missing environment variable {var}')
 
+def run(cmd):
+    return subprocess.check_output(['/bin/sh', '-c', cmd]).decode('utf8')
+
 def run_or_die(cmd, msg=''):
     rc = subprocess.run(['/bin/sh', '-c', cmd],
             stdout=subprocess.DEVNULL,
@@ -40,16 +44,23 @@ def run_or_die(cmd, msg=''):
         die(msg)
 
 def parse_config(path):
-    map = {}
+    config = []
 
     for line in open(path):
         line = line.strip()
 
         if line.startswith('[') and line.endswith(']'):
-            window_identifier = line[1:-1]
+            a = line[1:-1].split('|')
+
+            if len(a) < 2:
+                cls = a[0]
+                title = '*'
+            else:
+                cls = a[0]
+                title = a[1]
 
             bindings = []
-            map[window_identifier] = bindings
+            config.append((cls, title, bindings))
         elif line == '':
             continue
         elif line.startswith('#'):
@@ -57,7 +68,7 @@ def parse_config(path):
         else:
             bindings.append(line)
 
-    return map
+    return config
 
 class SwayMonitor():
     def __init__(self, on_window_change):
@@ -71,6 +82,8 @@ class SwayMonitor():
     def run(self):
         import json
         import subprocess
+        last_cls = ''
+        last_title = ''
 
         swayproc = subprocess.Popen(
             ['swaymsg',
@@ -83,14 +96,27 @@ class SwayMonitor():
         for ev in swayproc.stdout:
             data = json.loads(ev)
 
+            title = ''
+            cls = ''
+
             try:
                 if data['container']['focused'] == True:
                     props = data['container']['window_properties']
-                    self.on_window_change(props['class'], props['title'])
+
+                    cls = props['class']
+                    title = props['title']
             except:
+                title = ''
                 cls = data['container']['app_id']
-                self.on_window_change(cls, "")
-                pass
+
+            if title == '' and cls == '':
+                continue
+
+            if last_cls != cls or last_title != title:
+                last_cls = cls
+                last_title = title
+
+                self.on_window_change(cls, title)
 
 
 class XMonitor():
@@ -109,21 +135,29 @@ class XMonitor():
 
     def run(self):
         last_active_class = ""
-        last_active_name = ""
+        last_active_title = ""
+
+        WM_NAME = self.dpy.intern_atom('WM_NAME')
+
         while True:
             self.dpy.next_event()
 
             try:
-                wm_class = self.dpy.get_input_focus().focus.get_wm_class()
+                win = self.dpy.get_input_focus().focus
 
-                if wm_class == None:
+                classes = win.get_wm_class()
+                title = win.get_full_property(WM_NAME, 0).value.decode('utf8')
+
+                if classes == None:
                     cls = 'root'
                 else:
-                    cls = wm_class[1]
+                    cls = classes[1]
 
-                if cls != last_active_class:
+                if cls != last_active_class or title != last_active_title:
                     last_active_class = cls
-                    self.on_window_change(cls)
+                    last_active_title = title
+
+                    self.on_window_change(cls, title)
             except:
                 pass
 
@@ -134,7 +168,7 @@ class GnomeMonitor():
 
         self.on_window_change = on_window_change
 
-        self.version = '1'
+        self.version = '1.1'
         self.extension_dir = os.getenv('HOME') + '/.local/share/gnome-shell/extensions/keyd'
         self.fifo_path = self.extension_dir + '/keyd.fifo'
 
@@ -172,7 +206,9 @@ class GnomeMonitor():
                 Shell.WindowTracker.get_default().connect('notify::focus-app', () => {
                     const win = global.display.focus_window;
                     const cls = win ? win.get_wm_class() : 'root';
-                    send(`${cls}\n`);
+                    const title = win ? win.get_title() : '';
+
+                    send(`${cls}\\t${title}\\n`);
                 });
 
                 return {
@@ -207,16 +243,21 @@ class GnomeMonitor():
         if not self._is_installed():
             print('keyd extension not found, installing...')
             self._install()
-            print('Success! Please restart Gnome.')
+            run_or_die('gsettings set org.gnome.shell disable-user-extensions false');
+
+            print('Success! Please restart Gnome and rerun this script one more time.')
             exit(0)
 
-        run_or_die('gsettings set org.gnome.shell disable-user-extensions false');
-        run_or_die('gnome-extensions enable keyd', 'Failed to enable keyd extension.')
+        if 'DISABLED' in run('gnome-extensions show keyd'):
+            run_or_die('gnome-extensions enable keyd', 'Failed to enable keyd extension.')
+            print(f'Successfully enabled keyd extension :). Output will be stored in {LOGFILE}')
+            exit(0)
 
     def run(self):
         for line in open(self.fifo_path):
-            [cls, name] = line.strip().split('\t')
-            self.on_window_change(cls, name)
+            (cls, title) = line.strip('\n').split('\t')
+
+            self.on_window_change(cls, title)
 
 def get_monitor(on_window_change):
     monitors = [
@@ -269,31 +310,42 @@ args = opt.parse_args()
 if not os.path.exists(CONFIG_PATH):
     die('could not find app.conf, make sure it is in ~/.config/keyd/app.conf')
 
-map = parse_config(CONFIG_PATH)
+config = parse_config(CONFIG_PATH)
 ping_keyd()
 lock()
 
-def normalize_identifier(s):
-     return re.sub('[^A-Za-z0-9]', '-', s).strip('-').lower()
+def lookup_bindings(cls, title):
+    for cexp, texp, bindings in config:
+        if fnmatch(cls, cexp) and fnmatch(title, texp):
+            return bindings
+
+    return []
+
+def normalize_class(s):
+     return re.sub('[^A-Za-z0-9]+', '-', s).strip('-').lower()
+
+def normalize_title(s):
+    return re.sub('[^A-Za-z0-9@:/?.]+', '-', s).strip('-').lower()
 
 last_mtime = os.path.getmtime(CONFIG_PATH)
-def on_window_change(cls, name):
+def on_window_change(cls, title):
     global last_mtime
-    global map
+    global config
 
-    cls = normalize_identifier(cls)
-    name = normalize_identifier(name)
+    cls = normalize_class(cls)
+    title = normalize_title(title)
+
     mtime = os.path.getmtime(CONFIG_PATH)
 
     if mtime != last_mtime:
         print(CONFIG_PATH + ': Updated, reloading config...')
-        map = parse_config(CONFIG_PATH)
+        config = parse_config(CONFIG_PATH)
         last_mtime = mtime
 
     if not args.quiet:
-        print(f'Active window class: {cls}')
+        print(f'Active window: {cls}|{title}')
 
-    bindings = map.get(cls, [])
+    bindings = lookup_bindings(cls, title)
     subprocess.run(['keyd', '-e', 'reset', *bindings])
 
 

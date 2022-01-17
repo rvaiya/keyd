@@ -125,7 +125,7 @@ E.G
 
 - Run:
 
-	keyd-application-mapper
+	`keyd-application-mapper`
 
 You will probably want to put `keyd-application-mapper -d` somewhere in your 
 display server initialization logic (e.g ~/.xinitrc) unless you are running Gnome.

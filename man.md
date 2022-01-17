@@ -295,20 +295,34 @@ By default expressions apply to the most recently active keyboard.
 
 ### Application Support
 
-keyd ships with a python script called `keyd-application-mapper` that
+keyd ships with a python script called **keyd-application-mapper** which
 reads a file called *~/.config/keyd/app.conf* and applies the supplied bindings
 whenever a window with a matching class comes into focus.
 
-The file has the following form:
+You can think of each section as a set of application specific masks.
 
-	[<application class>]
+The config file has the following form:
+
+	[<filter>]
 
 	<expression 1>
 	<expression 2...>
 
-Where each expression is a valid argument to `-e` (see *Expressions*).
+Where `<filter>` has one of the following forms:
+	
+	[<class exp>]              # Match by window class
+	[<class exp>|<title exp>]  # Match by class and title
 
-For example:
+and each `<expression>` is a valid argument to `-e` (see *Expressions*).
+
+`<class exp>` and `<title exp>` are strings which describe window class and title names
+to be matched and may optionally contain unix style wildcards (*). For example, 
+'`[gnome|*find*]`' will match any window with a class of 'gnome' and a title
+which contains 'find'.
+
+applied over the global rules defined in `/etc/keyd/*.conf`. 
+
+E.G
 
 	[kitty]
 
@@ -316,9 +330,9 @@ For example:
 	alt.[ = C-S-tab
 	alt.t = C-S-t
 
-	[alacritty]
+	[st-*]
 
-	alt.1  = macro(Inside space alacritty!)
+	alt.1  = macro(Inside space st)
 
 	[chromium]
 
@@ -327,22 +341,24 @@ For example:
 	alt.[ = C-S-tab
 	alt.t = C-t
 
-Will remap `A-1` to the the string 'Inside alacritty' when a window with class
-`alacritty` is active. You can think of each section as an application specific mask
-applied over the default configuration. 
+Will remap `A-1` to the the string 'Inside st' when a window with a class
+that begins with 'st-' (e.g st-256color) is active. 
 
-Application classes can be obtained by inspecting the log output while the
+Window class and title names can be obtained by inspecting the log output while the
 daemon is running (e.g `tail -f ~/.config/keyd/app.log`).
-
-If the script is run under Gnome, the extension will manage the lifecycle of
-the application remapper after it has been run for the first time. Otherwise
-you will need to put `keyd-application-mapper -d` somewhere in your display
-server initialization logic (e.g ~/.xinitrc or ~/.xsession)
 
 At the moment X, Sway and Gnome are supported.
 
-Note: In order for this to work, keyd must be running and the user must have access to
-*/var/run/keyd.socket* (i.e be a member of the *keyd* group). 
+#### Installation
+
+Installation is a simple matter of running the daemon `keyd-application-mapper -d`
+somewhere in your display server initialization logic (e.g ~/.xinitrc or
+~/.xsession).  The exception to this is if you are running Gnome, in which case
+running `keyd-application-mapper` for the first time will install an extension
+which manages the script lifecycle.
+
+In order for this to work, keyd must be running and the user must have access
+to */var/run/keyd.socket* (i.e be a member of the *keyd* group). 
 
 ### A note on security
 
