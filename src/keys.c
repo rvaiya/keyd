@@ -33,6 +33,7 @@ uint16_t keycode_to_mod(uint16_t code)
 		return MOD_ALT;
 	case KEY_RIGHTALT:
 		return MOD_ALT_GR;
+	case KEY_LEFTCTRL:
 	case KEY_RIGHTCTRL:
 		return MOD_CTRL;
 	case KEY_LEFTMETA:

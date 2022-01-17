@@ -236,6 +236,11 @@ int parse_descriptor(char *s,
 	if (!parse_key_sequence(s, &seq)) {
 		desc->op = OP_KEYSEQ;
 
+		if (keycode_to_mod(seq.code)) {
+			err("modifier keycodes are not directly mappable, you probably want layer(<modifier name>) (e.g layer(alt))");
+			return -1;
+		}
+
 		desc->args[0].sequence = seq;
 	} else if (!parse_macro_fn(&config->macros[macro_idx], s)) {
 		desc->op = OP_MACRO;

@@ -479,7 +479,7 @@ int read_config_dir(const char *dir)
 
 			sprintf(path, "%s/%s", dir, de->d_name);
 
-			fprintf(stderr, "Parsing %s:\n", path);
+			fprintf(stderr, "Parsing %s\n", path);
 			data = read_file(path);
 
 			config_create_from_ini(path, data);
