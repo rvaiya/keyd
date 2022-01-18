@@ -137,7 +137,7 @@ class XMonitor():
         last_active_class = ""
         last_active_title = ""
 
-        WM_NAME = self.dpy.intern_atom('WM_NAME')
+        WM_NAME = self.dpy.intern_atom('_NET_WM_NAME')
 
         while True:
             self.dpy.next_event()
@@ -146,20 +146,25 @@ class XMonitor():
                 win = self.dpy.get_input_focus().focus
 
                 classes = win.get_wm_class()
-                title = win.get_full_property(WM_NAME, 0).value.decode('utf8')
 
-                if classes == None:
-                    cls = 'root'
-                else:
+                if classes:
                     cls = classes[1]
+                else:
+                    continue
+
+                property = win.get_full_property(WM_NAME, 0) 
+                if property:
+                    title = property.value.decode('utf8')
+                else:
+                    title = ""
 
                 if cls != last_active_class or title != last_active_title:
                     last_active_class = cls
                     last_active_title = title
 
                     self.on_window_change(cls, title)
-            except:
-                pass
+            except Exception as e:
+                print('warning: skipping window focus', e)
 
 # :(
 class GnomeMonitor():
