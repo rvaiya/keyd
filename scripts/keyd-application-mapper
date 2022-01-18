@@ -165,9 +165,6 @@ class XMonitor():
 
         while True:
             self.dpy.next_event()
-            win = self.dpy.get_input_focus().focus
-            if isinstance(win, int):
-                continue
 
             try:
                 win = self.dpy.get_input_focus().focus
