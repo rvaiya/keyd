@@ -133,25 +133,49 @@ class XMonitor():
         self.dpy.screen().root.change_attributes(
             event_mask = Xlib.X.SubstructureNotifyMask|Xlib.X.PropertyChangeMask)
 
+        self._NET_WM_NAME = self.dpy.intern_atom('_NET_WM_NAME')
+        self.WM_NAME = self.dpy.intern_atom('WM_NAME')
+
+
+    def get_window_info(self, win):
+        def get_title(win):
+            title = ''
+            try:
+                title = win.get_full_property(self._NET_WM_NAME, 0).value.decode('utf8')
+            except:
+                try:
+                    title = win.get_full_property(self.WM_NAME, 0).value.decode('latin1', 'replace')
+                except:
+                    pass
+
+            return title
+
+        while win:
+            cls = win.get_wm_class()
+            if cls:
+                return (cls[1], get_title(win))
+
+            win = win.query_tree().parent
+
+        return ("root", "")
+
     def run(self):
         last_active_class = ""
         last_active_title = ""
 
-        WM_NAME = self.dpy.intern_atom('WM_NAME')
-
         while True:
             self.dpy.next_event()
+            win = self.dpy.get_input_focus().focus
+            if isinstance(win, int):
+                continue
 
             try:
                 win = self.dpy.get_input_focus().focus
 
-                classes = win.get_wm_class()
-                title = win.get_full_property(WM_NAME, 0).value.decode('utf8')
+                if isinstance(win, int):
+                    continue
 
-                if classes == None:
-                    cls = 'root'
-                else:
-                    cls = classes[1]
+                cls, title = self.get_window_info(win)
 
                 if cls != last_active_class or title != last_active_title:
                     last_active_class = cls
