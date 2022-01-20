@@ -34,6 +34,7 @@ int ini_parse(char *s, struct ini *ini, const char *default_section_name)
 	struct ini_section *section = NULL;
 
 	while (s) {
+		size_t len;
 		struct ini_entry *ent;
 		char *line;
 
@@ -51,14 +52,18 @@ int ini_parse(char *s, struct ini *ini, const char *default_section_name)
 		while (isspace(line[0]))
 			line++;
 
+		len = strlen(line);
+
+		while(len > 0 && isspace(line[len-1]))
+			len--;
+
 		if (line[0] == 0)
 			continue;
 
-		switch (line[0]) {
-		size_t len;
-		case '[':
-			len = strlen(line);
+		line[len] = 0;
 
+		switch (line[0]) {
+		case '[':
 			if (line[len-1] == ']') {
 				assert(n < MAX_SECTIONS);
 
