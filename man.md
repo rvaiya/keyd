@@ -449,7 +449,7 @@ Examples:
 
 ## Example 1
 
-Make `esc+q/w/e` set the letter layout.
+Make `esc+q/w` set the letter layout.
 
 	[ids]
 	*
