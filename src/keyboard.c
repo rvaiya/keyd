@@ -230,7 +230,7 @@ static void kbd_swap_layer(struct keyboard *kbd,
 	for (i = 0; i < kbd->nr_active_keys; i++) {
 		struct active_key *ak = &kbd->active_keys[i];
 
-		if((ak->d.op == OP_LAYER || ak->d.op == OP_OVERLOAD) && ak->d.args[0].idx == dl) {
+		if((ak->d.op == OP_LAYER || ak->d.op == OP_OVERLOAD || ak->d.op == OP_SWAP) && ak->d.args[0].idx == dl) {
 			kbd_deactivate_layer(kbd, dl);
 			kbd_activate_layer(kbd, replacment_layer, 0);
 

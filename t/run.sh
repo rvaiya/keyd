@@ -19,7 +19,7 @@ sudo cp test.conf /etc/keyd
 sudo pkill keyd
 sleep .5s
 sudo ../bin/keyd -d || exit
-sleep .5s
+sleep 2s
 
 if [ $# -ne 0 ]; then
 	test_files="$(echo "$@"|sed -e 's/ /.t /g').t"
