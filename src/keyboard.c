@@ -163,6 +163,8 @@ static void kbd_clear_oneshots(struct keyboard *kbd)
 
 		if (!al->oneshot)
 			kbd->active_layers[n++] = *al;
+		else
+			dbg("Clearing oneshot layer %s", kbd->config.layers[al->layer].name);
 	}
 
 	kbd->nr_active_layers = n;

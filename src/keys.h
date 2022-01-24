@@ -44,6 +44,8 @@
 uint16_t keycode_to_mod(uint16_t code);
 int 	 parse_modset(const char *s, uint16_t *mods);
 
+const char *modstring(uint16_t mods);
+
 struct keycode_table_ent {
 	const char *name;
 	const char *alt_name;

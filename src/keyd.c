@@ -231,6 +231,9 @@ void set_mods(uint16_t mods)
 
 	uint16_t diff = mods ^ state;
 
+	if (debug && diff)
+		fprintf(stderr, "Active mods: %s\n", modstring(mods));
+
 	if (MOD_CTRL & diff)
 		send_key(KEY_LEFTCTRL, !!(MOD_CTRL & mods));
 	if (MOD_ALT_GR & diff)
