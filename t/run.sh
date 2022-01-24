@@ -4,7 +4,7 @@
 
 cleanup() {
 	sudo pkill keyd
-	sleep .5s
+	sleep 1s
 	sudo systemctl restart keyd
 
 	trap - EXIT

@@ -226,22 +226,23 @@ static void send_repetitions()
 
 void set_mods(uint16_t mods)
 {
+	static uint16_t state = 0;
 	size_t i;
 
-	for (i = 0; i < sizeof modifier_table / sizeof modifier_table[0]; i++) {
-		struct modifier_table_ent *m = &modifier_table[i];
+	uint16_t diff = mods ^ state;
 
-		if (m->mask & mods) {
-			if (!keystate[m->code1] && !keystate[m->code2])
-				send_key(m->code1, 1);
-		} else {
-			if (keystate[m->code1])
-				send_key(m->code1, 0);
+	if (MOD_CTRL & diff)
+		send_key(KEY_LEFTCTRL, !!(MOD_CTRL & mods));
+	if (MOD_ALT_GR & diff)
+		send_key(KEY_RIGHTALT, !!(MOD_ALT_GR & mods));
+	if (MOD_SHIFT & diff)
+		send_key(KEY_LEFTSHIFT, !!(MOD_SHIFT & mods));
+	if (MOD_SUPER & diff)
+		send_key(KEY_LEFTMETA, !!(MOD_SUPER & mods));
+	if (MOD_ALT & diff)
+		send_key(KEY_LEFTALT, !!(MOD_ALT & mods));
 
-			if (keystate[m->code2])
-				send_key(m->code2, 0);
-		}
-	}
+	state = mods;
 }
 
 /* Block on the given keyboard nodes until no keys are depressed. */
