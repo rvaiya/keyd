@@ -140,6 +140,8 @@ static void kbd_deactivate_layer(struct keyboard *kbd, int layer)
 	int i;
 	int n = kbd->nr_active_layers;
 
+	dbg("Deactivating layer %s", kbd->config.layers[layer].name);
+
 	kbd->nr_active_layers = 0;
 	for (i = 0; i < n; i++) {
 		struct active_layer *al = &kbd->active_layers[i];
@@ -171,6 +173,8 @@ static void kbd_activate_layer(struct keyboard *kbd, int layer, int oneshot)
 {
 	struct active_layer *al;
 	size_t i;
+
+	dbg("Activating layer %s", kbd->config.layers[layer].name);
 
 	for (i = 0; i < kbd->nr_active_layers; i++) {
 		al = &kbd->active_layers[i];

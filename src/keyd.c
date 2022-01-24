@@ -60,10 +60,6 @@
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
 #define MAX_KEYBOARDS 256
 
-#define dbg(fmt, ...) { if(debug) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
-#define dbg2(fmt, ...) { if(debug > 1) info("%s:%d: "fmt, __FILE__, __LINE__, ## __VA_ARGS__); }
-
-static int debug = 0;
 static struct vkbd *vkbd = NULL;
 
 static struct udev *udev;
@@ -73,6 +69,21 @@ static int sigfds[2];
 struct keyboard *active_keyboard = NULL;
 
 static struct keyboard *keyboards = NULL;
+
+int debug = 0;
+
+void dbg(const char *fmt, ...)
+{
+	va_list ap;
+
+	if (!debug)
+		return;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n");
+	va_end(ap);
+}
 
 static void info(char *fmt, ...)
 {
@@ -445,15 +456,13 @@ static int destroy_keyboard(const char *devnode)
 	return 0;
 }
 
-static void monitor_exit(int status)
+static void monitor_cleanup()
 {
 	struct termios tinfo;
 
 	tcgetattr(0, &tinfo);
 	tinfo.c_lflag |= ECHO;
 	tcsetattr(0, TCSANOW, &tinfo);
-
-	exit(status);
 }
 
 static void panic_check(uint16_t code, int state)
@@ -537,7 +546,7 @@ static void evdev_monitor_loop(int *fds, int sz)
 
 		if (FD_ISSET(1, &fdset) && read(1, NULL, 0) == -1) { /* STDOUT closed. */
 			/* Re-enable echo. */
-			monitor_exit(0);
+			exit(0);
 		}
 
 		for (i = 0; i < sz; i++) {
@@ -584,7 +593,9 @@ static int monitor_loop()
 	tinfo.c_lflag &= ~ECHO;
 	tcsetattr(0, TCSANOW, &tinfo);
 
-	signal(SIGINT, monitor_exit);
+	signal(SIGINT, exit);
+	signal(SIGTERM, exit);
+	atexit(monitor_cleanup);
 
 	get_keyboard_nodes(devnodes, &sz);
 
@@ -592,7 +603,7 @@ static int monitor_loop()
 		fd = open(devnodes[i], O_RDONLY | O_NONBLOCK);
 		if (fd < 0) {
 			perror("open");
-			monitor_exit(0);
+			exit(-1);
 		}
 		free(devnodes[i]);
 		fds[nfds++] = fd;
@@ -751,6 +762,7 @@ static void main_loop()
 								vkbd_move_mouse(vkbd, 0, ev.value);
 
 							break;
+						case EV_MSC:
 						case EV_SYN:
 							break;
 						default:
@@ -848,7 +860,6 @@ int main(int argc, char *argv[])
 		debug = atoi(getenv("KEYD_DEBUG"));
 
 	dbg("Debug mode enabled.");
-	dbg2("Verbose debugging enabled.");
 
 	if (argc > 1) {
 		if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version")) {

@@ -2,6 +2,11 @@
 #define KEYD_H
 
 extern uint8_t keystate[KEY_CNT];
+
+extern int debug;
+
+void dbg(const char *fmt, ...);
+
 void set_mods(uint16_t mods);
 void send_key(int code, int pressed);
 void reload_config();
