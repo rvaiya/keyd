@@ -288,7 +288,6 @@ static void kbd_execute_macro(struct keyboard *kbd,
 		}
 
 	}
-	kbd_reify_mods(kbd);
 }
 
 int kbd_execute_expression(struct keyboard *kbd, const char *exp)
@@ -313,7 +312,7 @@ static long get_time_ms()
 /*
  * Here be tiny dragons.
  *
- * Code may be 0 in the event of a timeout.
+ * `code` may be 0 in the event of a timeout.
  *
  * The return value corresponds to a timeout before which the next invocation
  * of kbd_process_key_event must take place. A return value of 0 permits the
@@ -382,10 +381,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 		kbd_process_keyseq(kbd, verbatim, &d.args[0].sequence, pressed);
 
-		if (pressed) {
-			oneshot_latch = 0;
-			kbd_clear_oneshots(kbd);
-		} else
+		if (!pressed)
 			kbd_reify_mods(kbd);
 
 		break;
@@ -494,8 +490,10 @@ long kbd_process_key_event(struct keyboard *kbd,
 			kbd_execute_macro(kbd, macro);
 
 			timeout = MACRO_REPEAT_TIMEOUT;
-		} else
+		} else {
+			kbd_reify_mods(kbd);
 			active_macro = NULL;
+		}
 
 		break;
 	default:
@@ -505,6 +503,16 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 	if (pressed)
 		last_pressed_keycode = code;
+
+	if (!d.op ||
+		(pressed &&
+		 (d.op == OP_KEYSEQ ||
+		  d.op == OP_MACRO  ||
+		  d.op == OP_OVERLOAD))) {
+		oneshot_latch = 0;
+		kbd_clear_oneshots(kbd);
+	}
+
 
 	return timeout;
 }

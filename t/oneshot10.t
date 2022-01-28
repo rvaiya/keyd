@@ -1,11 +1,15 @@
-l down
+2 down
+2 up
+x down
+x up
+x down
+x up
+
+shift down
+shift up
 o down
 o up
-l up
-a down
-a up
-
-control down
-control up
-b down
-b up
+n down
+n up
+x down
+x up

@@ -17,9 +17,9 @@ cd "$(dirname $0)"
 
 sudo cp test.conf /etc/keyd
 sudo pkill keyd
-sleep .5s
+sleep 1s
 sudo ../bin/keyd -d || exit
-sleep 2s
+sleep 4s
 
 if [ $# -ne 0 ]; then
 	test_files="$(echo "$@"|sed -e 's/ /.t /g').t"
