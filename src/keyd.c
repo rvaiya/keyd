@@ -41,13 +41,13 @@
 #include <signal.h>
 #include <unistd.h>
 #include <termios.h>
-#include <libudev.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <sys/inotify.h>
 
 #include "keys.h"
 #include "config.h"
@@ -58,12 +58,9 @@
 #include "error.h"
 
 #define VIRTUAL_KEYBOARD_NAME "keyd virtual keyboard"
-#define MAX_KEYBOARDS 256
 
 static struct vkbd *vkbd = NULL;
 
-static struct udev *udev;
-static struct udev_monitor *udevmon;
 uint8_t keystate[KEY_CNT] = { 0 };
 static int sigfds[2];
 struct keyboard *active_keyboard = NULL;
@@ -93,124 +90,6 @@ static void info(char *fmt, ...)
 	vfprintf(stderr, fmt, args);
 	va_end(args);
 	fprintf(stderr, "\n");
-}
-
-static void udev_type(struct udev_device *dev, int *iskbd, int *ismouse)
-{
-	if (iskbd)
-		*iskbd = 0;
-	if (ismouse)
-		*ismouse = 0;
-
-	const char *path = udev_device_get_devnode(dev);
-
-	if (!path || !strstr(path, "event"))	/* Filter out non evdev devices. */
-		return;
-
-	struct udev_list_entry *prop;
-	udev_list_entry_foreach(prop,
-				udev_device_get_properties_list_entry(dev))
-	{
-		if (!strcmp
-		    (udev_list_entry_get_name(prop), "ID_INPUT_KEYBOARD")
-		    && !strcmp(udev_list_entry_get_value(prop), "1")) {
-			if (iskbd)
-				*iskbd = 1;
-		}
-
-		if (!strcmp
-		    (udev_list_entry_get_name(prop), "ID_INPUT_MOUSE")
-		    && !strcmp(udev_list_entry_get_value(prop), "1")) {
-			if (ismouse)
-				*ismouse = 1;
-		}
-	}
-}
-
-static uint32_t evdev_device_id(const char *devnode)
-{
-	struct input_id info;
-
-	int fd = open(devnode, O_RDONLY);
-	if (fd < 0) {
-		perror("open");
-		exit(-1);
-	}
-
-	if (ioctl(fd, EVIOCGID, &info) == -1) {
-		perror("ioctl");
-		exit(-1);
-	}
-
-	close(fd);
-	return info.vendor << 16 | info.product;
-}
-
-static const char *evdev_device_name(const char *devnode)
-{
-	static char name[256];
-
-	int fd = open(devnode, O_RDONLY);
-	if (fd < 0) {
-		perror("open");
-		exit(-1);
-	}
-
-	if (ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1)
-		return NULL;
-
-	close(fd);
-	return name;
-}
-
-static void get_keyboard_nodes(char *nodes[MAX_KEYBOARDS], int *sz)
-{
-	struct udev *udev;
-	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *ent;
-
-	udev = udev_new();
-	if (!udev)
-		die("Cannot create udev context.");
-
-	enumerate = udev_enumerate_new(udev);
-	if (!enumerate)
-		die("Cannot create enumerate context.");
-
-	udev_enumerate_add_match_subsystem(enumerate, "input");
-	udev_enumerate_scan_devices(enumerate);
-
-	devices = udev_enumerate_get_list_entry(enumerate);
-	if (!devices)
-		die("Failed to get device list.");
-
-	*sz = 0;
-	udev_list_entry_foreach(ent, devices) {
-		int iskbd, ismouse;
-
-		const char *name = udev_list_entry_get_name(ent);;
-		struct udev_device *dev = udev_device_new_from_syspath(udev, name);
-		const char *path = udev_device_get_devnode(dev);
-
-		udev_type(dev, &iskbd, &ismouse);
-
-		if (iskbd) {
-			dbg("Detected keyboard node %s (%s) ismouse: %d",
-			    name, evdev_device_name(path), ismouse);
-
-			nodes[*sz] = malloc(strlen(path) + 1);
-			strcpy(nodes[*sz], path);
-			(*sz)++;
-			assert(*sz <= MAX_KEYBOARDS);
-		} else if (path) {
-			dbg("Ignoring %s (%s)", evdev_device_name(path), path);
-		}
-
-		udev_device_unref(dev);
-	}
-
-	udev_enumerate_unref(enumerate);
-	udev_unref(udev);
 }
 
 static void send_repetitions()
@@ -404,14 +283,12 @@ static void scan_keyboards(int wait)
 	int i, n;
 	char *devs[MAX_KEYBOARDS];
 
-	get_keyboard_nodes(devs, &n);
+	evdev_get_keyboard_nodes(devs, &n);
 	if (wait)
 		await_keyboard_neutrality(devs, n);
 
-	for (i = 0; i < n; i++) {
+	for (i = 0; i < n; i++)
 		manage_keyboard(devs[i]);
-		free(devs[i]);
-	}
 }
 
 /* TODO: optimize */
@@ -601,7 +478,7 @@ static int monitor_loop()
 	signal(SIGTERM, exit);
 	atexit(monitor_cleanup);
 
-	get_keyboard_nodes(devnodes, &sz);
+	evdev_get_keyboard_nodes(devnodes, &sz);
 
 	for (i = 0; i < sz; i++) {
 		fd = open(devnodes[i], O_RDONLY | O_NONBLOCK);
@@ -609,7 +486,6 @@ static int monitor_loop()
 			perror("open");
 			exit(-1);
 		}
-		free(devnodes[i]);
 		fds[nfds++] = fd;
 	}
 
@@ -632,10 +508,55 @@ long get_time()
 	return (tv.tv_sec*1E9)+tv.tv_nsec;
 }
 
+static int create_inotify_fd()
+{
+	int fd = inotify_init1(IN_NONBLOCK);
+	if (fd < 0) {
+		perror("inotify");
+		exit(-1);
+	}
+
+	int wd = inotify_add_watch(fd, "/dev/input", IN_CREATE | IN_DELETE);
+	if (wd < 0) {
+		perror("inotify");
+		exit(-1);
+	}
+
+	return fd;
+}
+
+static void process_inotify_events(int fd)
+{
+	int len;
+	char buf[4096];
+
+	while (1) {
+		struct inotify_event *ev;
+		if ((len = read(fd, buf, sizeof buf)) <= 0)
+			return;
+
+		for (char *ptr = buf; ptr < buf + len; ptr +=  sizeof(struct inotify_event) + ev->len) {
+			char path[1024];
+			ev = (struct inotify_event*) ptr;
+
+			if (strstr(ev->name, "ev") != ev->name)
+				continue;
+
+			sprintf(path, "/dev/input/%s", ev->name);
+
+			if (ev->mask & IN_CREATE &&  evdev_is_keyboard(path))
+				manage_keyboard(path);
+			else if (ev->mask & IN_DELETE)
+				destroy_keyboard(path);
+		}
+	}
+}
+
+
 static void main_loop()
 {
 	struct keyboard *kbd;
-	int monfd;
+	int inotifyfd;
 	int sd;
 
 	long timeout = 0; /* in ns */
@@ -646,16 +567,7 @@ static void main_loop()
 
 	scan_keyboards(1);
 
-	udev = udev_new();
-	udevmon = udev_monitor_new_from_netlink(udev, "udev");
-
-	if (!udev)
-		die("Can't create udev.");
-
-	udev_monitor_filter_add_match_subsystem_devtype(udevmon, "input", NULL);
-	udev_monitor_enable_receiving(udevmon);
-
-	monfd = udev_monitor_get_fd(udevmon);
+	inotifyfd = create_inotify_fd();
 	sd = create_server_socket();
 
 	pipe(sigfds);
@@ -664,17 +576,16 @@ static void main_loop()
 	while (1) {
 		int maxfd;
 		fd_set fds;
-		struct udev_device *dev;
 		int ret;
 
 		struct timeval tv;
 
 		FD_ZERO(&fds);
-		FD_SET(monfd, &fds);
+		FD_SET(inotifyfd, &fds);
 		FD_SET(sd, &fds);
 		FD_SET(sigfds[0], &fds);
 
-		maxfd = monfd > sigfds[0] ? monfd : sigfds[0];
+		maxfd = inotifyfd > sigfds[0] ? inotifyfd : sigfds[0];
 		maxfd = sd > maxfd ? sd : maxfd;
 
 		for (kbd = keyboards; kbd; kbd = kbd->next) {
@@ -713,27 +624,8 @@ static void main_loop()
 				reload_config();
 			}
 
-			if (FD_ISSET(monfd, &fds)) {
-				int iskbd;
-				dev = udev_monitor_receive_device(udevmon);
-				const char *devnode = udev_device_get_devnode(dev);
-				udev_type(dev, &iskbd, NULL);
-
-				if (devnode && iskbd) {
-					const char *action =
-					    udev_device_get_action(dev);
-
-					if (!strcmp(action, "add"))
-						manage_keyboard(devnode);
-					else if (!strcmp(action, "remove"))
-						destroy_keyboard(devnode);
-					else
-						dbg("udev: action %s %s",
-						    action, devnode);
-				}
-				udev_device_unref(dev);
-			}
-
+			if (FD_ISSET(inotifyfd, &fds))
+				process_inotify_events(inotifyfd);
 
 			for (kbd = keyboards; kbd; kbd = kbd->next) {
 				int fd = kbd->fd;
@@ -794,8 +686,6 @@ static void cleanup()
 	}
 
 	free_vkbd(vkbd);
-	udev_unref(udev);
-	udev_monitor_unref(udevmon);
 	unlink(SOCKET);
 }
 

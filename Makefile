@@ -22,7 +22,7 @@ CFLAGS+=-DVERSION=\"$(VERSION)\" \
 all: vkbd-uinput
 vkbd-%:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -ludev
+	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -lpthread
 debug:
 	CFLAGS+="-pedantic -Wall -Wextra -g" $(MAKE)
 man:
