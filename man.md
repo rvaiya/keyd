@@ -35,10 +35,10 @@ layering, oneshot modifiers, and macros. In its most basic form it can be used
 to define a custom key layout that persists across display server boundaries
 (e.g wayland/X/tty).
 
-The program is intended to run as a systemd service but is capable of running
-as a standalone daemon. The default behaviour is to run in the foreground and print
-to stderr, unless **-d** is supplied, in which case in which case log output
-will be stored in */var/log/keyd.log*.
+The program is intended to be managed by the init system, but is capable of
+running as a standalone daemon. The default behaviour is to run in the
+foreground and print to stderr, unless **-d** is supplied, in which case in
+which case log output will be stored in */var/log/keyd.log*.
 
 **NOTE**
 
