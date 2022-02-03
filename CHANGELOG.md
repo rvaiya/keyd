@@ -1,4 +1,13 @@
+# v2.2.5-beta
+
+ - Eliminate udev as a dependency
+ - Permit mapping to modifier key codes (still discouraged)
+ - Support for nested swapping
+ - Improve app detection
+ - Various bug fixes
+
 # v2.2.4-beta
+
   - Add support for application mapping by title
   - Fix macro timeouts
   - Forbid modifier keycodes as lone right hand values in favour of layers

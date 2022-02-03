@@ -11,8 +11,6 @@ HID reports.
 
 # Installation
 
-    sudo apt-get install libudev-dev # Debian specific, install the corresponding package on your distribution
-
     git clone https://github.com/rvaiya/keyd
     cd keyd
     make vkbd-usb-gadget && sudo make install-usb-gadget

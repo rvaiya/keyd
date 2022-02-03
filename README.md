@@ -57,7 +57,6 @@ Some of the more interesting ones include:
 # Dependencies
 
  - Your favourite C compiler
- - libudev
 
 ## Optional
 
@@ -67,8 +66,6 @@ Some of the more interesting ones include:
 # Installation
 
 ## From Source
-
-    sudo apt-get install libudev-dev # Debian specific, install the corresponding package on your distribution
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
