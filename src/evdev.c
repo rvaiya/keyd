@@ -97,7 +97,7 @@ const char *evdev_device_name(const char *devnode)
 	int fd = open(devnode, O_RDONLY);
 	if (fd < 0) {
 		perror("open name");
-		exit(-1);
+		return NULL;
 	}
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(name)), &name) == -1)

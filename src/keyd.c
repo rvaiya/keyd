@@ -218,11 +218,17 @@ void reset_keyboards()
 static int manage_keyboard(const char *devnode)
 {
 	int fd;
-	const char *name = evdev_device_name(devnode);
+	const char *name;
+
 	struct keyboard *kbd;
 	struct config *config = NULL;
 	uint32_t id;
 	uint16_t  vendor_id, product_id;
+
+	if (!(name = evdev_device_name(devnode))) {
+		fprintf(stderr, "Failed to obtain device info for %s, skipping..\n", devnode);
+		return -1;
+	}
 
 	/* Don't manage keyd's devices. */
 	if (!strcmp(name, VIRTUAL_KEYBOARD_NAME))
@@ -242,7 +248,7 @@ static int manage_keyboard(const char *devnode)
 	config = lookup_config(id);
 
 	if (!config) {
-		fprintf(stderr, "No config found for %s (%04x:%04x)\n", evdev_device_name(devnode), vendor_id, product_id);
+		fprintf(stderr, "No config found for %s (%04x:%04x)\n", name, vendor_id, product_id);
 		return -1;
 	}
 
@@ -274,7 +280,7 @@ static int manage_keyboard(const char *devnode)
 	keyboards = kbd;
 
 	active_keyboard = kbd;
-	info("Managing %s (%04x:%04x) (%s)", evdev_device_name(devnode), vendor_id, product_id, config->name);
+	info("Managing %s (%04x:%04x) (%s)", name, vendor_id, product_id, config->name);
 	return 0;
 }
 
