@@ -16,8 +16,8 @@ int evdev_is_keyboard(const char *devnode)
 {
 	int fd = open(devnode, O_RDONLY);
 	if (fd < 0) {
-		perror("open");
-		exit(-1);
+		fprintf(stderr, "is_keyboard: Failed to open %s\n", devnode);
+		return 0;
 	}
 
 	uint8_t keymask[(KEY_CNT+7)/8];
@@ -96,7 +96,7 @@ const char *evdev_device_name(const char *devnode)
 
 	int fd = open(devnode, O_RDONLY);
 	if (fd < 0) {
-		perror("open");
+		perror("open name");
 		exit(-1);
 	}
 

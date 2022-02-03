@@ -19,7 +19,7 @@ static int create_virtual_keyboard(const char *name)
 
 	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (fd < 0) {
-		perror("open");
+		perror("open uinput");
 		exit(-1);
 	}
 
