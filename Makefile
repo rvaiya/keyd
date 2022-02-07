@@ -31,14 +31,19 @@ clean:
 	-rm -rf bin
 install:
 	mkdir -p $(DESTDIR)/etc/keyd
-	mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples
 
+	@if pgrep -x systemd > /dev/null; then \
+		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system; \
+		install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system; \
+	else \
+		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
+	fi
+
 	-groupadd keyd
-	install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m755 scripts/keyd-application-mapper $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
