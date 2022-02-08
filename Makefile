@@ -17,12 +17,13 @@ CFLAGS+=-DVERSION=\"$(VERSION)\" \
 	-DSOCKET=\"$(SOCKET)\" \
 	-DLOCK_FILE=\"$(LOCK_FILE)\" \
 	-I/usr/local/include \
-	-L/usr/local/lib\
+	-L/usr/local/lib
+LDFLAGS+=$(shell if [ `uname -s` != Linux ]; then echo -linotify; fi)
 
 all: vkbd-uinput
 vkbd-%:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -lpthread
+	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -lpthread $(LDFLAGS)
 debug:
 	CFLAGS+="-pedantic -Wall -Wextra -g" $(MAKE)
 man:
