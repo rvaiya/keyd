@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <unistd.h>
 #include "ini.h"
 #include "keys.h"
