@@ -114,12 +114,12 @@ uint32_t evdev_device_id(const char *devnode)
 	int fd = open(devnode, O_RDONLY);
 	if (fd < 0) {
 		perror("open");
-		exit(-1);
+		return 0;
 	}
 
 	if (ioctl(fd, EVIOCGID, &info) == -1) {
 		perror("ioctl");
-		exit(-1);
+		return 0;
 	}
 
 	close(fd);

@@ -226,7 +226,7 @@ static int manage_keyboard(const char *devnode)
 	uint16_t  vendor_id, product_id;
 
 	if (!(name = evdev_device_name(devnode))) {
-		fprintf(stderr, "Failed to obtain device info for %s, skipping..\n", devnode);
+		fprintf(stderr, "WARNING: Failed to obtain device info for %s, skipping..\n", devnode);
 		return -1;
 	}
 
@@ -242,6 +242,11 @@ static int manage_keyboard(const char *devnode)
 	}
 
 	id = evdev_device_id(devnode);
+	if (!id) {
+		fprintf(stderr, "WARNING: Failed to obtain device id for %s (%s)\n", devnode, name);
+		return -1;
+	}
+
 	vendor_id = id >> 16;
 	product_id = id & 0xFFFF;
 
@@ -253,8 +258,9 @@ static int manage_keyboard(const char *devnode)
 	}
 
 	if ((fd = open(devnode, O_RDONLY | O_NONBLOCK)) < 0) {
+		fprintf(stderr, "WARNING: Failed to open %s (%s)\n", devnode, name);
 		perror("open");
-		exit(1);
+		return -1;
 	}
 
 	/* Grab the keyboard. */
