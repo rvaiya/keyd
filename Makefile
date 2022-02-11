@@ -44,6 +44,13 @@ install:
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
+	@if [ -e /usr/share/libinput/ ]; then \
+		install -m644 keyd.quirks $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks; \
+	else \
+		echo "WARNING: libinput not found, not installing keyd.quirks."; \
+	fi
+
+
 	-groupadd keyd
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m755 scripts/keyd-application-mapper $(DESTDIR)$(PREFIX)/bin
@@ -52,7 +59,8 @@ install:
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
+	rm -f $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks\
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
 		bin/keyd $(DESTDIR)$(PREFIX)/bin/keyd\
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper\
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd.1.gz

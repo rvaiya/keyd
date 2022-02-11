@@ -1,0 +1,4 @@
+[keyd]
+MatchUdevType=keyboard
+MatchVendor=0xFAC
+AttrKeyboardIntegration=internal

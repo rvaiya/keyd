@@ -48,8 +48,8 @@ static int create_virtual_pointer(const char *name)
 
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
-	usetup.id.product = 0x1FAC;
-	usetup.id.vendor = 0x0ADE;
+	usetup.id.vendor = 0x0FAC;
+	usetup.id.product = 0x0ADE;
 	strcpy(usetup.name, name);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
