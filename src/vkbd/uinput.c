@@ -13,6 +13,12 @@ struct vkbd {
 	int pfd;
 };
 
+static int is_mouse_button(size_t code)
+{
+	return (((code) >= BTN_LEFT && (code) <= BTN_TASK) || 
+		((code) >= BTN_0 && (code) <= BTN_9));
+}
+
 static int create_virtual_pointer(const char *name)
 {
 	uint16_t code;
@@ -69,8 +75,7 @@ static int create_virtual_keyboard(const char *name)
 
 	for (code = 0; code < KEY_MAX; code++) {
 		/* skip mouse buttons to prevent X from identifying the virtual device as a mouse */
-		if (((code) >= BTN_LEFT && (code) <= BTN_TASK) ||
-		    ((code) >= BTN_0 && (code) <= BTN_9))
+		if (is_mouse_button(code))
 			continue;
 
 		if (keycode_table[code].name)
@@ -101,7 +106,7 @@ struct vkbd *vkbd_init(const char *name)
 	 * of an external mouse) 
 	 */
 
-	vkbd->pfd = 0;
+	vkbd->pfd = -1;
 
 	return vkbd;
 }
@@ -110,7 +115,7 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 {
 	struct input_event ev;
 
-	if (!vkbd->pfd) {
+	if (vkbd->pfd == -1) {
 		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
 	}
 
@@ -146,6 +151,15 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	struct input_event ev;
+	int ofd = vkbd->fd;
+
+	if (is_mouse_button(code)) {
+		if (vkbd->pfd == -1) {
+			((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
+		}
+
+		ofd = vkbd->pfd;
+	}
 
 	ev.type = EV_KEY;
 	ev.code = code;
@@ -154,13 +168,14 @@ void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(vkbd->fd, &ev, sizeof(ev));
+	write(ofd, &ev, sizeof(ev));
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
-	write(vkbd->fd, &ev, sizeof(ev));
+
+	write(ofd, &ev, sizeof(ev));
 }
 
 void free_vkbd(struct vkbd *vkbd)
