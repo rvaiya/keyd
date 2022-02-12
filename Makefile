@@ -45,6 +45,7 @@ install:
 	fi
 
 	@if [ -e /usr/share/libinput/ ]; then \
+		mkdir -p $(DESTDIR)$(PREFIX)/share/libinput; \
 		install -m644 keyd.quirks $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks; \
 	else \
 		echo "WARNING: libinput not found, not installing keyd.quirks."; \
