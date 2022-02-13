@@ -37,14 +37,14 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples
 
-	@if pgrep -x systemd > /dev/null; then \
+	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system; \
 		install -m644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
-	@if [ -e /usr/share/libinput/ ]; then \
+	@if [ -e $(DESTDIR)$(PREFIX)/share/libinput/ ]; then \
 		install -m644 keyd.quirks $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks; \
 	else \
 		echo "WARNING: libinput not found, not installing keyd.quirks."; \
