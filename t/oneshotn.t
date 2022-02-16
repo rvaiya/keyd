@@ -5,5 +5,5 @@ a up
 
 control down
 a down
-a up
 control up
+a up

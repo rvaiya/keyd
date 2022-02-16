@@ -6,8 +6,8 @@ a up
 5 up
 
 [ down
-shift down
 [ up
+shift down
 [ down
 [ up
 shift up

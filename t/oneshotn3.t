@@ -8,6 +8,6 @@ a up
 control down
 shift down
 a down
-a up
 control up
 shift up
+a up

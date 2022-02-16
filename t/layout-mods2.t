@@ -7,7 +7,7 @@ a up
 
 shift down
 [ down
-shift up
 [ up
+shift up
 [ down
 [ up

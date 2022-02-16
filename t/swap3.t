@@ -20,14 +20,14 @@ control up
 shift down
 x down
 x up
-control down
 shift up
+control down
 control up
 shift down
 x down
 x up
-control down
 shift up
+control down
 control up
 b down
 b up

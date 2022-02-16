@@ -32,6 +32,20 @@
 #define MACRO_REPEAT_TIMEOUT 400 /* In ms */
 #define MACRO_REPEAT_INTERVAL 20 /* In ms */
 
+static void send_mods(uint16_t mods, int press)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof modifier_table / sizeof(modifier_table[0]); i++) {
+		uint16_t code = modifier_table[i].code1;
+		uint16_t mask = modifier_table[i].mask;
+
+		if (mask & mods && keystate[code] != press)
+			send_key(code, press);
+	}
+}
+
+
 static void kbd_lookup_descriptor(struct keyboard *kbd,
 				  uint16_t code,
 				  int pressed,
@@ -135,52 +149,61 @@ static const struct active_layer *kbd_lookup_active_layer(struct keyboard *kbd, 
 	return NULL;
 }
 
-static void kbd_deactivate_layer(struct keyboard *kbd, int layer)
+static void kbd_deactivate_layer(struct keyboard *kbd, int layer_idx)
 {
 	int i;
 	int n = kbd->nr_active_layers;
+	uint16_t active_mods = 0;
+	struct layer *layer = &kbd->config.layers[layer_idx];
 
-	dbg("Deactivating layer %s", kbd->config.layers[layer].name);
+	dbg("Deactivating layer %s", layer->name);
 
 	kbd->nr_active_layers = 0;
 	for (i = 0; i < n; i++) {
 		struct active_layer *al = &kbd->active_layers[i];
 
-		if (al->layer != layer)
+		if (al->layer != layer_idx) {
 			kbd->active_layers[kbd->nr_active_layers++] = *al;
+			active_mods |= kbd->config.layers[al->layer].mods;
+		}
 	}
 
-	kbd_reify_mods(kbd);
+	send_mods(layer->mods & ~active_mods, 0);
 }
 
 static void kbd_clear_oneshots(struct keyboard *kbd)
 {
 	size_t i, n;
+	uint16_t cleared_mods = 0;
 
 	n = 0;
 	for (i = 0; i < kbd->nr_active_layers; i++) {
 		struct active_layer *al = &kbd->active_layers[i];
 
-		if (!al->oneshot)
+		if (!al->oneshot) {
 			kbd->active_layers[n++] = *al;
-		else
+		} else {
+			cleared_mods |= kbd->config.layers[al->layer].mods;
 			dbg("Clearing oneshot layer %s", kbd->config.layers[al->layer].name);
+		}
 	}
 
 	kbd->nr_active_layers = n;
+
+	send_mods(cleared_mods & ~kbd_compute_mods(kbd), 0);
 }
 
-
-static void kbd_activate_layer(struct keyboard *kbd, int layer, int oneshot)
+static void kbd_activate_layer(struct keyboard *kbd, int layer_idx, int oneshot)
 {
 	struct active_layer *al;
+	struct layer *layer = &kbd->config.layers[layer_idx];
 	size_t i;
 
-	dbg("Activating layer %s", kbd->config.layers[layer].name);
+	dbg("Activating layer %s", kbd->config.layers[layer_idx].name);
 
 	for (i = 0; i < kbd->nr_active_layers; i++) {
 		al = &kbd->active_layers[i];
-		if(al->layer == layer) {
+		if(al->layer == layer_idx) {
 			al->oneshot = oneshot;
 			return;
 		}
@@ -188,38 +211,12 @@ static void kbd_activate_layer(struct keyboard *kbd, int layer, int oneshot)
 
 	al = &kbd->active_layers[kbd->nr_active_layers];
 
-	al->layer = layer;
+	al->layer = layer_idx;
 	al->oneshot = oneshot;
 
 	kbd->nr_active_layers++;
-	kbd_reify_mods(kbd);
-}
 
-static void kbd_process_keyseq(struct keyboard *kbd,
-			       int verbatim,
-			       const struct key_sequence *sequence,
-			       int pressed)
-{
-	if (sequence->code == 0)
-		return;
-
-	if (pressed) {
-		uint16_t mods;
-
-		if (verbatim) /* Temporarily disable layer mods. */
-			mods = sequence->mods;
-		else
-			mods = kbd_compute_mods(kbd) | sequence->mods;
-
-		set_mods(mods);
-
-		/* Accommodate rolling modified/unmodified keys (e.g [/{). */
-		if (keystate[sequence->code])
-			send_key(sequence->code, 0);
-
-		send_key(sequence->code, 1);
-	} else
-		send_key(sequence->code, 0);
+	send_mods(layer->mods, 1);
 }
 
 static void kbd_swap_layer(struct keyboard *kbd,
@@ -252,6 +249,9 @@ static void kbd_execute_macro(struct keyboard *kbd,
 {
 	size_t i;
 	int hold_start = -1;
+	uint16_t active_mods = kbd_compute_mods(kbd);
+
+	send_mods(active_mods, 0);
 
 	for (i = 0; i < macro->sz; i++) {
 		const struct macro_entry *ent = &macro->entries[i];
@@ -288,6 +288,8 @@ static void kbd_execute_macro(struct keyboard *kbd,
 		}
 
 	}
+
+	send_mods(active_mods, 1);
 }
 
 int kbd_execute_expression(struct keyboard *kbd, const char *exp)
@@ -307,6 +309,26 @@ static long get_time_ms()
 	struct timespec tv;
 	clock_gettime(CLOCK_MONOTONIC, &tv);
 	return (tv.tv_sec*1E3)+tv.tv_nsec/1E6;
+}
+
+void kbd_execute_sequence(struct keyboard *kbd, const struct key_sequence *sequence, int literally)
+{
+	uint16_t active_mods = kbd_compute_mods(kbd);
+
+	/* Avoid spurious key up actions */
+	if (!sequence->code && !sequence->mods)
+		return;
+
+	if (literally)
+		send_mods(active_mods, 0);
+
+	send_mods(sequence->mods, 1);
+	send_key(sequence->code, 1);
+	send_key(sequence->code, 0);
+	send_mods(sequence->mods, 0);
+
+	if (literally)
+		send_mods(active_mods, 1);
 }
 
 /*
@@ -351,10 +373,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		if ((get_time_ms() - pending_overload.start_time) >= (long)pending_overload.timeout) {
 			kbd_activate_layer(kbd, pending_overload.layer, 0);
 		} else {
-			kbd_process_keyseq(kbd, 1, &pending_overload.sequence, 1);
-			kbd_process_keyseq(kbd, 1, &pending_overload.sequence, 0);
-
-			kbd_reify_mods(kbd);
+			kbd_execute_sequence(kbd, &pending_overload.sequence, 1);
 		}
 
 		pending_overload.is_active = 0;
@@ -372,23 +391,27 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 	switch (d.op) {
 	int verbatim;
+	int is_sequence;
 	const struct key_sequence *sequence;
 	int layer;
 	const struct macro *macro;
 
 	case OP_KEYSEQ:
-		verbatim = dl != kbd->layout;
+		sequence = &d.args[0].sequence;
+		is_sequence = sequence->mods || dl != kbd->layout;
 
-		kbd_process_keyseq(kbd, verbatim, &d.args[0].sequence, pressed);
-
-		if (!pressed)
-			kbd_reify_mods(kbd);
+		if (is_sequence) {
+			if (pressed)
+				kbd_execute_sequence(kbd, sequence, 1);
+		} else {
+			send_key(sequence->code, pressed);
+		}
 
 		break;
 	case OP_RESET:
 		if (!pressed) {
+			send_mods(kbd_compute_mods(kbd), 0);
 			kbd->nr_active_layers = 0;
-			kbd_reify_mods(kbd);
 		}
 
 		break;
@@ -438,9 +461,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		sequence = &d.args[1].sequence;
 
 		if (pressed) {
-			kbd_process_keyseq(kbd, 1, sequence, 1);
-			kbd_process_keyseq(kbd, 1, sequence, 0);
-
+			kbd_execute_sequence(kbd, sequence, 1);
 			kbd_swap_layer(kbd, dl, layer, d);
 		} else if (last_pressed_keycode != code) {  /* We only reach this from the remapped dl activate key. */
 			kbd_deactivate_layer(kbd, layer);
@@ -455,12 +476,8 @@ long kbd_process_key_event(struct keyboard *kbd,
 			kbd_activate_layer(kbd, layer, 0);
 		} else if (last_pressed_keycode == code) {
 			kbd_deactivate_layer(kbd, layer);
-			verbatim = dl != kbd->layout;
 
-			kbd_process_keyseq(kbd, verbatim, sequence, 1);
-			kbd_process_keyseq(kbd, verbatim, sequence, 0);
-
-			kbd_reify_mods(kbd);
+			kbd_execute_sequence(kbd, sequence, dl != kbd->layout);
 		} else {
 			kbd_deactivate_layer(kbd, layer);
 		}
@@ -488,11 +505,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		if (pressed) {
 			active_macro = macro;
 			kbd_execute_macro(kbd, macro);
-
 			timeout = MACRO_REPEAT_TIMEOUT;
-		} else {
-			kbd_reify_mods(kbd);
-			active_macro = NULL;
 		}
 
 		break;

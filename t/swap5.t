@@ -14,6 +14,8 @@ alt up
 tab down
 tab up
 meta down
+alt down
+alt up
 control down
 a down
 a up

@@ -15,6 +15,8 @@ alt down
 alt up
 tab down
 tab up
+alt down
+alt up
 shift down
 x down
 x up
