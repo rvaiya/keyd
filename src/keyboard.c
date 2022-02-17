@@ -279,17 +279,15 @@ static void kbd_execute_macro(struct keyboard *kbd,
 	int hold_start = -1;
 	uint16_t active_mods = kbd_compute_mods(kbd);
 
-	send_mods(active_mods, 0);
+	disarm_mods(active_mods);
 
 	for (i = 0; i < macro->sz; i++) {
 		const struct macro_entry *ent = &macro->entries[i];
 
 		switch (ent->type) {
 		case MACRO_HOLD:
-			if (hold_start == -1) {
+			if (hold_start == -1)
 				hold_start = i;
-				set_mods(0);
-			}
 
 			send_key(ent->data.sequence.code, 1);
 
@@ -305,10 +303,12 @@ static void kbd_execute_macro(struct keyboard *kbd,
 			}
 			break;
 		case MACRO_KEYSEQUENCE:
-			set_mods(ent->data.sequence.mods);
+			send_mods(ent->data.sequence.mods, 1);
 
 			send_key(ent->data.sequence.code, 1);
 			send_key(ent->data.sequence.code, 0);
+
+			send_mods(ent->data.sequence.mods, 0);
 			break;
 		case MACRO_TIMEOUT:
 			usleep(ent->data.timeout*1E3);

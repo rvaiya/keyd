@@ -103,30 +103,6 @@ static void send_repetitions()
 	}
 }
 
-void set_mods(uint16_t mods)
-{
-	static uint16_t state = 0;
-	size_t i;
-
-	uint16_t diff = mods ^ state;
-
-	if (debug && diff)
-		fprintf(stderr, "Active mods: %s\n", modstring(mods));
-
-	if (MOD_CTRL & diff)
-		send_key(KEY_LEFTCTRL, !!(MOD_CTRL & mods));
-	if (MOD_ALT_GR & diff)
-		send_key(KEY_RIGHTALT, !!(MOD_ALT_GR & mods));
-	if (MOD_SHIFT & diff)
-		send_key(KEY_LEFTSHIFT, !!(MOD_SHIFT & mods));
-	if (MOD_SUPER & diff)
-		send_key(KEY_LEFTMETA, !!(MOD_SUPER & mods));
-	if (MOD_ALT & diff)
-		send_key(KEY_LEFTALT, !!(MOD_ALT & mods));
-
-	state = mods;
-}
-
 /* Block on the given keyboard nodes until no keys are depressed. */
 static void await_keyboard_neutrality(char **devs, int n)
 {
