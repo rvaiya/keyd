@@ -38,6 +38,7 @@ struct keyboard {
 	size_t nr_active_keys;
 
 	uint16_t last_pressed_keycode;
+	int disarm_flag;
 
 	struct keyboard *next;
 };

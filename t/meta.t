@@ -9,14 +9,22 @@ rightmeta up
 
 
 meta down
+control down
 meta up
+control up
 b down
 b up
 meta down
+control down
 meta up
+control up
 meta down
+control down
 meta up
+control up
 b down
 b up
 meta down
+control down
 meta up
+control up

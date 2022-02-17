@@ -9,13 +9,17 @@ meta up
 
 meta down
 alt down
+control down
 meta up
 alt up
+control up
 tab down
 tab up
 meta down
 alt down
+control down
 alt up
+control up
 control down
 a down
 a up

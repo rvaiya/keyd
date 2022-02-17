@@ -10,7 +10,9 @@ a up
 alt up
 
 alt down
+control down
 alt up
+control up
 b down
 b up
 c down

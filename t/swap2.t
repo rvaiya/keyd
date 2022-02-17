@@ -12,7 +12,9 @@ a up
 alt up
 
 alt down
+control down
 alt up
+control up
 shift down
 x down
 x up
