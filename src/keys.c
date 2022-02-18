@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include "keys.h"
 
-uint16_t keycode_to_mod(uint16_t code)
+uint8_t keycode_to_mod(uint8_t code)
 {
 	switch (code) {
 	case KEY_LEFTSHIFT:
@@ -44,7 +44,7 @@ uint16_t keycode_to_mod(uint16_t code)
 	return 0;
 }
 
-const char *modstring(uint16_t mods)
+const char *modstring(uint8_t mods)
 {
 	static char s[16];
 	int i = 0;
@@ -81,7 +81,7 @@ const char *modstring(uint16_t mods)
 	return s;
 }
 
-int parse_modset(const char *s, uint16_t *mods)
+int parse_modset(const char *s, uint8_t *mods)
 {
 	*mods = 0;
 

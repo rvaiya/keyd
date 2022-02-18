@@ -61,7 +61,7 @@
 
 static struct vkbd *vkbd = NULL;
 
-uint8_t keystate[KEY_CNT] = { 0 };
+uint8_t keystate[MAX_KEYS] = { 0 };
 static int sigfds[2];
 struct keyboard *active_keyboard = NULL;
 
@@ -154,11 +154,11 @@ static void await_keyboard_neutrality(char **devs, int n)
 			}
 		}
 
-		for (i = 0; i < KEY_CNT; i++)
+		for (i = 0; i < MAX_KEYS; i++)
 			if (keystate[i])
 				break;
 
-		if (i == KEY_CNT)
+		if (i == MAX_KEYS)
 			break;
 	}
 
@@ -170,8 +170,8 @@ static void await_keyboard_neutrality(char **devs, int n)
 
 void reset_vkbd()
 {
-	uint16_t code;
-	for (code = 0; code < KEY_MAX; code++) {
+	size_t code;
+	for (code = 0; code < MAX_KEYS; code++) {
 		if (keystate[code])
 			send_key(code, 0);
 	}
@@ -180,7 +180,7 @@ void reset_vkbd()
 void send_key(int code, int state)
 {
 	keystate[code] = state;
-	vkbd_send(vkbd, code, state);
+	vkbd_send_key(vkbd, code, state);
 }
 
 void reset_keyboards()
@@ -334,7 +334,7 @@ static void monitor_cleanup()
 	tcsetattr(0, TCSANOW, &tinfo);
 }
 
-static void panic_check(uint16_t code, int state)
+static void panic_check(uint8_t code, int state)
 {
 	static int n = 0;
 
@@ -423,11 +423,13 @@ static void evdev_monitor_loop(int *fds, int sz)
 
 			if (FD_ISSET(fd, &fdset)) {
 				while (read(fd, &ev, sizeof(ev)) > 0) {
-					if (ev.type == EV_KEY
-					    && ev.value != 2) {
-						const char *name =
-						    keycode_table[ev.code].
-						    name;
+					if (ev.code >= MAX_KEYS) {
+						info("Out of bounds evdev keycode: %d", ev.code);
+						continue;
+					}
+
+					if (ev.type == EV_KEY && ev.value != 2) {
+						const char *name = keycode_table[ev.code].name;
 						if (name) {
 							printf("%s\t%04x:%04x\t%s %s\n",
 							       info_table[fd].name,
@@ -624,19 +626,37 @@ static void main_loop()
 					while (read(fd, &ev, sizeof(ev)) > 0) {
 						switch (ev.type) {
 						case EV_KEY:
-							if (ev.value == 2) {
-								/* Wayland and X both ignore repeat events but VTs seem to require them. */
-								send_repetitions ();
-							} else {
-								panic_check(ev.code, ev.value);
+							switch (ev.code) {
+							case BTN_LEFT:
+								vkbd_send_button(vkbd, 1, ev.value);
+								break;
+							case BTN_MIDDLE:
+								vkbd_send_button(vkbd, 2, ev.value);
+								break;
+							case BTN_RIGHT:
+								vkbd_send_button(vkbd, 3, ev.value);
+								break;
+							default:
+								if (ev.code >= MAX_KEYS) {
+									dbg("Out of bounds evdev keycode: %d %d", ev.code, ev.value);
+									break;
+								}
 
-								active_keyboard = kbd;
-								timeout = kbd_process_key_event(kbd, ev.code, ev.value) * 1E6;
+								if (ev.value == 2) {
+									/* Wayland and X both ignore repeat events but VTs seem to require them. */
+									send_repetitions();
+								} else {
+									panic_check(ev.code, ev.value);
 
-								if (timeout > 0)
-									timeout_kbd = kbd;
-								else
-									timeout_kbd = NULL;
+									active_keyboard = kbd;
+									timeout = kbd_process_key_event(kbd, ev.code, ev.value) * 1E6;
+
+									if (timeout > 0)
+										timeout_kbd = kbd;
+									else
+										timeout_kbd = NULL;
+								}
+								break;
 							}
 							break;
 						case EV_REL: /* Pointer motion events */
@@ -785,7 +805,7 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--list")) {
 			size_t i;
 
-			for (i = 0; i < KEY_MAX; i++)
+			for (i = 0; i < MAX_KEYS; i++)
 				if (keycode_table[i].name) {
 					const struct keycode_table_ent *ent
 					    = &keycode_table[i];

@@ -15,7 +15,7 @@ struct active_layer {
 
 /* Represents a currently depressed key */
 struct active_key {
-	uint16_t code;
+	uint8_t code;
 
 	struct descriptor d;
 	int dl; /* The layer from which the descriptor was drawn. */
@@ -37,13 +37,13 @@ struct keyboard {
 	struct active_key active_keys[MAX_ACTIVE_KEYS];
 	size_t nr_active_keys;
 
-	uint16_t last_pressed_keycode;
+	uint8_t last_pressed_keycode;
 	int disarm_flag;
 
 	struct keyboard *next;
 };
 
-long	kbd_process_key_event(struct keyboard *kbd, uint16_t code, int pressed);
+long	kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
 
 void	kbd_reset(struct keyboard *kbd);
 int	kbd_execute_expression(struct keyboard *kbd, const char *exp);

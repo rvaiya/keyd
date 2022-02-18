@@ -39,13 +39,13 @@ static long get_time_ms()
 	return (tv.tv_sec*1E3)+tv.tv_nsec/1E6;
 }
 
-static void send_mods(uint16_t mods, int press)
+static void send_mods(uint8_t mods, int press)
 {
 	size_t i;
 
 	for (i = 0; i < sizeof modifier_table / sizeof(modifier_table[0]); i++) {
-		uint16_t code = modifier_table[i].code1;
-		uint16_t mask = modifier_table[i].mask;
+		uint8_t code = modifier_table[i].code1;
+		uint8_t mask = modifier_table[i].mask;
 
 		if (mask & mods && keystate[code] != press)
 			send_key(code, press);
@@ -53,9 +53,9 @@ static void send_mods(uint16_t mods, int press)
 }
 
 /* Intelligently disarm active mods to avoid spurious key press events. */
-static void disarm_mods(uint16_t mods)
+static void disarm_mods(uint8_t mods)
 {
-	uint16_t dmods = (MOD_ALT|MOD_SUPER) & mods;
+	uint8_t dmods = (MOD_ALT|MOD_SUPER) & mods;
 	/*
 	 * We interpose a control sequence to prevent '<alt down> <alt up>'
 	 * from being interpreted as an alt keypress.
@@ -78,7 +78,7 @@ static void disarm_mods(uint16_t mods)
 
 
 static void kbd_lookup_descriptor(struct keyboard *kbd,
-				  uint16_t code,
+				  uint8_t code,
 				  int pressed,
 				  struct descriptor *descriptor,
 				  int *descriptor_layer)
@@ -146,10 +146,10 @@ static void kbd_lookup_descriptor(struct keyboard *kbd,
 }
 
 /* Compute the current modifier set based on the activated layers. */
-static uint16_t kbd_compute_mods(struct keyboard *kbd)
+static uint8_t kbd_compute_mods(struct keyboard *kbd)
 {
 	size_t i;
-	uint16_t mods = 0;
+	uint8_t mods = 0;
 
 	for (i = 0; i < kbd->nr_active_layers; i++) {
 		struct layer *layer = &kbd->config.layers[kbd->active_layers[i].layer];
@@ -178,7 +178,7 @@ static void kbd_deactivate_layer(struct keyboard *kbd, int layer_idx, int disarm
 {
 	int i;
 	int n = kbd->nr_active_layers;
-	uint16_t active_mods = 0;
+	uint8_t active_mods = 0;
 	struct layer *layer = &kbd->config.layers[layer_idx];
 
 	dbg("Deactivating layer %s", layer->name);
@@ -202,7 +202,7 @@ static void kbd_deactivate_layer(struct keyboard *kbd, int layer_idx, int disarm
 static void kbd_clear_oneshots(struct keyboard *kbd)
 {
 	size_t i, n;
-	uint16_t cleared_mods = 0;
+	uint8_t cleared_mods = 0;
 
 	n = 0;
 	for (i = 0; i < kbd->nr_active_layers; i++) {
@@ -277,7 +277,7 @@ static void kbd_execute_macro(struct keyboard *kbd,
 {
 	size_t i;
 	int hold_start = -1;
-	uint16_t active_mods = kbd_compute_mods(kbd);
+	uint8_t active_mods = kbd_compute_mods(kbd);
 
 	disarm_mods(active_mods);
 
@@ -334,7 +334,7 @@ void kbd_reset(struct keyboard *kbd)
 
 static void kbd_start_sequence(struct keyboard *kbd, const struct key_sequence *sequence, int literally)
 {
-	uint16_t active_mods = kbd_compute_mods(kbd);
+	uint8_t active_mods = kbd_compute_mods(kbd);
 
 	if (!sequence->code && !sequence->mods)
 		return;
@@ -348,7 +348,7 @@ static void kbd_start_sequence(struct keyboard *kbd, const struct key_sequence *
 
 static void kbd_end_sequence(struct keyboard *kbd, const struct key_sequence *sequence)
 {
-	uint16_t active_mods = kbd_compute_mods(kbd);
+	uint8_t active_mods = kbd_compute_mods(kbd);
 
 	send_key(sequence->code, 0);
 	send_mods(sequence->mods, 0);
@@ -372,7 +372,7 @@ static void kbd_execute_sequence(struct keyboard *kbd, const struct key_sequence
  * main loop to call at liberty.
  */
 long kbd_process_key_event(struct keyboard *kbd,
-			   uint16_t code,
+			   uint8_t code,
 			   int pressed)
 {
 	int dl;

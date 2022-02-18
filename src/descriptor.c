@@ -72,7 +72,7 @@ static int parse_fn(char *s,
 static int parse_key_sequence(const char *s, struct key_sequence *seq)
 {
 	const char *c = s;
-	uint16_t code;
+	size_t code;
 
 	if (!*s)
 		return -1;
@@ -104,7 +104,7 @@ static int parse_key_sequence(const char *s, struct key_sequence *seq)
 		c += 2;
 	}
 
-	for (code = 0; code < KEY_MAX; code++) {
+	for (code = 0; code < MAX_KEYS; code++) {
 		const struct keycode_table_ent *ent = &keycode_table[code];
 
 		if (ent->name) {
@@ -276,7 +276,7 @@ int parse_descriptor(char *s,
 
 		layer_idx = config_lookup_layer(config, args[0]);
 		if (layer_idx == -1) {
-			uint16_t mods;
+			uint8_t mods;
 
 			/* Autovivify modifier layers. */
 			if (!parse_modset(args[0], &mods)) {

@@ -18,9 +18,9 @@ struct layer {
 	char name[MAX_LAYER_NAME_LEN];
 
 	int is_layout;
-	uint16_t mods;
+	uint8_t mods;
 
-	struct descriptor keymap[KEY_MAX];
+	struct descriptor keymap[MAX_KEYS];
 };
 
 #endif

@@ -26,8 +26,8 @@ enum op {
 };
 
 struct key_sequence {
-	uint16_t mods;
-	uint16_t code;
+	uint8_t mods;
+	uint8_t code;
 };
 
 struct macro_entry {
@@ -60,9 +60,10 @@ struct descriptor {
 
 	union {
 		struct key_sequence sequence;
-		int idx;
-		size_t sz;
-		size_t timeout;
+
+		uint16_t idx;
+		uint16_t sz;
+		uint16_t timeout;
 	} args[3];
 };
 

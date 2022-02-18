@@ -129,17 +129,22 @@ struct vkbd *vkbd_init(const char *name)
 }
 
 
-void vkbd_send(const struct vkbd *vkbd, uint16_t code, int state)
+void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
+{
+	fprintf(stderr, "usb-gadget: mouse support is not implemented\n");
+}
+
+void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
+{
+	fprintf(stderr, "usb-gadget: mouse support is not implemented\n");
+}
+
+void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 {
 	if (update_modifier_state(code, state) < 0)
 		update_key_state(code, state);
 
 	send_hid_report(vkbd);
-}
-
-void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
-{
-	/* Not implemented */
 }
 
 void free_vkbd(struct vkbd *vkbd)

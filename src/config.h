@@ -31,7 +31,7 @@ struct config {
 struct config	*lookup_config(uint32_t device_id);
 
 int	config_lookup_layer(struct config *config, const char *name);
-int	config_create_layer(struct config *config, const char *name, uint16_t mods);
+int	config_create_layer(struct config *config, const char *name, uint8_t mods);
 
 int	config_execute_expression(struct config *config, const char *str);
 int	read_config_dir(const char *dir);

@@ -2,11 +2,7 @@
 #define _USBGADGET_H_
 #define _USBGADGET_H_
 
-#ifdef __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#else
-#include <linux/input-event-codes.h>
-#endif
+#include "../keys.h"
 
 #define HID_CTRL 0x1
 #define HID_RIGHTCTRL 0x10
@@ -17,7 +13,7 @@
 #define HID_RIGHTSUPER 0x80
 #define HID_SUPER 0x8
 
-static const uint16_t hid_table[] = {
+static const uint8_t hid_table[MAX_KEYS] = {
 	[KEY_ESC] = 0x29,
 	[KEY_1] = 0x1e,
 	[KEY_2] = 0x1f,
@@ -163,8 +159,6 @@ static const uint16_t hid_table[] = {
 	[KEY_F22] = 0x71,
 	[KEY_F23] = 0x72,
 	[KEY_F24] = 0x73,
-
-	[KEY_MAX] = 0
 };
 
 #endif

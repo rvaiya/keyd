@@ -92,7 +92,7 @@ static int parse_kvp(char *s, char **key, char **value)
 }
 
 /* Return up to two keycodes associated with the given name. */
-static int lookup_keycodes(const char *name, uint16_t *code1, uint16_t *code2)
+static int lookup_keycodes(const char *name, uint8_t *code1, uint8_t *code2)
 {
 	size_t i;
 
@@ -111,7 +111,7 @@ static int lookup_keycodes(const char *name, uint16_t *code1, uint16_t *code2)
 		}
 	}
 
-	for (i = 0; i < KEY_MAX; i++) {
+	for (i = 0; i < MAX_KEYS; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
 
 		if (ent->name &&
@@ -152,7 +152,7 @@ static char *read_file(const char *path)
 	return data;
 }
 
-int config_create_layer(struct config *config, const char *name, uint16_t mods)
+int config_create_layer(struct config *config, const char *name, uint8_t mods)
 {
 	struct layer *layer = &config->layers[config->nr_layers++];
 
@@ -178,7 +178,7 @@ int config_lookup_layer(struct config *config, const char *name)
 /* Returns the index within the layer table of the newly created layout. */
 int config_create_layout(struct config *config, const char *name)
 {
-	uint16_t code;
+	size_t code;
 	struct layer *layout;
 
 	int layout_idx = config_create_layer(config, name, 0);
@@ -186,7 +186,7 @@ int config_create_layout(struct config *config, const char *name)
 		
 	layout->is_layout = 1;
 
-	for (code = 0; code < KEY_MAX; code++) {
+	for (code = 0; code < MAX_KEYS-1; code++) {
 		struct descriptor *d = &layout->keymap[code];
 
 		d->op = OP_KEYSEQ;
@@ -265,7 +265,7 @@ struct config *create_config(const char *name)
  */
 int config_add_layer(struct config *config, const char *str)
 {
-	uint16_t mods;
+	uint8_t mods;
 	char *name;
 	char *type;
 
@@ -338,7 +338,7 @@ int config_execute_expression(struct config *config, const char *exp)
  */
 int config_add_mapping(struct config *config, const char *layer_name, const char *str)
 {
-	uint16_t code1, code2;
+	uint8_t code1, code2;
 	char *key, *descstr;
 	int idx;
 	struct descriptor d;
