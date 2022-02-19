@@ -130,3 +130,38 @@ int evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product)
 	return 0;
 }
 
+int evdev_grab_keyboard(int fd)
+{
+	size_t i;
+	uint8_t state[KEY_MAX / 8 + 1];
+
+	/*
+	 * await neutral key state to ensure any residual
+	 * key up events propagate.
+	 */
+
+	while (1) {
+		int n = 0;
+		memset(state, 0, sizeof(state));
+
+		if (ioctl(fd, EVIOCGKEY(sizeof state), state) < 0) {
+			perror("ioctl EVIOCGKEY");
+			return -1;
+		}
+
+		for (i = 0; i < KEY_MAX; i++) {
+			if ((state[i/8] >> (i % 8)) & 0x1)
+				n++;
+		}
+
+		if (n == 0)
+			break;
+	}
+
+	if (ioctl(fd, EVIOCGRAB, (void *) 1) < 0) {
+		perror("EVIOCGRAB");
+		return -1;
+	}
+
+	return 0;
+}

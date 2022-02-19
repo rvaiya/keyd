@@ -103,71 +103,6 @@ static void send_repetitions()
 	}
 }
 
-/* Block on the given keyboard nodes until no keys are depressed. */
-static void await_keyboard_neutrality(char **devs, int n)
-{
-	int fds[MAX_KEYBOARDS];
-	int maxfd = 0;
-	int i;
-
-	dbg("Awaiting keyboard neutrality.");
-	for (i = 0; i < n; i++) {
-		if ((fds[i] = open(devs[i], O_RDONLY | O_NONBLOCK)) < 0)
-			die("open");
-
-		if (fds[i] > maxfd)
-			maxfd = fds[i];
-	}
-
-	/*
-	 * There is a race condition here since it is possible for a key down
-	 * event to be generated before keyd is launched, in that case we hope a
-	 * repeat event is generated within the first 300ms. If we miss the
-	 * keydown event and the repeat event is not generated within the first
-	 * 300ms it is possible for this to yield a false positive. In practice
-	 * this seems to work fine. Given the stateless nature of evdev I am not
-	 * aware of a better way to achieve this.
-	 */
-	while (1) {
-		struct timeval tv = {
-			.tv_usec = 300000
-		};
-
-		struct input_event ev;
-		int i;
-		fd_set fdset;
-
-		FD_ZERO(&fdset);
-		for (i = 0; i < n; i++)
-			FD_SET(fds[i], &fdset);
-
-		select(maxfd + 1, &fdset, NULL, NULL, &tv);
-
-		for (i = 0; i < n; i++) {
-			if (FD_ISSET(fds[i], &fdset)) {
-				while (read(fds[i], &ev, sizeof ev) > 0) {
-					if (ev.type == EV_KEY) {
-						keystate[ev.code] = ev.value;
-						dbg("keystate[%d]: %d", ev.code, ev.value);
-					}
-				}
-			}
-		}
-
-		for (i = 0; i < MAX_KEYS; i++)
-			if (keystate[i])
-				break;
-
-		if (i == MAX_KEYS)
-			break;
-	}
-
-	for (i = 0; i < n; i++)
-		close(fds[i]);
-
-	dbg("Keyboard neutrality achieved");
-}
-
 void reset_vkbd()
 {
 	size_t code;
@@ -243,13 +178,10 @@ static int manage_keyboard(const char *devnode)
 		return -1;
 	}
 
-	/* Grab the keyboard. */
-	if (ioctl(fd, EVIOCGRAB, (void *) 1) < 0) {
+	if (evdev_grab_keyboard(fd) < 0) {
 		info("Failed to grab %04x:%04x, ignoring...\n", vendor_id, product_id);
-		perror("EVIOCGRAB");
-		close(fd);
-
 		free(kbd);
+
 		return -1;
 	}
 
@@ -269,14 +201,12 @@ static int manage_keyboard(const char *devnode)
 	return 0;
 }
 
-static void scan_keyboards(int wait)
+static void scan_keyboards()
 {
 	int i, n;
 	char *devs[MAX_KEYBOARDS];
 
 	evdev_get_keyboard_nodes(devs, &n);
-	if (wait)
-		await_keyboard_neutrality(devs, n);
 
 	for (i = 0; i < n; i++)
 		manage_keyboard(devs[i]);
@@ -298,7 +228,7 @@ void reload_config()
 
 	keyboards = NULL;
 
-	scan_keyboards(0);
+	scan_keyboards();
 }
 
 static int destroy_keyboard(const char *devnode)
@@ -556,7 +486,7 @@ static void main_loop()
 
 	nice(-20);
 
-	scan_keyboards(1);
+	scan_keyboards();
 
 	inotifyfd = create_inotify_fd();
 	sd = create_server_socket();

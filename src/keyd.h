@@ -20,5 +20,6 @@ int		 evdev_get_keyboard_nodes(char **devs, int *ndevs);
 int		 evdev_is_keyboard(const char *devnode);
 int		 evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product);
 const char	*evdev_device_name(const char *devnode);
+int		 evdev_grab_keyboard(int fd);
 
 #endif
