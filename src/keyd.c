@@ -194,20 +194,20 @@ void reset_keyboards()
 static int manage_keyboard(const char *devnode)
 {
 	int fd;
-	const char *name;
+	const char *devname;
+	const char *config_path;
 
 	struct keyboard *kbd;
 	struct config *config = NULL;
-	uint32_t id;
 	uint16_t  vendor_id, product_id;
 
-	if (!(name = evdev_device_name(devnode))) {
+	if (!(devname = evdev_device_name(devnode))) {
 		fprintf(stderr, "WARNING: Failed to obtain device info for %s, skipping..\n", devnode);
 		return -1;
 	}
 
 	/* Don't manage keyd's devices. */
-	if (!strcmp(name, VIRTUAL_KEYBOARD_NAME))
+	if (!strcmp(devname, VIRTUAL_KEYBOARD_NAME))
 		return -1;
 
 	for (kbd = keyboards; kbd; kbd = kbd->next) {
@@ -217,25 +217,29 @@ static int manage_keyboard(const char *devnode)
 		}
 	}
 
-	id = evdev_device_id(devnode);
-	if (!id) {
-		fprintf(stderr, "WARNING: Failed to obtain device id for %s (%s)\n", devnode, name);
+	if (evdev_device_id(devnode, &vendor_id, &product_id) < 0) {
+		fprintf(stderr, "WARNING: Failed to obtain device id for %s (%s)\n", devnode, devname);
 		return -1;
 	}
 
-	vendor_id = id >> 16;
-	product_id = id & 0xFFFF;
+	config_path = config_find_path(CONFIG_DIR, vendor_id, product_id);
+	if (!config_path) {
+		fprintf(stderr, "No config found for %s (%04x:%04x)\n", devname, vendor_id, product_id);
+		return -1;
+	}
 
-	config = lookup_config(id);
-
-	if (!config) {
-		fprintf(stderr, "No config found for %s (%04x:%04x)\n", name, vendor_id, product_id);
+	kbd = calloc(1, sizeof(struct keyboard));
+	if (config_parse(&kbd->config, config_path) < 0) {
+		fprintf(stderr, "ERROR: failed to parse %s\n", config_path);
+		free(kbd);
 		return -1;
 	}
 
 	if ((fd = open(devnode, O_RDONLY | O_NONBLOCK)) < 0) {
-		fprintf(stderr, "WARNING: Failed to open %s (%s)\n", devnode, name);
+		fprintf(stderr, "WARNING: Failed to open %s (%s)\n", devnode, devname);
 		perror("open");
+
+		free(kbd);
 		return -1;
 	}
 
@@ -244,17 +248,15 @@ static int manage_keyboard(const char *devnode)
 		info("Failed to grab %04x:%04x, ignoring...\n", vendor_id, product_id);
 		perror("EVIOCGRAB");
 		close(fd);
+
+		free(kbd);
 		return -1;
 	}
 
-	kbd = calloc(1, sizeof(struct keyboard));
 	kbd->fd = fd;
 
-	/* TODO: optimize */
-	kbd->config = *config;
-	kbd->original_config = *config;
-
-	kbd->layout = config->default_layout;
+	kbd->original_config = kbd->config;
+	kbd->layout = kbd->config.default_layout;
 
 	strcpy(kbd->devnode, devnode);
 
@@ -262,7 +264,8 @@ static int manage_keyboard(const char *devnode)
 	keyboards = kbd;
 
 	active_keyboard = kbd;
-	info("Managing %s (%04x:%04x) (%s)", name, vendor_id, product_id, config->name);
+
+	info("Managing %s (%04x:%04x) (%s)", devname, vendor_id, product_id, config_path);
 	return 0;
 }
 
@@ -295,8 +298,6 @@ void reload_config()
 
 	keyboards = NULL;
 
-	free_configs();
-	read_config_dir(CONFIG_DIR);
 	scan_keyboards(0);
 }
 
@@ -685,7 +686,6 @@ static void cleanup()
 	info("cleaning up and terminating...");
 
 	struct keyboard *kbd = keyboards;
-	free_configs();
 
 	while (kbd) {
 		struct keyboard *tmp = kbd;
@@ -850,7 +850,6 @@ int main(int argc, char *argv[])
 	atexit(cleanup);
 
 	info("Starting keyd v%s (%s).", VERSION, GIT_COMMIT_HASH);
-	read_config_dir(CONFIG_DIR);
 	vkbd = vkbd_init(VIRTUAL_KEYBOARD_NAME);
 
 	main_loop();

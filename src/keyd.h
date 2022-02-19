@@ -18,7 +18,7 @@ void	reset_vkbd();
 
 int		 evdev_get_keyboard_nodes(char **devs, int *ndevs);
 int		 evdev_is_keyboard(const char *devnode);
-uint32_t	 evdev_device_id(const char *devnode);
+int		 evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product);
 const char	*evdev_device_name(const char *devnode);
 
 #endif

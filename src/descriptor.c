@@ -213,7 +213,7 @@ static int config_get_free_macro_idx(struct config *config)
 		if (!config->macros[i].sz)
 			return i;
 
-	die("Max macros exceeded in %s\n", config->name);
+	die("Max macros exceeded\n");
 
 	return -1;
 }

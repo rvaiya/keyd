@@ -9,33 +9,21 @@
 #include "layer.h"
 
 struct config {
-	char	 name[MAX_CONFIG_NAME];
-	uint32_t device_ids[MAX_DEVICE_IDS];
-
-	int has_wildcard;
-
-	/* The first two layers are the default main and modifier layouts. */
 	struct layer layers[MAX_LAYERS];
 	struct macro macros[MAX_MACROS];
 
 	/* The index of the default layout within the config layer table. */
 	int default_layout;
 
-	size_t nr_device_ids;
 	size_t nr_layers;
-
-	struct config *next;
 };
 
-	
-struct config	*lookup_config(uint32_t device_id);
+int		 config_lookup_layer(struct config *config, const char *name);
+int		 config_create_layer(struct config *config, const char *name, uint8_t mods);
 
-int	config_lookup_layer(struct config *config, const char *name);
-int	config_create_layer(struct config *config, const char *name, uint8_t mods);
+int		 config_execute_expression(struct config *config, const char *str);
+const char	*config_find_path(const char *dir, uint16_t vendor, uint16_t product);
 
-int	config_execute_expression(struct config *config, const char *str);
-int	read_config_dir(const char *dir);
-
-void	free_configs();
+int		 config_parse(struct config *config, const char *path);
 
 #endif

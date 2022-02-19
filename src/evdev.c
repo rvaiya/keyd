@@ -107,22 +107,26 @@ const char *evdev_device_name(const char *devnode)
 	return name;
 }
 
-uint32_t evdev_device_id(const char *devnode)
+int evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product)
 {
 	struct input_id info;
 
 	int fd = open(devnode, O_RDONLY);
 	if (fd < 0) {
 		perror("open");
-		return 0;
+		return -1;
 	}
 
 	if (ioctl(fd, EVIOCGID, &info) == -1) {
 		perror("ioctl");
-		return 0;
+		return -1;
 	}
 
 	close(fd);
-	return info.vendor << 16 | info.product;
+
+	*vendor = info.vendor;
+	*product = info.product;
+
+	return 0;
 }
 

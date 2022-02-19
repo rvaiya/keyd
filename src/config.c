@@ -20,27 +20,29 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
+
 #include "ini.h"
 #include "keys.h"
 #include "error.h"
 #include "descriptor.h"
 #include "layer.h"
 #include "config.h"
-#include <string.h>
 
 static struct config *configs = NULL;
 
-int config_add_mapping(struct config *config, const char *layer, const char *str);
-int config_add_layer(struct config *config, const char *str);
+static int config_add_mapping(struct config *config, const char *layer, const char *str);
+static int config_add_layer(struct config *config, const char *str);
 
 /*
  * Parse a value of the form 'key = value'. The value may contain =
@@ -176,7 +178,7 @@ int config_lookup_layer(struct config *config, const char *name)
 
 
 /* Returns the index within the layer table of the newly created layout. */
-int config_create_layout(struct config *config, const char *name)
+static int config_create_layout(struct config *config, const char *name)
 {
 	size_t code;
 	struct layer *layout;
@@ -203,48 +205,9 @@ int config_create_layout(struct config *config, const char *name)
 	return layout_idx;
 }
 
-static void parse_id_section(struct config *config, struct ini_section *section)
+static void config_init(struct config *config)
 {
-	size_t i;
-
-	for (i = 0; i < section->nr_entries; i++) {
-		struct ini_entry *ent = &section->entries[i];
-
-		uint16_t product_id, vendor_id;
-
-		/*  Applies to all device ids except the ones explicitly listed within the config. */
-
-		if (!strcmp(ent->line, "*")) {
-			config->has_wildcard = 1;
-			continue;
-		}
-
-		if (sscanf (ent->line, "-%hx:%hx", &product_id, &vendor_id) == 2) {
-			if (!config->has_wildcard) {
-				fprintf(stderr,
-					"ERROR %s:%zu: -<id> is not permitted unless the ids section begins with *.\n",
-					config->name, ent->lnum);
-				continue;
-			}
-
-			config->device_ids[config->nr_device_ids++] = product_id << 16 | vendor_id;
-		} else if (sscanf(ent->line, "%hx:%hx", &product_id, &vendor_id) == 2) {
-			assert(config->nr_device_ids < MAX_DEVICE_IDS);
-			config->device_ids[config->nr_device_ids++] = product_id << 16 | vendor_id;
-		} else {
-			fprintf (stderr,
-				"ERROR %s:%zu: Invalid product id: %s\n",
-				config->name, ent->lnum, ent->line);
-		}
-	}
-}
-
-struct config *create_config(const char *name)
-{
-	struct config *config;
-
-	config = calloc(1, sizeof(struct config));
-	strncpy(config->name, name, sizeof(config->name)-1);
+	bzero(config, sizeof(*config));
 
 	/* Create the default modifier layers. */
 
@@ -255,7 +218,6 @@ struct config *create_config(const char *name)
 	config_add_layer(config, "alt:A");
 
 	config->default_layout = config_create_layout(config, "main");
-	return config;
 }
 
 /*
@@ -263,7 +225,7 @@ struct config *create_config(const char *name)
  * within the provided config. If the layer already exists
  * then its attributes will remain unchanged.
  */
-int config_add_layer(struct config *config, const char *str)
+static int config_add_layer(struct config *config, const char *str)
 {
 	uint8_t mods;
 	char *name;
@@ -289,10 +251,7 @@ int config_add_layer(struct config *config, const char *str)
 		else if (!parse_modset(type, &mods))
 			config_create_layer(config, name, mods);
 		else {
-			fprintf(stderr,
-				"WARNING %s: \"%s\" is not a valid layer type "
-				" (must be \"layout\" or a valid modifier set).\n",
-				config->name, type);
+			err("WARNING: \"%s\" is not a valid layer type (must be \"layout\" or a valid modifier set).\n", type);
 
 			return -1;
 		}
@@ -336,7 +295,7 @@ int config_execute_expression(struct config *config, const char *exp)
  * corresponding mapping to the layer within the supplied config.
  * The layer must exist or else be a valid modifier set.
  */
-int config_add_mapping(struct config *config, const char *layer_name, const char *str)
+static int config_add_mapping(struct config *config, const char *layer_name, const char *str)
 {
 	uint8_t code1, code2;
 	char *key, *descstr;
@@ -375,35 +334,30 @@ int config_add_mapping(struct config *config, const char *layer_name, const char
 	return 0;
 }
 
-static struct config *parse_ini_string(const char *name, char *str)
+static int parse(struct config *config, char *str, const char *path)
 {
 	size_t i;
 
 	struct ini ini;
-	struct config *config = create_config(name);
 	struct ini_section *section;
 
-	if (ini_parse(str, &ini, NULL) < 0) {
-		fprintf(stderr, "ERROR: %s is not a valid config.", config->name);
+	config_init(config);
 
-		free(config);
-		return NULL;
-	}
+	if (ini_parse(str, &ini, NULL) < 0)
+		return -1;
 
 	/* First pass: create all layers based on section headers.  */
 	for (i = 0; i < ini.nr_sections; i++) {
 		section = &ini.sections[i];
 
-		if (!strcmp(section->name, "ids")) {
-			parse_id_section(config, section);
+		if (!strcmp(section->name, "ids"))
 			continue;
-		}
 
 		if (config_lookup_layer(config, section->name) != -1)
 			continue;
 
 		if (config_add_layer(config, section->name) < 0)
-			fprintf(stderr, "ERROR %s:%zd: %s\n", config->name, section->lnum, errstr);
+			fprintf(stderr, "ERROR %s:%zd: %s\n", path, section->lnum, errstr);
 	}
 
 	/* Populate each layer. */
@@ -421,102 +375,137 @@ static struct config *parse_ini_string(const char *name, char *str)
 			struct ini_entry *ent = &section->entries[j];
 
 			if (config_add_mapping(config, name, ent->line) < 0)
-				fprintf(stderr, "ERROR %s:%zd: %s\n", config->name, ent->lnum, errstr);
+				fprintf(stderr, "ERROR %s:%zd: %s\n", path, ent->lnum, errstr);
 		}
 	}
 
-	return config;
+	return 0;
 }
 
-struct config *config_create_from_ini(const char *config_name, char *str)
+int config_parse(struct config *config, const char *path)
 {
-	struct config *config = parse_ini_string(config_name, str);
+	int ret;
 
-	if (!config) {
-		free(config);
+	char *data = read_file(path);
+	ret = parse(config, data, path);
+	free(data);
+
+	if (ret < 0)
+		fprintf(stderr, "Failed to parse %s\n", path);
+
+	return ret;
+}
+
+/* 
+ * returns 1 in the case of a match and 2
+ * in the case of an exact match.
+ */
+static int config_check_match(const char *path, uint16_t vendor, uint16_t product)
+{
+	char line[32];
+	int line_sz = 0;
+
+	int fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		perror("open");
+		return 0;
+	}
+
+	int seen_ids = 0;
+	int wildcard = 0;
+
+	while (1) {
+		char buf[1024];
+		int i;
+		int n = read(fd, buf, sizeof buf);
+
+		if (!n)
+			break;
+
+		for (i = 0; i < n; i++) {
+			switch (buf[i]) {
+				case ' ':
+					break;
+				case '[':
+					if (seen_ids)
+						goto end;
+					else if (line_sz < sizeof(line)-1)
+						line[line_sz++] = buf[i];
+
+					break;
+				case '\n':
+					line[line_sz] = 0;
+
+					if (!seen_ids && strstr(line, "[ids]") == line) {
+						seen_ids++;
+					} else if (seen_ids && line_sz) {
+						if (line[0] == '*' && line[1] == 0) {
+							wildcard = 1;
+						} else {
+							char *id = line;
+							uint16_t p, v;
+							int ret;
+
+							if (line[0] == '-')
+								id++;
+
+							if (line[0] != '#') {
+								ret = sscanf(id, "%hx:%hx", &v, &p);
+
+								if (ret == 2 && v == vendor && p == product)
+									return wildcard ? 0 : 2;
+							}
+						}
+					}
+
+					line_sz = 0;
+					break;
+				default:
+					if (line_sz < sizeof(line)-1)
+						line[line_sz++] = buf[i];
+
+					break;
+			}
+		}
+	}
+end:
+
+	return wildcard;
+}
+
+/* 
+ * scan a directory for the most appropriate match for a given vendor/product
+ * pair and return the result. returns NULL if not match is found.
+ */
+const char *config_find_path(const char *dir, uint16_t vendor, uint16_t product)
+{
+	static char result[1024];
+	DIR *dh = opendir(dir);
+	struct dirent *ent;
+	int priority = 0;
+
+	if (!dh) {
+		perror("opendir");
 		return NULL;
 	}
 
-	config->next = configs;
-	configs = config;
+	while ((ent = readdir(dh))) {
+		char path[1024];
+		int len;
 
-	return config;
-}
+		if (ent->d_type != DT_REG)
+			continue;
 
-void free_configs()
-{
-	struct config *config = configs;
-
-	while (config) {
-		struct config *tmp = config;
-		config = config->next;
-
-		free(tmp);
-	}
-
-	configs = NULL;
-}
-
-int read_config_dir(const char *dir)
-{
-	free_configs();
-
-	DIR *dh = opendir(dir);
-	struct dirent *de;
-
-	if (!dh)
-		return -1;
-
-	while ((de = readdir(dh))) {
-		size_t len = strlen(de->d_name);
-
-		if (len > 4 && !strcmp(de->d_name+len-4, ".cfg")) {
-			fprintf(stderr, "NOTE: %s looks like an old (v1) config. See the man page for details on the current config format.\n", de->d_name);
-		}
-
-		if (len > 5 && !strcmp(de->d_name+len-5, ".conf")) {
-			char path[PATH_MAX];
-			char *data;
-
-			sprintf(path, "%s/%s", dir, de->d_name);
-
-			fprintf(stderr, "Parsing %s\n", path);
-			data = read_file(path);
-
-			config_create_from_ini(path, data);
-			free(data);
+		len = snprintf(path, sizeof path, "%s/%s", dir, ent->d_name);
+		if (len >= 5 && !strcmp(path+len-5, ".conf")) {
+			int ret = config_check_match(path, vendor, product);
+			if (ret && ret > priority) {
+				priority = ret;
+				strcpy(result, path);
+			}
 		}
 	}
 
 	closedir(dh);
-	return 0;
+	return priority ? result : NULL;
 }
-
-struct config *lookup_config(uint32_t device_id)
-{
-	struct config *config = configs;
-	struct config *result = NULL;
-
-	while (config) {
-		size_t i;
-
-		if (config->has_wildcard) {
-			int excluded = 0;
-			for (i = 0; i < config->nr_device_ids; i++)
-				if (config->device_ids[i] == device_id)
-					excluded++;
-
-			if (!excluded)
-				result = config;
-		} else {
-			for (i = 0; i < config->nr_device_ids; i++)
-				if (config->device_ids[i] == device_id)
-					return config;
-		}
-
-		config = config->next;
-	}
-
-	return result;
-}
-
