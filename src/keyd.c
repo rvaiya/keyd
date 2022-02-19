@@ -67,6 +67,8 @@ struct keyboard *active_keyboard = NULL;
 
 static struct keyboard *keyboards = NULL;
 
+static int panic_counter = 0;
+
 int debug = 0;
 
 void dbg(const char *fmt, ...)
@@ -112,11 +114,6 @@ void reset_vkbd()
 	}
 }
 
-void send_key(int code, int state)
-{
-	keystate[code] = state;
-	vkbd_send_key(vkbd, code, state);
-}
 
 void reset_keyboards()
 {
@@ -124,6 +121,12 @@ void reset_keyboards()
 
 	for (kbd = keyboards; kbd; kbd = kbd->next)
 		kbd_reset(kbd);
+}
+
+void send_key(int code, int state)
+{
+	keystate[code] = state;
+	vkbd_send_key(vkbd, code, state);
 }
 
 static int manage_keyboard(const char *devnode)
@@ -229,6 +232,7 @@ void reload_config()
 	keyboards = NULL;
 
 	scan_keyboards();
+	panic_counter = 0;
 }
 
 static int destroy_keyboard(const char *devnode)
@@ -267,21 +271,19 @@ static void monitor_cleanup()
 
 static void panic_check(uint8_t code, int state)
 {
-	static int n = 0;
-
 	switch (code) {
 	case KEY_BACKSPACE:
 	case KEY_ENTER:
 	case KEY_ESC:
 		if (state == 1)
-			n++;
+			panic_counter++;
 		else if (state == 0)
-			n--;
+			panic_counter--;
 
 		break;
 	}
 
-	if (n == 3)
+	if (panic_counter == 3)
 		die("Termination key sequence triggered (backspace+escape+enter), terminating.");
 }
 

@@ -133,6 +133,7 @@ int evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product)
 int evdev_grab_keyboard(int fd)
 {
 	size_t i;
+	struct input_event ev;
 	uint8_t state[KEY_MAX / 8 + 1];
 
 	/*
@@ -161,6 +162,10 @@ int evdev_grab_keyboard(int fd)
 	if (ioctl(fd, EVIOCGRAB, (void *) 1) < 0) {
 		perror("EVIOCGRAB");
 		return -1;
+	}
+
+	/* drain any input events before the grab (assumes NONBLOCK is set on the fd) */
+	while (read(fd, &ev, sizeof(ev)) > 0) {
 	}
 
 	return 0;
