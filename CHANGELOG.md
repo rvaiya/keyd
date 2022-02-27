@@ -1,3 +1,10 @@
+# v2.2.7-beta
+
+ - Fix support for symlinked config files (#148)
+ - Improve out of the box handling of alt and meta overloading (#128)
+ - Add unicode support to keyd-application-mapper
+ - Various bugfixes and stability improvements
+
 # v2.2.5-beta
 
  - Eliminate udev as a dependency
