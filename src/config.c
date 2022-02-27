@@ -493,7 +493,7 @@ const char *config_find_path(const char *dir, uint16_t vendor, uint16_t product)
 		char path[1024];
 		int len;
 
-		if (ent->d_type != DT_REG)
+		if (ent->d_type == DT_DIR)
 			continue;
 
 		len = snprintf(path, sizeof path, "%s/%s", dir, ent->d_name);
