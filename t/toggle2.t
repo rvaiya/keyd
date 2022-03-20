@@ -13,6 +13,8 @@ b up
 
 shift down
 shift up
+shift down
+shift up
 a down
 a up
 shift down

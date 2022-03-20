@@ -1,3 +1,9 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ * © 2021 Giorgi Chavchanidze
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

@@ -1,0 +1,90 @@
+keyd-application-mapper(1)
+
+# USAGE
+
+keyd-application-mapper [-d]
+
+# OVERVIEW
+
+A script which reads _~/.config/keyd/app.conf_ and applies the supplied
+bindings whenever a window with a matching class comes into focus.
+
+You can think of each section as a set of application specific masks applied
+over the global rules defined in _/etc/keyd/\*.conf_. 
+
+The config file has the following form:
+
+```
+	[<filter>]
+
+	<expression 1>
+	<expression 2>
+	...
+```
+
+Where _<filter>_ has one of the following forms:
+
+	\[<class exp>\]              # Match by window class
+	\[<class exp>|<title exp>\]  # Match by class and title
+
+and each _<expression>_ is a valid argument to _-e_ (see *Expressions*).
+
+_<class exp>_ and _<title exp>_ are strings which describe window class and title names
+to be matched, and may optionally contain unix style wildcards (\*). For example, 
+_[gnome|\*find\*]_ will match any window with a class of _gnome_ and a title
+containing the substring _find_.
+
+E.G:
+
+```
+	[kitty]
+
+	alt.] = C-tab
+	alt.[ = C-S-tab
+	alt.t = C-S-t
+
+	[st-*]
+
+	alt.1  = macro(Inside space st)
+
+	[chromium]
+
+	control.1 = macro(Inside space chrome!)
+	alt.] = C-tab
+	alt.[ = C-S-tab
+	alt.t = C-t
+```
+
+Will remap _A-1_ to the the string 'Inside st' when a window with a class
+that begins with 'st-' (e.g st-256color) is active. 
+
+Window class and title names can be obtained by inspecting the log output while the
+daemon is running (e.g _tail\ -f\ ~/.config/keyd/app.log_).
+
+At the moment X, Sway and Gnome are supported.
+
+# INSTALLATION
+
+Installation is a simple matter of running the command _keyd-application-mapper -d_
+somewhere in your display server initialization logic (e.g _~/.xinitrc_ or
+_~/.xsession_). If you are running Gnome, 
+running _keyd-application-mapper_ for the first time will install an extension
+which manages the script lifecycle.
+
+In order for this to work, keyd must be running and the user must have access
+to */var/run/keyd.socket* (i.e be a member of the *keyd* group). 
+
+# A note on security
+
+Any user which can interact with a program that directly controls input devices
+should be assumed to have full access to the system.
+
+While keyd offers slightly better isolation compared to other remappers by dint
+of mediating access through an IPC mechanism (rather than granting users
+blanket access to /dev/input/\* and /dev/uinput), it still provides an
+opportunity for abuse and should be treated with due deference.
+
+Specifically, access to */var/run/keyd.socket* should only be granted to
+trusted users and the group _keyd_ should be regarded with the same reverence
+as _wheel_.
+

@@ -1,13 +1,13 @@
 s down
 meta down
-c down
-c up
+i down
+i up
 meta up
 s up
 
 shift down
 meta down
-c down
-c up
+i down
+i up
 meta up
 shift up

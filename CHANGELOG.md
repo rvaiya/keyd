@@ -1,3 +1,18 @@
+# v2.3.0-rc
+
+This is a **major release** which breaks **backward compatibility** with
+non trivial configs. It is best to reread the man page. Minimal
+breaking changes are expected moving forward.
+
+ - Introduce composite layers
+ - Add timeout()
+ - Simplify layer model
+ - Layer entries are now affected by active modifiers (current layer modifiers excepted)
+ - Eliminate layer types
+ - Eliminate -d
+
+See [DESIGN.md](DESIGN.md) for a more thorough description of changes.
+
 # v2.2.7-beta
 
  - Fix support for symlinked config files (#148)

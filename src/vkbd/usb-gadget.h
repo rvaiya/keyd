@@ -1,3 +1,9 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ * © 2021 Giorgi Chavchanidze
+ */
 #ifndef _USBGADGET_H_
 #define _USBGADGET_H_
 #define _USBGADGET_H_

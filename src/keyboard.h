@@ -1,50 +1,50 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ */
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
 #include "config.h"
 #include "layer.h"
 
-#define MAX_ACTIVE_KEYS 32
+#define MAX_ACTIVE_KEYS	32
+#define CACHE_SIZE	16 //Effectively nkro
 
-extern struct keyboard *active_keyboard;
-
-struct active_layer {
-	int layer;
-	int oneshot;
-};
-
-/* Represents a currently depressed key */
-struct active_key {
+struct cache_entry {
 	uint8_t code;
-
 	struct descriptor d;
-	int dl; /* The layer from which the descriptor was drawn. */
+	uint8_t layermods;
 };
 
-/* Active keyboard state. */
 struct keyboard {
 	int fd;
-	char devnode[256];
-	uint32_t id;
 
-	struct active_layer active_layers[MAX_LAYERS];
-	size_t nr_active_layers;
-
-	struct config original_config;
 	struct config config;
-	int layout;
 
-	struct active_key active_keys[MAX_ACTIVE_KEYS];
-	size_t nr_active_keys;
+	struct layer_table layer_table;
 
+	/* state*/
+
+	/* for key up events */
+	struct cache_entry cache[CACHE_SIZE];
+
+	uint8_t last_pressed_output_code;
 	uint8_t last_pressed_keycode;
-	int disarm_flag;
+	uint8_t last_layer_code;
 
-	struct keyboard *next;
+	struct {
+		uint8_t code;
+		uint8_t mods;
+		struct timeout t;
+	} pending_timeout;
+
+	uint8_t keystate[256];
+	uint8_t modstate[MAX_MOD];
 };
 
 long	kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
-
 void	kbd_reset(struct keyboard *kbd);
 int	kbd_execute_expression(struct keyboard *kbd, const char *exp);
 

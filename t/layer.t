@@ -7,11 +7,9 @@ b up
 
 control down
 shift down
-control up
 shift up
 a down
 a up
-control down
 shift down
 shift up
 control up

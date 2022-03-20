@@ -1,3 +1,8 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ */
 #ifndef VIRTUAL_KEYBOARD_H
 #define VIRTUAL_KEYBOARD_H
 

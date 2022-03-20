@@ -2,32 +2,31 @@
 DESTDIR=
 PREFIX=/usr
 
-LOCK_FILE="/var/run/keyd.lock"
-SOCKET="/var/run/keyd.socket"
-LOG_FILE="/var/log/keyd.log"
-CONFIG_DIR="/etc/keyd"
+VERSION=2.3.0-rc
+COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 
-VERSION=2.2.7-beta
-GIT_HASH=$(shell git describe --no-match --always --abbrev=40 --dirty)
-
-CFLAGS+=-DVERSION=\"$(VERSION)\" \
-	-DGIT_COMMIT_HASH=\"$(GIT_HASH)\" \
-	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
-	-DLOG_FILE=\"$(LOG_FILE)\" \
-	-DSOCKET=\"$(SOCKET)\" \
-	-DLOCK_FILE=\"$(LOCK_FILE)\" \
+CFLAGS+=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
 	-L/usr/local/lib
-LDFLAGS+=$(shell if [ `uname -s` != Linux ]; then echo -linotify; fi)
+
+platform+=$(shell uname -s)
+
+ifeq ($(platform), Linux)
+	COMPAT_FILES=
+else
+	LDFLAGS+=-linotify
+	COMPAT_FILES=
+endif
 
 all: vkbd-uinput
 vkbd-%:
 	mkdir -p bin
-	$(CC) $(CFLAGS) -O3 src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -lpthread $(LDFLAGS)
+	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(@:vkbd-%=%).c -o bin/keyd -lpthread $(LDFLAGS)
 debug:
-	CFLAGS+="-pedantic -Wall -Wextra -g" $(MAKE)
+	CFLAGS="-pedantic -Wall -Wextra -g" $(MAKE)
 man:
-	pandoc -s -t man man.md | gzip > keyd.1.gz
+	scdoc < keyd.md | gzip > keyd.1.gz
+	scdoc < keyd-application-mapper.md | gzip > keyd-application-mapper.1.gz
 clean:
 	-rm -rf bin
 install:
@@ -55,6 +54,7 @@ install:
 	install -m755 bin/keyd $(DESTDIR)$(PREFIX)/bin
 	install -m755 scripts/keyd-application-mapper $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m644 keyd-application-mapper.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m644 man.md CHANGELOG.md README.md $(DESTDIR)$(PREFIX)/share/doc/keyd
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples
 
@@ -63,7 +63,8 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service\
 		bin/keyd $(DESTDIR)$(PREFIX)/bin/keyd\
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper\
-		$(DESTDIR)$(PREFIX)/share/man/man1/keyd.1.gz
+		$(DESTDIR)$(PREFIX)/share/man/man1/keyd.1.gz\
+		$(DESTDIR)$(PREFIX)/share/man/man1/keyd-application-mapper.1.gz
 
 install-usb-gadget: install
 	install -m644 src/vkbd/usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service

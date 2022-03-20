@@ -1,19 +1,17 @@
 - down
 - up
-a down
-a up
+x down
+x up
 control down
-a down
-a up
+x down
+x up
 control up
 - down
 - up
 
-c down
-c up
+o down
+o up
 control down
-control up
-b down
-b up
-control down
+o down
+o up
 control up

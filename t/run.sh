@@ -2,30 +2,40 @@
 
 # TODO: make this more robust
 
+if [ `whoami` != "root" ]; then
+	echo "Must be run as root, restarting (sudo $0)"
+	sudo "$0" "$@"
+	exit $?
+fi
+
+tmpdir=$(mktemp -d)
+
 cleanup() {
-	sudo pkill keyd
-	sleep 1s
-	sudo systemctl restart keyd
+	rm -rf "$tmpdir"
+	kill $pid
 
 	trap - EXIT
 	exit
 }
 
-trap cleanup INT EXIT
+trap cleanup INT
 
-cd "$(dirname $0)"
+cd "$(dirname "$0")"
+cp test.conf "$tmpdir"
 
-sudo cp test.conf /etc/keyd
-sudo pkill keyd
-sleep 1s
-sudo ../bin/keyd -d || exit
-sleep 4s
+KEYD_NAME="keyd test device" \
+KEYD_DEBUG=1 \
+KEYD_CONFIG_DIR="$tmpdir" \
+../bin/keyd > test.log 2>&1 &
 
+pid=$!
+
+sleep .7s
 if [ $# -ne 0 ]; then
 	test_files="$(echo "$@"|sed -e 's/ /.t /g').t"
-	sudo ./runner.py -v $test_files
-	exit
+	./runner.py -v $test_files
+	cleanup
 fi
 
-sudo ./runner.py -ev *.t || exit
-sudo ./runner.py -ev $(seq 100|sed -e 's@.*@overload-timeout.t@')
+./runner.py -ev *.t
+cleanup

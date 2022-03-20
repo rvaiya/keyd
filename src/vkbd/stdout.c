@@ -1,3 +1,8 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ */
 /* Build with make vkbd-stdout. */
 
 #include <stdio.h>

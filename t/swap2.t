@@ -15,6 +15,8 @@ alt down
 control down
 alt up
 control up
+9 down
+9 up
 shift down
 x down
 x up

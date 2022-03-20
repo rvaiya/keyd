@@ -2,6 +2,10 @@
 2 up
 x down
 x up
+2 down
+a down
+a up
+2 up
 x down
 x up
 
@@ -11,5 +15,9 @@ o down
 o up
 n down
 n up
+shift down
+a down
+a up
+shift up
 x down
 x up

@@ -6,11 +6,12 @@ result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
 
-# UPDATE (v2-beta)
+# UPDATE (v2.3.0-rc)
 
-master is currently tracking `v2-beta`. Things should be reasonably backwards
-compatible but may occasionally break before v2 leaves beta. If you are looking
-for something a bit more stable you may be interested the [v1](https://github.com/rvaiya/keyd/tree/v1) branch.
+master is currently tracking `v2.3.0-rc`. Things should be reasonably backwards
+compatible, but minor changes may be introduced before the final release. If
+you are looking for something a bit more stable you may be interested the
+[v1](https://github.com/rvaiya/keyd/tree/v1) branch.
 
 *NOTE: For those migrating their configs from v1, please see the
 [changelog](CHANGELOG.md) for a list of changes.*
@@ -154,7 +155,7 @@ members, no personal responsibility is taken for them.
 	
 	[main]
 
-	leftshift = oneshot(S)
+	leftshift = oneshot(shift)
 	capslock = overload(symbols, esc)
 
 	[symbols]
@@ -182,7 +183,7 @@ following config:
 	leftalt = oneshot(alt)
 	rightalt = oneshot(altgr)
 
-	capslock = overload(C, esc)
+	capslock = overload(control, esc)
 	insert = S-insert
 
 This overloads the capslock key to function as both escape (when tapped) and

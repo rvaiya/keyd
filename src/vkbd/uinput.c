@@ -1,3 +1,8 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ */
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -49,7 +54,7 @@ static int create_virtual_pointer(const char *name)
 	memset(&usetup, 0, sizeof(usetup));
 	usetup.id.bustype = BUS_USB;
 	usetup.id.vendor = 0x0FAC;
-	usetup.id.product = 0x0ADE;
+	usetup.id.product = 0x1ADE;
 	strcpy(usetup.name, name);
 
 	ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -73,7 +78,7 @@ static int create_virtual_keyboard(const char *name)
 	ioctl(fd, UI_SET_EVBIT, EV_REL);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
-	for (code = 0; code < MAX_KEYS; code++) {
+	for (code = 0; code < 256; code++) {
 		if (keycode_table[code].name)
 			ioctl(fd, UI_SET_KEYBIT, code);
 	}
@@ -204,6 +209,8 @@ void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 
 void free_vkbd(struct vkbd *vkbd)
 {
-	close(vkbd->fd);
-	free(vkbd);
+	if (vkbd) {
+		close(vkbd->fd);
+		free(vkbd);
+	}
 }

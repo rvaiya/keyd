@@ -1,9 +1,9 @@
-1 down
-1 up
-a down
-a up
+c down
+c up
+b down
+b up
 
 control down
-a down
+b down
 control up
-a up
+b up

@@ -141,14 +141,14 @@ class KeyStream():
         (_, vendor, product, _) = struct.unpack("HHHH", resp)
         return (product, vendor)
 
-    def __init__(self, product, vendor):
+    def __init__(self, product=0x00, vendor=0x09, name=""):
         self.fh = None
         for f in glob.glob("/dev/input/event*"):
             fh = open(f, 'rb')
             fh.devname = self.get_name(fh)
             p, v = self.get_ids(fh)
 
-            if p == product and v == vendor:
+            if (p == product and v == vendor) or (name != "" and fh.devname == name):
                 self.fh = fh
 
         if not self.fh:
@@ -205,7 +205,7 @@ signal.signal(signal.SIGALRM, on_timeout)
 signal.alarm(20)
 
 vkbd = VirtualKeyboard('test keyboard', vendor_id=0x2fac, product_id=0x2ade)
-stream = KeyStream(product=0x0ade, vendor=0x0fac)
+stream = KeyStream(name="keyd test device")
 
 # Grab the virtual keyboard so we don't
 # cause pandemonium.

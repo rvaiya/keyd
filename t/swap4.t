@@ -31,3 +31,5 @@ x up
 shift up
 b down
 b up
+x down
+x up

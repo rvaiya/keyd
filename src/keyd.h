@@ -1,25 +1,47 @@
+/*
+ * keyd - A key remapping daemon.
+ *
+ * © 2019 Raheman Vaiya (see also: LICENSE).
+ */
 #ifndef KEYD_H
 #define KEYD_H
 
-#include "keys.h"
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <termios.h>
+#include <unistd.h>
+#include <time.h>
+#include <grp.h>
 
-#define MAX_KEYBOARDS 256
-extern uint8_t keystate[MAX_KEYS];
+#include "device.h"
+#include "keyboard.h"
+#include "vkbd.h"
+#include "ipc.h"
 
-extern int debug;
+#define MAX_MESSAGE_SIZE 4096
 
-void dbg(const char *fmt, ...);
+#define dbg(fmt, ...) { \
+	if (debug_level) \
+		fprintf(stderr, "DEBUG: %s:%d: "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+}
 
-void	send_key(int code, int pressed);
-void	reload_config();
-void	reset_keyboards();
-void	reset_vkbd();
+#define err(fmt, ...) snprintf(errstr, sizeof(errstr), fmt, ##__VA_ARGS__);
 
-int		 evdev_get_keyboard_nodes(char **devs, int *ndevs);
-int		 evdev_is_keyboard(const char *devnode);
-int		 evdev_device_id(const char *devnode, uint16_t *vendor, uint16_t *product);
-const char	*evdev_device_name(const char *devnode);
-int		 evdev_grab_keyboard(int fd);
+extern int debug_level;
+extern char errstr[2048];
+extern struct vkbd *vkbd;
+
+int create_server_socket(const char *socket_file);
 
 #endif
