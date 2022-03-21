@@ -1,4 +1,3 @@
-fix hotswap
 cleanup manpage
 add [globals] with configurable macro timeouts.
 [idea] tmux like layer timeouts

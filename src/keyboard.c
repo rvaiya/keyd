@@ -152,9 +152,26 @@ int kbd_execute_expression(struct keyboard *kbd, const char *exp)
 
 void kbd_reset(struct keyboard *kbd)
 {
+	uint8_t flags[MAX_LAYERS];
+	long at[MAX_LAYERS];
+	size_t i;
+
+	/* Preserve layer state to facilitate hotswapping (TODO: make this more robust) */
+
+	for (i = 0; i < kbd->config.layer_table.nr; i++) {
+		flags[i] = kbd->layer_table.layers[i].flags;
+		at[i] = kbd->layer_table.layers[i].activation_time;
+	}
+
 	memcpy(&kbd->layer_table,
 		&kbd->config.layer_table,
 		sizeof(kbd->layer_table));
+
+	for (i = 0; i < kbd->config.layer_table.nr; i++) {
+		kbd->layer_table.layers[i].flags = flags[i];
+		kbd->layer_table.layers[i].activation_time = at[i];
+	}
+
 }
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code, uint8_t *layer_mods, struct descriptor *d)
