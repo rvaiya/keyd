@@ -213,7 +213,7 @@ the full config actually looks something like this:
 
 A special kind of layer called a *composite layer* can be defined by creating a
 layer with a name consisting of existing layers delimited by _+_. The resultant
-layer will be activated and given precedence when one of its constituents are
+layer will be activated and given precedence when all of its constituents are
 activated.
 
 E.G

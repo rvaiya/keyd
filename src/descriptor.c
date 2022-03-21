@@ -575,8 +575,6 @@ int parse_descriptor(char *s,
 		if (keycode_to_mod(code))
 			fprintf(stderr,
 				"WARNING: mapping modifier keycodes directly may produce unintended results, you probably want layer(<modifier name>) instead\n");
-	} else if (!strcmp(s, "noop")) {
-		d->op = OP_UNDEFINED;
 	} else if (!parse_macro(s, &macro)) {
 		if (lt->nr_macros >= MAX_MACROS) {
 			err("max macros (%d), exceeded", MAX_MACROS);

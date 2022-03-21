@@ -265,6 +265,7 @@ const struct keycode_table_ent keycode_table[256] = {
 	[KEYD_MOUSE_1] = { "mouse1", NULL, NULL },
 	[KEYD_MOUSE_2] = { "mouse2", NULL, NULL },
 	[KEYD_FN] = { "fn", NULL, NULL },
+	[KEYD_NOOP] = { "noop", NULL, NULL },
 };
 
 uint8_t keycode_to_mod(uint8_t code)

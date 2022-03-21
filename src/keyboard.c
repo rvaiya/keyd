@@ -30,6 +30,9 @@ static long get_time()
 
 static void kbd_send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 {
+	if (code == KEYD_NOOP)
+		return;
+
 	if (pressed)
 		kbd->last_pressed_output_code = code;
 
