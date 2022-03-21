@@ -6,7 +6,6 @@ After=local-fs.target
 [Service]
 Type=simple
 ExecStart=/usr/bin/keyd
-ExecReload=/bin/kill -USR1 $MAINPID
 
 [Install]
 WantedBy=sysinit.target

@@ -256,7 +256,7 @@ struct device_event *device_read_event(struct device *dev)
 			ev.code = KEYD_FN;
 		else {
 			fprintf(stderr, "ERROR: unsupported evdev code: 0x%x\n", ev.code);
-			ev.code = 0;
+			return NULL;
 		}
 	}
 

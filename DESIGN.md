@@ -39,15 +39,18 @@ and enhancements.
     layer entries.
 
     E.G
-          capslock = layer(nav)
 
-          [nav:C]
+```
+	capslock = layer(nav)
 
-          h = left
-          l = right
+	[nav:C]
 
-    will cause 'control+h' to produce 'left' (rather than 'C-left'), while
-    'control+capslock+h' will produce 'C-left', as one might intuit.
+	h = left
+	l = right
+```
+
+    will cause `control+h` to produce `left` (rather than `C-left`), while
+    `control+capslock+h` will produce `C-left`, as one might intuit.
 
   - Abolished layer types. Notably, the concept of a 'layout' no longer exists.
     Bindings are drawn from layers on the basis of activation order with [main]
@@ -77,7 +80,7 @@ and enhancements.
 
   - Special characters within macros like ) and \ must be escaped with a backslash.
 
-  - Modifier sequences (e.g 'C-M') are no longer valid layers by default.
+  - Modifier sequences (e.g `C-M`) are no longer valid layers by default.
 
     Rationale:
 
@@ -99,7 +102,8 @@ and enhancements.
                   [meta-control:M-C]
 
     Note that in the above sample "meta" does not need to be
-    explicitly defined, since full modifier names are
+    explicitly defined, since full modifier names are still
+    mapped to their eponymously named layers.
 
   - Eliminated -d
 
