@@ -132,6 +132,22 @@ set of modifiers to emulate in the absence of an explicit mapping.
 These layers play nicely with other modifiers and preserve existing stacking
 semantics.
 
+For example:
+
+```
+	[main]
+
+	capslock = layer(capslock)
+
+	[capslock:C]
+
+	j = down
+```
+
+will cause _capslock_ to behave as _control_, except in the case of _control+j_, which will
+emit _down_. This makes it trivial to define custom modifiers which don't interfere with
+one another.
+
 Formally, each layer heading has the following form:
 
 ```
@@ -155,23 +171,6 @@ Finally, each layer heading is followed by a set of bindings which take the form
 	<key> = <keycode>|<macro>|<action>
 
 for a description of <action> and <macro> see _ACTIONS_ and _MACROS_.
-
-
-For example:
-
-```
-	[main]
-
-	capslock = layer(capslock)
-
-	[capslock:C]
-
-	j = down
-```
-
-will cause _capslock_ to behave as _control_, except in the case of _control+j_, which will
-emit _down_. This makes it trivial to define custom modifiers which don't interfere with
-one another.
 
 By default, each key is bound to itself within the main layer. The exception to this
 are the modifier keys, which are instead bound to eponymously named layers with the

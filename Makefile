@@ -55,7 +55,7 @@ install:
 	install -m755 scripts/keyd-application-mapper $(DESTDIR)$(PREFIX)/bin
 	install -m644 keyd.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m644 keyd-application-mapper.1.gz $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m644 man.md CHANGELOG.md README.md $(DESTDIR)$(PREFIX)/share/doc/keyd
+	install -m644 DESIGN.md CHANGELOG.md README.md $(DESTDIR)$(PREFIX)/share/doc/keyd
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples
 
 uninstall:
