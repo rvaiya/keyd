@@ -36,13 +36,13 @@ static void kbd_send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	kbd->keystate[code] = pressed;
 
 	switch (code) {
-		case KEY_LEFT_MOUSE:
+		case KEYD_LEFT_MOUSE:
 			vkbd_send_button(vkbd, 1, pressed);
 			break;
-		case KEY_MIDDLE_MOUSE:
+		case KEYD_MIDDLE_MOUSE:
 			vkbd_send_button(vkbd, 2, pressed);
 			break;
-		case KEY_RIGHT_MOUSE:
+		case KEYD_RIGHT_MOUSE:
 			vkbd_send_button(vkbd, 3, pressed);
 			break;
 		default:
@@ -85,13 +85,13 @@ static void disarm_mods(struct keyboard *kbd, uint8_t mods)
 	 * We interpose a control sequence to prevent '<alt down> <alt up>'
 	 * from being interpreted as an alt keypress.
 	 */
-	if (dmods && ((kbd->last_pressed_output_code == KEY_LEFTMETA) || (kbd->last_pressed_output_code == KEY_LEFTALT))) {
-		if (kbd->keystate[KEY_LEFTCTRL])
+	if (dmods && ((kbd->last_pressed_output_code == KEYD_LEFTMETA) || (kbd->last_pressed_output_code == KEYD_LEFTALT))) {
+		if (kbd->keystate[KEYD_LEFTCTRL])
 			send_mods(kbd, dmods, 0);
 		else {
-			kbd_send_key(kbd, KEY_LEFTCTRL, 1);
+			kbd_send_key(kbd, KEYD_LEFTCTRL, 1);
 			send_mods(kbd, dmods, 0);
-			kbd_send_key(kbd, KEY_LEFTCTRL, 0);
+			kbd_send_key(kbd, KEYD_LEFTCTRL, 0);
 		}
 
 		mods &= ~dmods;

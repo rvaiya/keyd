@@ -88,13 +88,13 @@ static void panic_check(uint8_t code, uint8_t pressed)
 {
 	static uint8_t enter, backspace, escape;
 	switch (code) {
-		case KEY_ENTER:
+		case KEYD_ENTER:
 			enter = pressed;
 			break;
-		case KEY_BACKSPACE:
+		case KEYD_BACKSPACE:
 			backspace = pressed;
 			break;
-		case KEY_ESC:
+		case KEYD_ESC:
 			escape = pressed;
 			break;
 	}

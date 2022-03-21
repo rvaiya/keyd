@@ -10,6 +10,12 @@
 #include <unistd.h>
 #include <linux/uinput.h>
 
+#ifdef __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#else
+#include <linux/input-event-codes.h>
+#endif
+
 #include "../vkbd.h"
 #include "../keys.h"
 

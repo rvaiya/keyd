@@ -3,8 +3,8 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
-#ifndef KEYD_H
-#define KEYD_H
+#ifndef KEYD_H_
+#define KEYD_H_
 
 #include <assert.h>
 #include <ctype.h>

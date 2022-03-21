@@ -56,28 +56,28 @@ static void send_hid_report(const struct vkbd *vkbd)
 static uint8_t get_modifier(int code)
 {
 	switch (code) {
-	case KEY_LEFTSHIFT:
+	case KEYD_LEFTSHIFT:
 		return HID_SHIFT;
 		break;
-	case KEY_RIGHTSHIFT:
+	case KEYD_RIGHTSHIFT:
 		return HID_RIGHTSHIFT;
 		break;
-	case KEY_LEFTCTRL:
+	case KEYD_LEFTCTRL:
 		return HID_CTRL;
 		break;
-	case KEY_RIGHTCTRL:
+	case KEYD_RIGHTCTRL:
 		return HID_RIGHTCTRL;
 		break;
-	case KEY_LEFTALT:
+	case KEYD_LEFTALT:
 		return HID_ALT;
 		break;
-	case KEY_RIGHTALT:
+	case KEYD_RIGHTALT:
 		return HID_ALT_GR;
 		break;
-	case KEY_LEFTMETA:
+	case KEYD_LEFTMETA:
 		return HID_SUPER;
 		break;
-	case KEY_RIGHTMETA:
+	case KEYD_RIGHTMETA:
 		return HID_RIGHTSUPER;
 		break;
 	default:

@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #define DEV_MOUSE	0
-#define DEV_KEYBOARD	1
+#define DEV_KEY		1
 #define DEV_REMOVED	2
 
 #define MAX_DEVICES	64

@@ -237,20 +237,30 @@ struct device_event *device_read_event(struct device *dev)
 	if (ev.type != EV_KEY || ev.value == 2)
 		return NULL;
 
+	/*
+	 * KEYD_* codes <256 correspond to their evdev
+	 * counterparts.
+	 */
 	if (ev.code >= 256) {
 		if (ev.code == BTN_LEFT)
-			ev.code = KEY_LEFT_MOUSE;
+			ev.code = KEYD_LEFT_MOUSE;
 		else if (ev.code == BTN_MIDDLE)
-			ev.code = KEY_RIGHT_MOUSE;
+			ev.code = KEYD_RIGHT_MOUSE;
 		else if (ev.code == BTN_RIGHT)
-			ev.code = KEY_MIDDLE_MOUSE;
+			ev.code = KEYD_MIDDLE_MOUSE;
 		else if (ev.code == BTN_SIDE)
-			ev.code = KEY_MOUSE_1;
+			ev.code = KEYD_MOUSE_1;
 		else if (ev.code == BTN_EXTRA)
-			ev.code = KEY_MOUSE_2;
+			ev.code = KEYD_MOUSE_2;
+		else if (ev.code == KEY_FN)
+			ev.code = KEYD_FN;
+		else {
+			fprintf(stderr, "ERROR: unsupported evdev code: 0x%x\n", ev.code);
+			ev.code = 0;
+		}
 	}
 
-	devev.type = DEV_KEYBOARD;
+	devev.type = DEV_KEY;
 	devev.code = ev.code;
 	devev.pressed = ev.value;
 
