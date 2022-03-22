@@ -6,10 +6,41 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <assert.h>
 
 #include "ini.h"
+#define MAX_INI_SIZE 65536
 
-int ini_parse(char *s, struct ini *ini, const char *default_section_name)
+static void read_file(const char *path, char *buf, size_t buf_sz)
+{
+	struct stat st;
+	size_t sz;
+	int fd;
+	ssize_t n = 0, nr;
+
+	if (stat(path, &st)) {
+		perror("stat");
+		exit(-1);
+	}
+
+	sz = st.st_size;
+	assert(sz < buf_sz);
+
+	fd = open(path, O_RDONLY);
+	while ((nr = read(fd, buf + n, sz - n))) {
+		n += nr;
+	}
+
+	buf[sz] = '\0';
+	close(fd);
+}
+
+int parse(char *s, struct ini *ini, const char *default_section_name)
 {
 	int ln = 0;
 	size_t n = 0;
@@ -87,4 +118,20 @@ int ini_parse(char *s, struct ini *ini, const char *default_section_name)
 
 	ini->nr_sections = n;
 	return 0;
+}
+
+/* 
+ * The result is statically allocated and should not be freed by the caller.
+ * The returned ini struct is only valid until the next invocation.
+ */
+struct ini *ini_parse_file(const char *path, const char *default_section_name)
+{
+	static char buf[MAX_INI_SIZE];
+	static struct ini ini;
+
+	read_file(path, buf, sizeof buf);
+	if (parse(buf, &ini, default_section_name) < 0)
+		return NULL;
+
+	return &ini;
 }

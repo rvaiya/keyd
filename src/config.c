@@ -22,32 +22,6 @@
 #include "config.h"
 #include "keyd.h"
 
-static char *read_file(const char *path)
-{
-	struct stat st;
-	size_t sz;
-	int fd;
-	char *data;
-	ssize_t n = 0, nr;
-
-	if (stat(path, &st)) {
-		perror("stat");
-		exit(-1);
-	}
-
-	sz = st.st_size;
-	data = malloc(sz + 1);
-
-	fd = open(path, O_RDONLY);
-	while ((nr = read(fd, data + n, sz - n))) {
-		n += nr;
-	}
-
-	data[sz] = '\0';
-	close(fd);
-	return data;
-}
-
 int config_add_binding(struct config *config, const char *layer, const char *binding)
 {
 	char exp[MAX_EXP_LEN];
@@ -130,21 +104,21 @@ static void config_init(struct config *config)
 	config->layer_table.layers[0].flags = LF_ACTIVE;
 }
 
-static int parse(struct config *config, char *str, const char *path)
+int config_parse(struct config *config, const char *path)
 {
 	size_t i;
 
-	struct ini ini;
+	struct ini *ini;
 	struct ini_section *section;
 
 	config_init(config);
 
-	if (ini_parse(str, &ini, NULL) < 0)
+	if (!(ini = ini_parse_file(path, NULL)))
 		return -1;
 
 	/* First pass: create all layers based on section headers.  */
-	for (i = 0; i < ini.nr_sections; i++) {
-		section = &ini.sections[i];
+	for (i = 0; i < ini->nr_sections; i++) {
+		section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids"))
 			continue;
@@ -154,10 +128,10 @@ static int parse(struct config *config, char *str, const char *path)
 	}
 
 	/* Populate each layer. */
-	for (i = 0; i < ini.nr_sections; i++) {
+	for (i = 0; i < ini->nr_sections; i++) {
 		size_t j;
 		char *name;
-		section = &ini.sections[i];
+		section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids"))
 		    continue;
@@ -173,20 +147,6 @@ static int parse(struct config *config, char *str, const char *path)
 	}
 
 	return 0;
-}
-
-int config_parse(struct config *config, const char *path)
-{
-	int ret;
-
-	char *data = read_file(path);
-	ret = parse(config, data, path);
-	free(data);
-
-	if (ret < 0)
-		fprintf(stderr, "Failed to parse %s\n", path);
-
-	return ret;
 }
 
 /* 

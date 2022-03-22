@@ -50,8 +50,12 @@ struct ini {
  *  section name is supplied then entries not
  *  listed under an explicit heading will be
  *  returned under the named section.
+ *
+ *  The returned result is statically allocated and only
+ *  valid until the next invocation. It should not be
+ *  freed.
  */
 
-int ini_parse(char *s, struct ini *ini, const char *default_section_name);
+struct ini *ini_parse_file(const char *path, const char *default_section_name);
 
 #endif

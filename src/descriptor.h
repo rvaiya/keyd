@@ -15,7 +15,8 @@ struct layer_table;
 #define MAX_LAYERS 32
 #define MAX_EXP_LEN 512
 #define MAX_MACROEXP_LEN 512
-#define MAX_DESCRIPTORS 32
+
+#define MAX_DESCRIPTOR_LEN 256
 
 enum op {
 	OP_UNDEFINED,

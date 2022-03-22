@@ -31,6 +31,7 @@ struct vkbd *vkbd;
 char errstr[2048];
 int debug_level;
 
+
 static void daemon_remove_cb(struct device *dev)
 {
 	struct keyboard *kbd = dev->data;

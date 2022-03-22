@@ -556,7 +556,7 @@ int create_layer(struct layer *layer, const char *desc, const struct layer_table
  * Modifies the input string. Layers names within the descriptor
  * are resolved using the provided layer table.
  */
-int parse_descriptor(char *s,
+int parse_descriptor(char *descstr,
 		     struct descriptor *d,
 		     struct layer_table *lt)
 {
@@ -566,6 +566,14 @@ int parse_descriptor(char *s,
 	struct macro macro;
 	uint8_t code;
 	int idx;
+
+	if (strlen(descstr) > MAX_DESCRIPTOR_LEN) {
+		err("maximum descriptor length exceeded");
+		return -1;
+	}
+
+	char s[MAX_DESCRIPTOR_LEN+1];
+	strcpy(s, descstr);
 
 	if ((code = parse_code(s))) {
 		d->op = OP_KEYCODE;
