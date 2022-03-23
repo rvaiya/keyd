@@ -121,15 +121,20 @@ static int ipc_cb(int fd, const char *input)
 {
 	int ret = 0;
 
-	if (!active_kbd)
-		return -1;
-
-	if (!strcmp(input, "reset")) {
-		kbd_reset(active_kbd);
-	} else if (!strcmp(input, "ping")) {
+	if (!strcmp(input, "ping")) {
 		char s[] = "pong\n";
 		write(fd, s, sizeof s);
-	} else {
+
+		return 0;
+	} else if (!strcmp(input, "reset")) {
+		if (!active_kbd)
+			return -1;
+
+		kbd_reset(active_kbd);
+	}  else {
+		if (!active_kbd)
+			return -1;
+
 		ret = kbd_execute_expression(active_kbd, input);
 		if (ret < 0) {
 			write(fd, "ERROR: ", 7);
