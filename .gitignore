@@ -7,3 +7,4 @@ bin/
 *.o
 *.gch
 __pycache__
+test.log

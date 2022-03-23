@@ -1,22 +1,20 @@
-This document contains a description of major design changes.
+This document contains a description of major design iterations.
 It is not intended to be exhaustive.
 
 # v2.3.0-rc
 
 This is a major release which breaks backward compatibility for
-non-trivial configs. (we are still in beta after all :P).
+non-trivial configs (we are still in beta after all :P).
 
 In the absence of too much blowback, this will probably become the final
 v2 design.
 
-Much of this harkens back to the v1, with some additional simplifications
+Much of this harkens back to v1, with some additional simplifications
 and enhancements.
 
 ## Notable changes:
 
   - Introduced composite layers
-
-  - Replaced three arg overload() with a more flexible timeout() mechanism
 
   - Eliminated sequences in favour of macros (C-x is now just syntactic
     sugar for macro(C-x)).
@@ -28,15 +26,21 @@ and enhancements.
 
   - Made the man page less war and peacey
 
-## Non backward-compatible changes:
+## Non backward-compatible changes
+
+  - Replaced three arg overload() with a more flexible timeout() mechanism
+
+  - Layers are now fully transparent. That is, bindings are drawn on the basis
+    of activation order with [main] being active by default.
 
   - Modifiers now apply to all bindings with the exception of modifiers
-    associated with the layer in which the key is bound.
+    associated with the active layer.
 
     Rationale:
 
-    The end result is more intuitive and allows for modifiers to be paired with
-    layer entries.
+    The end result is more intuitive and in conjunction with transparency
+    allows modifiers to be paired with layer entries without having
+    to use layer nesting (#103).
 
     E.G
 
@@ -53,8 +57,6 @@ and enhancements.
     `control+capslock+h` will produce `C-left`, as one might intuit.
 
   - Abolished layer types. Notably, the concept of a 'layout' no longer exists.
-    Bindings are drawn from layers on the basis of activation order with [main]
-    being active by default.
 
     Rationale:
 

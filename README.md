@@ -14,14 +14,14 @@ you are looking for something a bit more stable you may be interested the
 [v1](https://github.com/rvaiya/keyd/tree/v1) branch.
 
 *NOTE: For those migrating their configs from v1, please see the
-[changelog](CHANGELOG.md) for a list of changes.*
+[changelog](docs/CHANGELOG.md) for a list of changes.*
 
 # Goals
 
   - Speed       (a hand tuned input loop written in C that takes <<1ms)
   - Simplicity  (a [config format](#sample-config) that is intuitive)
-  - Consistency (modifiers that [play nicely with layers](man.md#modifiers) by default)
-  - Modularity  (a UNIXy core extensible through the use of an [IPC](man.md#IPC) mechanism)
+  - Consistency (modifiers that [play nicely with layers](docs/keyd.scdoc#Layers) by default)
+  - Modularity  (a UNIXy core extensible through the use of an [IPC](keyd.scdoc#IPC) mechanism)
 
 # Features
 
@@ -31,7 +31,7 @@ as well as some which are unique to keyd.
 
 Some of the more interesting ones include:
 
-- Layers (with support for [hybrid modifiers](man.md#modifiers)).
+- Layers (with support for [hybrid modifiers](keyd.md#Layers)).
 - Key overloading (different behaviour on tap/hold).
 - Keyboard specific configuration.
 - Instantaneous remapping (no more flashing :)).
