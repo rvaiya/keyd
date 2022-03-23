@@ -1,3 +1,9 @@
+# v2.3.1-rc
+
+ - Add unicode support
+ - Add noop
+ - Fix keyd-application-mapper hotswapping
+
 # v2.3.0-rc
 
 This is a **major release** which breaks **backward compatibility** with

@@ -2,7 +2,7 @@
 DESTDIR=
 PREFIX=/usr
 
-VERSION=2.3.0-rc
+VERSION=2.3.1-rc
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
 
@@ -26,6 +26,7 @@ all:
 debug:
 	CFLAGS="-pedantic -Wall -Wextra -g" $(MAKE)
 assets:
+	./scripts/gen_aliases.py > src/aliases.h
 	for f in docs/*.scdoc; do \
 		scdoc < "$$f" | gzip > "$${f%%.scdoc}.1.gz"; \
 	done

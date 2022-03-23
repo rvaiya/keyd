@@ -13,7 +13,7 @@ HID reports.
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
-    make vkbd-usb-gadget && sudo make install-usb-gadget
+    make VKBD=usb-gadget && sudo make install VKBD=usb-gadget
     sudo systemctl enable usb-gadget && sudo systemctl start usb-gadget
     sudo systemctl enable keyd && sudo systemctl start keyd
 

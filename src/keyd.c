@@ -245,6 +245,11 @@ static int loop(int monitor_mode)
 	} else {
 		init_devices(devices, 1);
 		ipcfd = ipc_create_server(socket_file);
+		if (ipcfd < 0) {
+			fprintf(stderr, "ERROR: failed to create %s (another instance running?)\n", socket_file);
+			exit(-1);
+		}
+
 		printf("socket: %s\n", socket_file);
 	}
 

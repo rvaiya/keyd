@@ -50,7 +50,7 @@ struct descriptor {
  * Potentially modifying the input string in the process.
  */
 
-int parse_descriptor(char *s,
+int parse_descriptor(const char *descstr,
 		     struct descriptor *d,
 		     struct layer_table *lt);
 

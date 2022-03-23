@@ -14,6 +14,7 @@
 #include "keys.h"
 #include "error.h"
 #include "config.h"
+#include "aliases.h"
 
 #define MAX_ARGS 5
 
@@ -556,7 +557,7 @@ int create_layer(struct layer *layer, const char *desc, const struct layer_table
  * Modifies the input string. Layers names within the descriptor
  * are resolved using the provided layer table.
  */
-int parse_descriptor(char *descstr,
+int parse_descriptor(const char *descstr,
 		     struct descriptor *d,
 		     struct layer_table *lt)
 {
@@ -673,6 +674,12 @@ int parse_descriptor(char *descstr,
 			lt->nr_macros++;
 		}
 	} else {
+		size_t i;
+		for (i = 0; i < nr_aliases; i++)
+			if (!strcmp(aliases[i].name, descstr)) {
+				return parse_descriptor(aliases[i].def, d, lt);
+			}
+
 		err("invalid key or action");
 		return -1;
 	}

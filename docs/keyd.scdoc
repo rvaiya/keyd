@@ -214,7 +214,8 @@ the full config actually looks something like this:
 A special kind of layer called a *composite layer* can be defined by creating a
 layer with a name consisting of existing layers delimited by _+_. The resultant
 layer will be activated and given precedence when all of its constituents are
-activated.
+activated. Composite layers always inherit the modifiers of their constituent
+layers and cannot be explicitly assigned.
 
 E.G
 
@@ -248,6 +249,64 @@ and not
 [layer1+layer2]
 [layer1]
 [layer2]
+```
+
+## International Characters
+
+If keyd encounters a UTF8 sequence as a right hand value, it will try and
+translate that sequence into a macro which emits the corresponding XKB
+sequence.
+
+For example:
+
+```
+	a = ä
+	u = Ü
+```
+
+will produce the following mapping:
+
+```
+	a = macro(compose a ")
+	U = macro(compose U ")
+```
+
+In order for this to produce the desired symbol, the xkb option compose:menu
+must be set, so that the compose keycode is properly recognized.
+
+This can be manually achieved with:
+
+```
+	setxkbmap -option compose:menu
+```
+
+though the settings will be lost when the device is unplugged (i.e keyd is
+restarted).
+
+The changes can be made permanent by setting the relevant option in your
+display server's configuration logic. XKB compose sequences are supported by X
+as well as most wayland compositors.
+
+E.G:
+
+on X:
+
+Populating _/etc/X11/xorg.conf.d/compose.conf_ with:
+
+```
+            Section "InputClass"
+                    Identifier "system-keyboard"
+                    MatchIsKeyboard "on"
+                    Option "XkbOptions" "compose:menu"
+            EndSection
+```
+
+on sway:
+
+Setting the following environment variable:
+
+```
+	XKB_DEFAULT_OPTIONS=compose:menu
 ```
 
 # MACROS
