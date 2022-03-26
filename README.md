@@ -20,8 +20,8 @@ you are looking for something a bit more stable you may be interested the
 
   - Speed       (a hand tuned input loop written in C that takes <<1ms)
   - Simplicity  (a [config format](#sample-config) that is intuitive)
-  - Consistency (modifiers that [play nicely with layers](docs/keyd.scdoc#Layers) by default)
-  - Modularity  (a UNIXy core extensible through the use of an [IPC](keyd.scdoc#IPC) mechanism)
+  - Consistency (modifiers that [play nicely with layers](https://github.com/rvaiya/keyd/blob/6dc2d5c4ea76802fd192b143bdd53b1787fd6deb/docs/keyd.scdoc#L128) by default)
+  - Modularity  (a UNIXy core extensible through the use of an [IPC](https://github.com/rvaiya/keyd/blob/90973686723522c2e44d8e90bb3508a6da625a20/docs/keyd.scdoc#L391) mechanism)
 
 # Features
 
@@ -31,7 +31,7 @@ as well as some which are unique to keyd.
 
 Some of the more interesting ones include:
 
-- Layers (with support for [hybrid modifiers](keyd.md#Layers)).
+- Layers (with support for [hybrid modifiers](https://github.com/rvaiya/keyd/blob/6dc2d5c4ea76802fd192b143bdd53b1787fd6deb/docs/keyd.scdoc#L128)).
 - Key overloading (different behaviour on tap/hold).
 - Keyboard specific configuration.
 - Instantaneous remapping (no more flashing :)).
