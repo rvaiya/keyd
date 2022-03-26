@@ -55,6 +55,16 @@ static void daemon_add_cb(struct device *dev)
 
 	dev->data = NULL;
 
+	/*
+	 * NOTE: Some mice can emit keys and consequently appear as keyboards.
+	 * Conversely, some keyboards with a builtin trackpad can emit mouse
+	 * events. There doesn't appear to be a reliable way to distinguish
+	 * between these two, so we take a permissive approach and leave it up to
+	 * the user to blacklist mice which emit key events.
+	 */
+	if (!dev->is_keyboard)
+		return;
+
 	printf("device added: %04x:%04x %s (%s)\n",
 	       dev->vendor_id,
 	       dev->product_id,
@@ -106,7 +116,18 @@ static void panic_check(uint8_t code, uint8_t pressed)
 
 static int daemon_event_cb(struct device *dev, uint8_t code, uint8_t pressed)
 {
-	struct keyboard *kbd = dev ? dev->data : active_kbd;
+	struct keyboard *kbd = NULL;
+
+	if (!dev) {
+		/* timeout */
+		kbd = active_kbd;
+	} else if (dev->data) {
+		kbd = dev->data;
+	} else if (code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) {
+		code = KEYD_EXTERNAL_MOUSE_BUTTON;
+
+		kbd = active_kbd;
+	}
 
 	if (!kbd)
 		return 0;

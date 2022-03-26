@@ -30,7 +30,7 @@ static long get_time()
 
 static void kbd_send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 {
-	if (code == KEYD_NOOP)
+	if (code == KEYD_NOOP || code == KEYD_EXTERNAL_MOUSE_BUTTON)
 		return;
 
 	if (pressed)
@@ -377,10 +377,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 		} else {
 			kbd_send_key(kbd, d->args[0].code, 0);
 			send_mods(kbd, descriptor_layer_mods, 1);
+			clear_oneshot = 1;
 		}
 
 		oneshot_latch = 0;
-		clear_oneshot = 1;
 		break;
 	case OP_LAYER:
 		layer = &layers[d->args[0].idx];

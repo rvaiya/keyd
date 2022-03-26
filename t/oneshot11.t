@@ -9,7 +9,7 @@ a up
 
 control down
 j down
-control up
 j up
+control up
 a down
 a up

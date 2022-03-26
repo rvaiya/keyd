@@ -7,3 +7,5 @@ control down
 control up
 b down
 b up
+control down
+control up

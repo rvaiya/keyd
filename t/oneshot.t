@@ -5,5 +5,5 @@ b up
 
 control down
 b down
-control up
 b up
+control up

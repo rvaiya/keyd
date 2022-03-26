@@ -21,6 +21,7 @@ struct device {
 	 */
 	int fd;
 
+	uint8_t is_keyboard;
 	uint16_t product_id;
 	uint16_t vendor_id;
 	char name[64];

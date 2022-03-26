@@ -281,13 +281,15 @@ struct modifier_table_ent {
 
 /* These deviate from uinput codes. */
 
-#define  KEYD_NOOP             195
-#define  KEYD_LEFT_MOUSE       249
-#define  KEYD_RIGHT_MOUSE      250
-#define  KEYD_MIDDLE_MOUSE     251
-#define  KEYD_MOUSE_1          252
-#define  KEYD_MOUSE_2          253
-#define  KEYD_FN               254
+#define  KEYD_EXTERNAL_MOUSE_BUTTON     196
+
+#define  KEYD_NOOP             		195
+#define  KEYD_LEFT_MOUSE       		249
+#define  KEYD_MIDDLE_MOUSE     		250
+#define  KEYD_RIGHT_MOUSE		251
+#define  KEYD_MOUSE_1          		252
+#define  KEYD_MOUSE_2          		253
+#define  KEYD_FN               		254
 
 extern const struct modifier_table_ent modifier_table[MAX_MOD];
 extern const struct keycode_table_ent keycode_table[256];

@@ -8,6 +8,6 @@ i up
 shift down
 control down
 i down
+i up
 control up
 shift up
-i up
