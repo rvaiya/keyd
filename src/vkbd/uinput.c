@@ -80,13 +80,28 @@ static int create_virtual_keyboard(const char *name)
 		exit(-1);
 	}
 
-	ioctl(fd, UI_SET_EVBIT, EV_KEY);
-	ioctl(fd, UI_SET_EVBIT, EV_REL);
-	ioctl(fd, UI_SET_EVBIT, EV_SYN);
+	if (ioctl(fd, UI_SET_EVBIT, EV_KEY)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_SET_EVBIT, EV_REL)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_SET_EVBIT, EV_SYN)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
 
 	for (code = 0; code < 256; code++) {
-		if (keycode_table[code].name)
-			ioctl(fd, UI_SET_KEYBIT, code);
+		if (keycode_table[code].name) {
+			if (ioctl(fd, UI_SET_KEYBIT, code)) {
+				perror("ioctl set_keybit");
+				exit(-1);
+			}
+		}
 	}
 
 	memset(&usetup, 0, sizeof(usetup));
@@ -95,8 +110,15 @@ static int create_virtual_keyboard(const char *name)
 	usetup.id.product = 0x0ADE;
 	strcpy(usetup.name, name);
 
-	ioctl(fd, UI_DEV_SETUP, &usetup);
-	ioctl(fd, UI_DEV_CREATE);
+	if (ioctl(fd, UI_DEV_SETUP, &usetup)) {
+		perror("ioctl dev_setup");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_DEV_CREATE)) {
+		perror("ioctl dev_create");
+		exit(-1);
+	}
 
 	return fd;
 }
