@@ -30,10 +30,68 @@ static int is_mouse_button(size_t code)
 		((code) >= BTN_0 && (code) <= BTN_9));
 }
 
+static int create_virtual_keyboard(const char *name)
+{
+	int ret;
+	size_t code;
+	struct uinput_user_dev udev = {0};
+
+	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	if (fd < 0) {
+		perror("open uinput");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_SET_EVBIT, EV_KEY)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_SET_EVBIT, EV_SYN)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
+
+	for (code = 0; code < 256; code++) {
+		if (keycode_table[code].name) {
+			if (ioctl(fd, UI_SET_KEYBIT, code)) {
+				perror("ioctl set_keybit");
+				exit(-1);
+			}
+		}
+	}
+
+	udev.id.bustype = BUS_USB;
+	udev.id.vendor = 0x0FAC;
+	udev.id.product = 0x0ADE;
+
+	snprintf(udev.name, sizeof(udev.name), "%s", name);
+
+	/*
+	 * We use this in favour of the newer UINPUT_DEV_SETUP
+	 * ioctl in order to support older kernels.
+	 *
+	 * See: https://github.com/torvalds/linux/commit/052876f8e5aec887d22c4d06e54aa5531ffcec75
+	 */
+	ret = write(fd, &udev, sizeof udev);
+
+	if (ret < 0) {
+		fprintf(stderr, "failed to create uinput device\n");
+		exit(-1);
+	}
+
+	if (ioctl(fd, UI_DEV_CREATE)) {
+		perror("ioctl dev_create");
+		exit(-1);
+	}
+
+	return fd;
+}
+
 static int create_virtual_pointer(const char *name)
 {
 	uint16_t code;
-	struct uinput_setup usetup;
+	struct uinput_user_dev udev = {0};
 
 	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (fd < 0) {
@@ -57,68 +115,18 @@ static int create_virtual_pointer(const char *name)
 	for (code = BTN_0; code <= BTN_9; code++)
 		ioctl(fd, UI_SET_KEYBIT, code);
 
-	memset(&usetup, 0, sizeof(usetup));
-	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x0FAC;
-	usetup.id.product = 0x1ADE;
-	strcpy(usetup.name, name);
+	udev.id.bustype = BUS_USB;
+	udev.id.vendor = 0x0FAC;
+	udev.id.product = 0x1ADE;
 
-	ioctl(fd, UI_DEV_SETUP, &usetup);
+	snprintf(udev.name, sizeof(udev.name), "%s", name);
+
+	if (write(fd, &udev, sizeof udev) < 0) {
+		fprintf(stderr, "failed to create uinput device\n");
+		exit(-1);
+	}
+
 	ioctl(fd, UI_DEV_CREATE);
-
-	return fd;
-}
-
-static int create_virtual_keyboard(const char *name)
-{
-	size_t code;
-	struct uinput_setup usetup;
-
-	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-	if (fd < 0) {
-		perror("open uinput");
-		exit(-1);
-	}
-
-	if (ioctl(fd, UI_SET_EVBIT, EV_KEY)) {
-		perror("ioctl set_evbit");
-		exit(-1);
-	}
-
-	if (ioctl(fd, UI_SET_EVBIT, EV_REL)) {
-		perror("ioctl set_evbit");
-		exit(-1);
-	}
-
-	if (ioctl(fd, UI_SET_EVBIT, EV_SYN)) {
-		perror("ioctl set_evbit");
-		exit(-1);
-	}
-
-	for (code = 0; code < 256; code++) {
-		if (keycode_table[code].name) {
-			if (ioctl(fd, UI_SET_KEYBIT, code)) {
-				perror("ioctl set_keybit");
-				exit(-1);
-			}
-		}
-	}
-
-	memset(&usetup, 0, sizeof(usetup));
-	usetup.id.bustype = BUS_USB;
-	usetup.id.vendor = 0x0FAC;
-	usetup.id.product = 0x0ADE;
-	strcpy(usetup.name, name);
-
-	if (ioctl(fd, UI_DEV_SETUP, &usetup)) {
-		perror("ioctl dev_setup");
-		exit(-1);
-	}
-
-	if (ioctl(fd, UI_DEV_CREATE)) {
-		perror("ioctl dev_create");
-		exit(-1);
-	}
 
 	return fd;
 }
