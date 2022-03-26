@@ -251,63 +251,20 @@ and not
 [layer2]
 ```
 
-## International Characters
+## Unicode Support
 
-If keyd encounters a UTF8 sequence as a right hand value, it will try and
-translate that sequence into a macro which emits the corresponding XKB
-sequence.
+If keyd encounters a valid UTF8 sequence as a right hand value, it will try and
+translate that sequence into a macro which emits a keyd-specific XKB sequence.
 
-For example:
+In order for this to work, the sequences defined in the compose file shipped
+with keyd (_/etc/keyd/keyd.compose_) must be accessible. This can be achieved
+globally by copying the file to the appropriate location in
+_/usr/share/X11/locale_, or on a per-user basis by symlinking it to
+~/.XCompose.
 
-```
-	a = ä
-	u = Ü
-```
+E.G
 
-will produce the following mapping:
-
-```
-	a = macro(compose a ")
-	U = macro(compose U ")
-```
-
-In order for this to produce the desired symbol, the xkb option compose:menu
-must be set, so that the compose keycode is properly recognized.
-
-This can be manually achieved with:
-
-```
-	setxkbmap -option compose:menu
-```
-
-though the settings will be lost when the device is unplugged (i.e keyd is
-restarted).
-
-The changes can be made permanent by setting the relevant option in your
-display server's configuration logic. XKB compose sequences are supported by X
-as well as most wayland compositors.
-
-E.G:
-
-on X:
-
-Populating _/etc/X11/xorg.conf.d/compose.conf_ with:
-
-```
-            Section "InputClass"
-                    Identifier "system-keyboard"
-                    MatchIsKeyboard "on"
-                    Option "XkbOptions" "compose:menu"
-            EndSection
-```
-
-on sway:
-
-Setting the following environment variable:
-
-```
-	XKB_DEFAULT_OPTIONS=compose:menu
-```
+	ln -s /etc/keyd/keyd.compose ~/.XCompose
 
 # MACROS
 

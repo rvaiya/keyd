@@ -1,0 +1,25 @@
+3 down
+\ down
+\ up
+3 up
+
+control down
+control up
+1 down
+1 up
+linefeed down
+linefeed up
+3 down
+3 up
+2 down
+2 up
+3 down
+3 up
+3 down
+3 up
+4 down
+4 up
+2 down
+2 up
+control down
+control up

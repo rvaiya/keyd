@@ -60,12 +60,11 @@ struct macro_entry {
 		MACRO_KEYSEQUENCE,
 		MACRO_HOLD,
 		MACRO_RELEASE,
+		MACRO_UNICODE,
 		MACRO_TIMEOUT
 	} type;
 
-	uint8_t code;
-	uint8_t mods;
-	uint16_t timeout;
+	uint16_t data;
 };
 
 /*

@@ -113,11 +113,15 @@ static void execute_macro(struct keyboard *kbd, const struct macro *macro)
 		const struct macro_entry *ent = &macro->entries[i];
 
 		switch (ent->type) {
+		size_t j;
+		uint16_t n;
+		uint8_t code, mods;
+
 		case MACRO_HOLD:
 			if (hold_start == -1)
 				hold_start = i;
 
-			kbd_send_key(kbd, ent->code, 1);
+			kbd_send_key(kbd, ent->data, 1);
 
 			break;
 		case MACRO_RELEASE:
@@ -126,22 +130,42 @@ static void execute_macro(struct keyboard *kbd, const struct macro *macro)
 
 				for (j = hold_start; j < i; j++) {
 					const struct macro_entry *ent = &macro->entries[j];
-					kbd_send_key(kbd, ent->code, 0);
+					kbd_send_key(kbd, ent->data, 0);
 				}
+
+				hold_start = -1;
+			}
+			break;
+		case MACRO_UNICODE:
+			n = ent->data;
+
+			kbd_send_key(kbd, KEYD_LINEFEED, 1);
+			kbd_send_key(kbd, KEYD_LINEFEED, 0);
+
+			for (j = 10000; j; j /= 10) {
+				int digit = n / j;
+				code = digit == 0 ? KEYD_0 : digit - 1 + KEYD_1;
+
+				kbd_send_key(kbd, code, 1);
+				kbd_send_key(kbd, code, 0);
+				n %= j;
 			}
 			break;
 		case MACRO_KEYSEQUENCE:
-			if (kbd->keystate[ent->code])
-				kbd_send_key(kbd, ent->code, 0);
+			code = ent->data;
+			mods = ent->data >> 8;
 
-			send_mods(kbd, ent->mods, 1);
-			kbd_send_key(kbd, ent->code, 1);
-			kbd_send_key(kbd, ent->code, 0);
-			send_mods(kbd, ent->mods, 0);
+			if (kbd->keystate[code])
+				kbd_send_key(kbd, code, 0);
+
+			send_mods(kbd, mods, 1);
+			kbd_send_key(kbd, code, 1);
+			kbd_send_key(kbd, code, 0);
+			send_mods(kbd, mods, 0);
 
 			break;
 		case MACRO_TIMEOUT:
-			usleep(ent->timeout*1E3);
+			usleep(ent->data*1E3);
 			break;
 		}
 

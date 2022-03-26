@@ -14,7 +14,7 @@
 #include "keys.h"
 #include "error.h"
 #include "config.h"
-#include "aliases.h"
+#include "unicode.h"
 
 #define MAX_ARGS 5
 
@@ -221,89 +221,117 @@ static int parse_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
 	return -1;
 }
 
+/* 
+ * Returns the character size in bytes, or 0 in the case of the empty string.
+ */
+static int utf8_read_char(const char *_s, uint32_t *code)
+{
+	const unsigned char *s = (const unsigned char*)_s;
+
+	if (!s[0])
+		return 0;
+
+	if (s[0] >= 0xF0) {
+		assert(s[1]);
+		assert(s[2]);
+		assert(s[3]);
+		*code = (s[0] & 0x07) << 18 | (s[1] & 0x3F) << 12 | (s[2] & 0x3F) << 6 | (s[3] & 0x3F);
+		return 4;
+	} else if (s[0] >= 0xE0) {
+		assert(s[1]);
+		assert(s[2]);
+		*code = (s[0] & 0x0F) << 12 | (s[1] & 0x3F) << 6 | (s[2] & 0x3F);
+		return 3;
+	} else if (s[0] >= 0xC0) {
+		assert(s[1]);
+		*code = (s[0] & 0x1F) << 6 | (s[1] & 0x3F);
+		return 2;
+	} else {
+		*code = s[0] & 0x7F;
+		return 1;
+	}
+}
+
+static int utf8_strlen(const char *s)
+{
+	uint32_t code;
+	int csz;
+	int n = 0;
+
+	while ((csz = utf8_read_char(s, &code))) {
+		n++;
+		s+=csz;
+	}
+
+	return n;
+}
+
+static void macro_add(struct macro *m, uint8_t type, uint16_t data)
+{
+	assert(m->sz < MAX_MACRO_SIZE);
+
+	m->entries[m->sz].type = type;
+	m->entries[m->sz].data = data;
+
+	m->sz++;
+}
+
 static int do_parse_macro(struct macro *macro, char *s)
 {
 	char *tok;
-	size_t sz = 0;
-	uint8_t code, mods;
-
 	macro->sz = 0;
+
 	for (tok = strtok(s, " "); tok; tok = strtok(NULL, " ")) {
-		struct macro_entry ent;
+		uint8_t code, mods;
 		size_t len = strlen(tok);
 
 		if (!parse_sequence(tok, &code, &mods)) {
-			assert(sz < MAX_MACRO_SIZE);
-
-			ent.type = MACRO_KEYSEQUENCE;
-			ent.code = code;
-			ent.mods = mods;
-
-			macro->entries[sz++] = ent;
+			macro_add(macro, MACRO_KEYSEQUENCE, (mods << 8) | code);
 		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
-			int len = atoi(tok);
+			macro_add(macro, MACRO_TIMEOUT, atoi(tok));
+		} else if (strchr(tok, '+')) {
+			char *saveptr;
+			char *key;
 
-			ent.type = MACRO_TIMEOUT;
-			ent.timeout = len;
+			for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
+				if (parse_sequence(key, &code, &mods))
+					return -1;
 
-			assert(sz < MAX_MACRO_SIZE);
-			macro->entries[sz++] = ent;
+				macro_add(macro, MACRO_HOLD, code);
+			}
+
+			macro_add(macro, MACRO_RELEASE, 0);
 		} else {
-			char *c;
+			uint32_t codepoint;
+			int chrsz;
 
-			if (strchr(tok, '+')) {
-				char *saveptr;
-				char *key;
+			while ((chrsz=utf8_read_char(tok, &codepoint))) {
+				int i;
+				int xcode;
 
-				for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
-					if (parse_sequence(key, &code, &mods) < 0) {
-						return -1;
+				if (chrsz == 1 && codepoint < 128) {
+					for (i = 0; i < 256; i++) {
+						const char *name = keycode_table[i].name;
+						const char *shiftname = keycode_table[i].shifted_name;
+
+						if (name && name[0] == tok[0] && name[1] == 0) {
+							macro_add(macro, MACRO_KEYSEQUENCE, i);
+							break;
+						}
+
+						if (shiftname && shiftname[0] == tok[0] && shiftname[1] == 0) {
+							macro_add(macro, MACRO_KEYSEQUENCE, (MOD_SHIFT << 8) | i);
+							break;
+						}
 					}
+				} else if ((xcode = lookup_xcompose_code(codepoint)) > 0)
+					macro_add(macro, MACRO_UNICODE, xcode);
 
-					ent.type = MACRO_HOLD;
-					ent.code = code;
-					ent.mods = mods;
-
-					assert(sz < MAX_MACRO_SIZE);
-					macro->entries[sz++] = ent;
-				}
-
-				ent.type = MACRO_RELEASE;
-				assert(sz < MAX_MACRO_SIZE);
-				macro->entries[sz++] = ent;
-			} else {
-				for (c = tok; *c; c++) {
-					uint8_t code, mods;
-					char s[32];
-
-					switch (*c) {
-					case '\n':
-						strcpy(s, "enter");
-						break;
-					case '\t':
-						strcpy(s, "tab");
-						break;
-					default:
-						s[0] = *c;
-						s[1] = 0;
-						break;
-					}
-
-					if (parse_sequence(s, &code, &mods) < 0)
-						return -1;
-
-					ent.type = MACRO_KEYSEQUENCE;
-					ent.code = code;
-					ent.mods = mods;
-
-					assert(sz < MAX_MACRO_SIZE);
-					macro->entries[sz++] = ent;
-				}
+				tok += chrsz;
 			}
 		}
 	}
 
-	macro->sz = sz;
 	return 0;
 }
 
@@ -349,6 +377,7 @@ static size_t escape(char *s)
 
 	return n;
 }
+
 
 static int parse_macro(const char *exp, struct macro *macro)
 {
@@ -553,6 +582,32 @@ int create_layer(struct layer *layer, const char *desc, const struct layer_table
 	return 0;
 }
 
+/* 
+ * Returns:
+ *
+ * > 0 if exp is a valid macro but the macro table is full
+ * < 0 in the case of an invalid macro
+ * 0 on success
+ */
+int set_macro_arg(struct descriptor *d, int idx, struct layer_table *lt, const char *exp)
+{
+	if (lt->nr_macros >= MAX_MACROS) {
+		err("max macros (%d), exceeded", MAX_MACROS);
+		return 1;
+	}
+
+	if (parse_macro(exp, &lt->macros[lt->nr_macros]) < 0) {
+		err("\"%s\" is not a valid macro", exp);
+		return -1;
+	}
+
+	d->args[idx].idx = lt->nr_macros;
+
+	lt->nr_macros++;
+
+	return 0;
+}
+
 /*
  * Modifies the input string. Layers names within the descriptor
  * are resolved using the provided layer table.
@@ -564,19 +619,20 @@ int parse_descriptor(const char *descstr,
 	char *fn = NULL;
 	char *args[MAX_ARGS];
 	size_t nargs = 0;
-	struct macro macro;
 	uint8_t code;
 	int idx;
+	int ret;
+
+	char fnstr[MAX_DESCRIPTOR_LEN+1];
 
 	if (strlen(descstr) > MAX_DESCRIPTOR_LEN) {
 		err("maximum descriptor length exceeded");
 		return -1;
 	}
 
-	char s[MAX_DESCRIPTOR_LEN+1];
-	strcpy(s, descstr);
+	strcpy(fnstr, descstr);
 
-	if ((code = parse_code(s))) {
+	if ((code = parse_code(descstr))) {
 		d->op = OP_KEYCODE;
 		d->args[0].code = code;
 
@@ -584,19 +640,12 @@ int parse_descriptor(const char *descstr,
 		if (keycode_to_mod(code))
 			fprintf(stderr,
 				"WARNING: mapping modifier keycodes directly may produce unintended results, you probably want layer(<modifier name>) instead\n");
-	} else if (!parse_macro(s, &macro)) {
-		if (lt->nr_macros >= MAX_MACROS) {
-			err("max macros (%d), exceeded", MAX_MACROS);
+	} else if ((ret=set_macro_arg(d, 0, lt, descstr)) >= 0) {
+		if (ret > 0)
 			return -1;
-		}
-
-		d->op = OP_MACRO;
-
-		lt->macros[lt->nr_macros] = macro;
-		d->args[0].idx = lt->nr_macros;
-
-		lt->nr_macros++;
-	} else if (!parse_fn(s, &fn, args, &nargs)) {
+		else
+			d->op = OP_MACRO;
+	} else if (!parse_fn(fnstr, &fn, args, &nargs)) {
 		if (!strcmp(fn, "layer"))
 			d->op = OP_LAYER;
 		else if (!strcmp(fn, "toggle"))
@@ -610,7 +659,7 @@ int parse_descriptor(const char *descstr,
 		} else if (!strcmp(fn, "timeout")) {
 			d->op = OP_TIMEOUT;
 		} else {
-			err("\"%s\" is not a valid action or macro.", s);
+			err("\"%s\" is not a valid action or macro.", descstr);
 			return -1;
 		}
 
@@ -659,27 +708,16 @@ int parse_descriptor(const char *descstr,
 		d->args[0].idx = idx;
 		d->args[1].idx = -1;
 
-		if (nargs > 1) {
-			if (lt->nr_macros >= MAX_MACROS) {
-				err("max macros (%d), exceeded", MAX_MACROS);
-				return -1;
-			}
+		if (nargs > 1)
+			return set_macro_arg(d, 1, lt, args[1]);
+	} else if (utf8_strlen(descstr) == 1) {
+		char buf[32];
+		sprintf(buf, "macro(%s)", descstr);
+		d->op = OP_MACRO;
 
-			if (parse_macro(args[1], &lt->macros[lt->nr_macros]) < 0) {
-				err("\"%s\" is not a valid macro", args[1]);
-				return -1;
-			}
-
-			d->args[1].idx = lt->nr_macros;
-			lt->nr_macros++;
-		}
+		if (set_macro_arg(d, 0, lt, buf))
+			return -1;
 	} else {
-		size_t i;
-		for (i = 0; i < nr_aliases; i++)
-			if (!strcmp(aliases[i].name, descstr)) {
-				return parse_descriptor(aliases[i].def, d, lt);
-			}
-
 		err("invalid key or action");
 		return -1;
 	}

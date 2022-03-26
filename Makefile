@@ -1,4 +1,4 @@
-.PHONY: all clean install uninstall debug assets
+.PHONY: all clean install uninstall debug man compose
 DESTDIR=
 PREFIX=/usr
 
@@ -25,10 +25,14 @@ all:
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -o bin/keyd -lpthread $(LDFLAGS)
 debug:
 	CFLAGS="-pedantic -Wall -Wextra -g" $(MAKE)
-assets:
-	./scripts/gen_aliases.py > src/aliases.h
+compose:
+	-mkdir data
+	./scripts/generate_xcompose
+man:
 	for f in docs/*.scdoc; do \
-		scdoc < "$$f" | gzip > "$${f%%.scdoc}.1.gz"; \
+		target=$${f%%.scdoc}.1.gz; \
+		target=data/$${target##*/}; \
+		scdoc < "$$f" | gzip > "$$target"; \
 	done
 install:
 	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
@@ -48,6 +52,7 @@ install:
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
 	fi
 
+	mkdir -p $(DESTDIR)/etc/keyd
 	mkdir -p $(DESTDIR)$(PREFIX)/bin/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/
@@ -55,9 +60,10 @@ install:
 
 	-groupadd keyd
 	install -m755 bin/* $(DESTDIR)$(PREFIX)/bin/
-	install -m644 docs/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
-	-install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
+	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
+	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
+	install -m644 data/keyd.compose $(DESTDIR)/etc/keyd/
 
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks \

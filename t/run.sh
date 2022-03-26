@@ -24,6 +24,7 @@ cd "$(dirname "$0")"
 cp test.conf "$tmpdir"
 
 KEYD_NAME="keyd test device" \
+KEYD_SOCKET=/tmp/keyd_test.socket \
 KEYD_DEBUG=1 \
 KEYD_CONFIG_DIR="$tmpdir" \
 ../bin/keyd > test.log 2>&1 &

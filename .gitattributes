@@ -1,0 +1,2 @@
+data/* -diff
+src/unicode.c -diff
