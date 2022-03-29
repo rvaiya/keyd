@@ -102,15 +102,16 @@ static void config_init(struct config *config)
 	}
 
 	config->layer_table.layers[0].flags = LF_ACTIVE;
+
+	/* In ms */
+	config->macro_timeout = 600;
+	config->macro_repeat_timeout = 50;
+
 }
 
 static void parse_globals(const char *path, struct config *config, struct ini_section *section)
 {
 	size_t i;
-
-	/* In ms */
-	config->macro_timeout = 600;
-	config->macro_repeat_timeout = 50;
 
 	for (i = 0; i < section->nr_entries;i++) {
 		char *key, *val;
