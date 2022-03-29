@@ -267,16 +267,16 @@ E.G
 
 	ln -s /etc/keyd/keyd.compose ~/.XCompose
 
-# GLOBAL
+# GLOBALS
 
 A special section called `[global]` may be defined in the file
 and can contain any of the following options:
 
-*macro_timeout:* The time (in milliseconds) separating the initial execution of a macro
-sequence and the first repetition (default: 600)
+	*macro_timeout:* The time (in milliseconds) separating the initial execution of a macro
+	sequence and the first repetition (default: 600)
 
-*macro_repeat_timeout:* The time separating successive executions of a macro
-(default: 50)
+	*macro_repeat_timeout:* The time separating successive executions of a macro
+	(default: 50)
 
 *Note:* Unicode characters and key sequences are treated as macros, and
 consequently affected by the corresponding timeout options.
