@@ -14,9 +14,6 @@
 #include "descriptor.h"
 #include "layer.h"
 
-#define MACRO_REPEAT_TIMEOUT 600 /* In ms */
-#define MACRO_REPEAT_INTERVAL 50 /* In ms */
-
 static struct macro *active_macro = NULL;
 static uint8_t active_macro_mods = 0;
 static uint8_t oneshot_latch = 0;
@@ -336,7 +333,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 			active_macro = macro;
 			active_macro_mods = descriptor_layer_mods;
 
-			timeout = MACRO_REPEAT_TIMEOUT;
+			timeout = kbd->config.macro_timeout;
 		}
 
 		oneshot_latch = 0;
@@ -520,7 +517,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 	if (!code) {
 		if (active_macro) {
 			execute_macro(kbd, active_macro);
-			return MACRO_REPEAT_INTERVAL;
+			return kbd->config.macro_repeat_timeout;
 		} else if (kbd->pending_timeout.code) {
 			uint8_t mods = kbd->pending_timeout.mods;
 			uint8_t code = kbd->pending_timeout.code;

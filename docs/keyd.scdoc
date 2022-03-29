@@ -97,7 +97,8 @@ Will match all devices which *do not* have the id _0123:4567_, while:
 
 will exclusively match any devices which do.
 
-Each subsequent section of the file corresponds to a _layer_.
+Each subsequent section of the file corresponds to a _layer_ (with the exception
+of `[global]` (see _GLOBALS_).
 
 ## Layers
 
@@ -265,6 +266,20 @@ _/usr/share/X11/locale_, or on a per-user basis by symlinking it to
 E.G
 
 	ln -s /etc/keyd/keyd.compose ~/.XCompose
+
+# GLOBAL
+
+A special section called `[global]` may be defined in the file
+and can contain any of the following options:
+
+*macro_timeout:* The time (in milliseconds) separating the initial execution of a macro
+sequence and the first repetition (default: 600)
+
+*macro_repeat_timeout:* The time separating successive executions of a macro
+(default: 50)
+
+*Note:* Unicode characters and key sequences are treated as macros, and
+consequently affected by the corresponding timeout options.
 
 # MACROS
 

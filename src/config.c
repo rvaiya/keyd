@@ -104,6 +104,33 @@ static void config_init(struct config *config)
 	config->layer_table.layers[0].flags = LF_ACTIVE;
 }
 
+static void parse_globals(const char *path, struct config *config, struct ini_section *section)
+{
+	size_t i;
+
+	/* In ms */
+	config->macro_timeout = 600;
+	config->macro_repeat_timeout = 50;
+
+	for (i = 0; i < section->nr_entries;i++) {
+		char *key, *val;
+		struct ini_entry *ent = &section->entries[i];
+		if (parse_kvp(ent->line, &key, &val)) {
+			fprintf(stderr, "\tERROR %s:%zd: malformed config entry\n", path, ent->lnum);
+			continue;
+		}
+
+		if (!strcmp(key, "macro_timeout"))
+			config->macro_timeout = atoi(val);
+		else if (!strcmp(key, "macro_repeat_timeout"))
+			config->macro_repeat_timeout = atoi(val);
+		else
+			fprintf(stderr, "\tERROR %s:%zd: %s is not a valid global option.\n",
+					path,
+					ent->lnum,
+					key);
+	}
+}
 int config_parse(struct config *config, const char *path)
 {
 	size_t i;
@@ -120,8 +147,10 @@ int config_parse(struct config *config, const char *path)
 	for (i = 0; i < ini->nr_sections; i++) {
 		section = &ini->sections[i];
 
-		if (!strcmp(section->name, "ids"))
+		if (!strcmp(section->name, "ids") ||
+		    !strcmp(section->name, "global"))
 			continue;
+
 
 		if (config_add_layer(config, section->name) < 0)
 			fprintf(stderr, "ERROR %s:%zd: %s\n", path, section->lnum, errstr);
@@ -134,7 +163,12 @@ int config_parse(struct config *config, const char *path)
 		section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids"))
-		    continue;
+			continue;
+
+		if (!strcmp(section->name, "global")) {
+			parse_globals(path, config, section);
+			continue;
+		}
 
 		name = strtok(section->name, ":");
 

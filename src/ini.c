@@ -16,6 +16,55 @@
 #include "ini.h"
 #define MAX_INI_SIZE 65536
 
+/*
+ * Parse a value of the form 'key = value'. The value may contain =
+ * and the key may itself be = as a special case. The returned
+ * values are pointers within the modified input string.
+ */
+
+int parse_kvp(char *s, char **key, char **value)
+{
+	char *last_space = NULL;
+	char *c = s;
+
+	/* Allow the first character to be = as a special case. */
+	if (*c == '=')
+		c++;
+
+	while (*c) {
+		switch (*c) {
+		case '=':
+			if (last_space)
+				*last_space = 0;
+			else
+				*c = 0;
+			c++;
+
+			while (*c && *c == ' ')
+				c++;
+
+			if (!*s)
+				return -1;
+
+			*key = s;
+			*value = c;
+
+			return 0;
+		case ' ':
+			if (!last_space)
+				last_space = c;
+			break;
+		default:
+			last_space = NULL;
+			break;
+		}
+
+		c++;
+	}
+
+	return -1;
+}
+
 static void read_file(const char *path, char *buf, size_t buf_sz)
 {
 	struct stat st;

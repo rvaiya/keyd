@@ -13,6 +13,8 @@
 
 struct config {
 	struct layer_table layer_table;
+	long macro_timeout;
+	long macro_repeat_timeout;
 };
 
 const char	*config_find_path(const char *dir, uint16_t vendor, uint16_t product);
