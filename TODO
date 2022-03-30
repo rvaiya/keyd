@@ -1,9 +1,7 @@
 cleanup manpage
-add [globals] with configurable macro timeouts.
 [idea] tmux like layer timeouts
 nested timeouts? (perhaps not...)
 toggleable composite layers?
 improved mouse support (integrate moused?)
 organize tests
-unicode support
 multi-user support (remove keyd group)
