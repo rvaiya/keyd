@@ -200,6 +200,7 @@ void kbd_reset(struct keyboard *kbd)
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code, uint8_t *layer_mods, struct descriptor *d)
 {
+	size_t max;
 	size_t i;
 	uint8_t active[MAX_LAYERS];
 	struct layer_table *lt = &kbd->layer_table;
@@ -223,6 +224,7 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code, uint8_t *layer
 		}
 	}
 
+	max = 0;
 	/* Scan for any composite matches (which take precedence). */
 	for (i = 0; i < lt->nr; i++) {
 		struct layer *layer = &lt->layers[i];
@@ -239,9 +241,11 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code, uint8_t *layer
 					match = 0;
 			}
 
-			if (match && layer->keymap[code].op) {
+			if (match && layer->keymap[code].op && (layer->nr_layers > max)) {
 				*layer_mods = mods;
 				*d = layer->keymap[code];
+
+				max = layer->nr_layers;
 			}
 		}
 	}
