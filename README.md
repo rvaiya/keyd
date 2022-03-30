@@ -58,6 +58,7 @@ Some of the more interesting ones include:
 # Dependencies
 
  - Your favourite C compiler
+ - Linux kernel headers (already present on most systems)
 
 ## Optional
 
