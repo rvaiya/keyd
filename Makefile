@@ -36,7 +36,7 @@ man:
 	done
 install:
 	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
-		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system; \
+		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
