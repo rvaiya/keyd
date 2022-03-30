@@ -8,12 +8,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "descriptor.h"
-#include "layer.h"
 #include "keyd.h"
-#include "keys.h"
-#include "error.h"
-#include "config.h"
 #include "unicode.h"
 #include "ini.h"
 
