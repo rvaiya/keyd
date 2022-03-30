@@ -49,5 +49,6 @@ int		 	 device_ungrab(struct device *dev);
 
 int		 devmon_create();
 struct device	*devmon_read_device(int fd);
+void		 device_set_led(const struct device *dev, int led, int state);
 
 #endif

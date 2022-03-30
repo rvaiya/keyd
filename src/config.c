@@ -125,6 +125,8 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 			config->macro_timeout = atoi(val);
 		else if (!strcmp(key, "macro_repeat_timeout"))
 			config->macro_repeat_timeout = atoi(val);
+		else if (!strcmp(key, "layer_indicator"))
+			config->layer_indicator = atoi(val);
 		else
 			fprintf(stderr, "\tERROR %s:%zd: %s is not a valid global option.\n",
 					path,

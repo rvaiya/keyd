@@ -98,7 +98,7 @@ Will match all devices which *do not* have the id _0123:4567_, while:
 will exclusively match any devices which do.
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
-of `[global]` (see _GLOBALS_).
+of _[global]_ (see _GLOBALS_).
 
 ## Layers
 
@@ -269,17 +269,22 @@ E.G
 
 # GLOBALS
 
-A special section called `[global]` may be defined in the file
+A special section called _[global]_ may be defined in the file
 and can contain any of the following options:
 
 	*macro_timeout:* The time (in milliseconds) separating the initial execution of a macro
-	sequence and the first repetition (default: 600)
+	sequence and the first repetition.
+	(default: 600)
 
-	*macro_repeat_timeout:* The time separating successive executions of a macro
+	*macro_repeat_timeout:* The time separating successive executions of a macro.
 	(default: 50)
 
+	*layer_indicator:* If set, this will turn the capslock light on whenever a layer with a non-empty modifier set
+	is active.
+	(default: 0)
+
 *Note:* Unicode characters and key sequences are treated as macros, and
-consequently affected by the corresponding timeout options.
+are consequently affected by the corresponding timeout options.
 
 # MACROS
 

@@ -91,7 +91,10 @@ static void daemon_add_cb(struct device *dev)
 
 	printf("\tmatched %s\n", config_path);
 
+
 	memcpy(&kbd->layer_table, &kbd->config.layer_table, sizeof(kbd->layer_table));
+
+	kbd->dev = dev;
 	dev->data = kbd;
 }
 

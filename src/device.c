@@ -68,7 +68,7 @@ static int device_init(const char *path, struct device *dev)
 	int fd;
 	int type;
 
-	if ((fd = open(path, O_RDONLY | O_NONBLOCK, 0600)) < 0) {
+	if ((fd = open(path, O_RDWR | O_NONBLOCK, 0600)) < 0) {
 		fprintf(stderr, "failed to open %s\n", path);
 		return -1;
 	}
@@ -280,4 +280,15 @@ struct device_event *device_read_event(struct device *dev)
 	devev.pressed = ev.value;
 
 	return &devev;
+}
+
+void device_set_led(const struct device *dev, int led, int state)
+{
+	struct input_event ev = {
+		.type = EV_LED,
+		.code = led,
+		.value = state
+	};
+
+	write(dev->fd, &ev, sizeof ev);
 }

@@ -19,7 +19,7 @@ struct cache_entry {
 };
 
 struct keyboard {
-	int fd;
+	struct device *dev;
 
 	struct config config;
 

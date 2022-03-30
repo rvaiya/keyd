@@ -308,6 +308,28 @@ static void deactivate_layer(struct keyboard *kbd, struct layer *layer, int disa
 		send_mods(kbd, layer->mods, 0);
 }
 
+static void update_leds(struct keyboard *kbd)
+{
+	struct layer_table *lt = &kbd->layer_table;
+
+	if (!kbd->config.layer_indicator)
+		return;
+
+	size_t i;
+	int active = 0;
+
+	for (i = 0; i < lt->nr; i++) {
+		if (lt->layers[i].flags && lt->layers[i].mods)
+			active = 1;
+	}
+
+	if (active) {
+		device_set_led(kbd->dev, 1, 1);
+	} else {
+		device_set_led(kbd->dev, 1, 0);
+	}
+}
+
 static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descriptor *d, int descriptor_layer_mods, int pressed)
 {
 	int timeout = 0;
@@ -493,6 +515,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 	if (pressed)
 		kbd->last_pressed_keycode = code;
 
+	update_leds(kbd);
 	return timeout;
 }
 
