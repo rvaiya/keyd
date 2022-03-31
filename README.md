@@ -96,7 +96,7 @@ esc = capslock
 
 3. Run `sudo systemctl restart keyd` to reload the config file.
 
-4. See the [man page](man.md) for a comprehensive list of config options.
+4. See the man page (`man keyd`) for a more comprehensive description.
 
 *Note*: It is possible to render your machine unusable with a bad config file.
 Should you find yourself in this position, the special key sequence
