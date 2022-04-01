@@ -53,8 +53,8 @@ and enhancements.
 	l = right
 ```
 
-    will cause `control+h` to produce `left` (rather than `C-left`), while
-    `control+capslock+h` will produce `C-left`, as one might intuit.
+will cause `capslock+h` to produce `left` (rather than `C-left`), while
+`control+capslock+h` will produce `C-left`, as one might intuit.
 
   - Abolished layer types. Notably, the concept of a 'layout' no longer exists.
 

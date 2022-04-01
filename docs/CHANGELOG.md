@@ -83,28 +83,28 @@ See [DESIGN.md](DESIGN.md) for a more thorough description of changes.
 
 Major version update.
 
-This breaks 1.x configs. The format may change slightly before leaving beta,
+This breaks 1.x configs. The format may ~~change slightly~~ (see [2.3.0-rc](#v230-rc)) before leaving beta,
 but once it does should remain backwards compatible for the foreseeable future.
 
 A non exhaustive list of changes can be found below. It is best to forget
 everything you know and read man page anew.
 
-	- Eliminate layer inheritance in favour of simple types.
-	(layouts are now defined with `:layout` instead of `:main`)
-	- Macros are now repeatable.
-	- Overload now accepts a hold threshold timeout.
-	- Config files are now vendor/product id oriented.
-	- SIGUSR1 now triggers a config reload.
-	- Modifiers are layers by default and can be extended directly.
-	- Config files now end in `.conf`.
-	- `layert()` is now `toggle()`.
-	- All layers are 'modifier layers' (terminological change)
-	- Eliminate the dedicated modifer layout.
-	- Modifiers no longer apply to key sequences defined within a layer.
-	  (Layer entries are now always executed verbatim.)
+ - Eliminate layer inheritance in favour of simple types.
+ (layouts are now defined with `:layout` instead of `:main`)
+ - Macros are now repeatable.
+ - Overload now accepts a hold threshold timeout.
+ - Config files are now vendor/product id oriented.
+ - SIGUSR1 now triggers a config reload.
+ - Modifiers are layers by default and can be extended directly.
+ - Config files now end in `.conf`.
+ - `layert()` is now `toggle()`.
+ - All layers are 'modifier layers' (terminological change)
+ - Eliminate the dedicated modifer layout.
+ - Modifiers no longer apply to key sequences defined within a layer.
+   (Layer entries are now always executed verbatim.)
 
-	  The old behaviour was unintuitive and can be emulated using nested
-	  layers if necessary.
+   The old behaviour was unintuitive and can be emulated using nested
+   layers if necessary.
 
 For most old configs transitioning should be a simple matter of changing
 the file extension from `.cfg` to `.conf`, replacing `layert` with
