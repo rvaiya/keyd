@@ -267,6 +267,8 @@ E.G
 
 	ln -s /etc/keyd/keyd.compose ~/.XCompose
 
+*Note:* You may have to restart your applications for this to take effect.
+
 # GLOBALS
 
 A special section called _[global]_ may be defined in the file
