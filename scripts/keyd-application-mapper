@@ -306,10 +306,6 @@ def lock():
     except:
         die('only one instance may run at a time')
 
-def ping_keyd():
-    run_or_die('keyd -e ping',
-'could not connect to keyd instance, make sure it is running and you are a member of `keyd`')
-
 def daemonize():
     print(f'Daemonizing, log output will be stored in {LOGFILE}...')
 
@@ -332,7 +328,6 @@ if not os.path.exists(CONFIG_PATH):
     die('could not find app.conf, make sure it is in ~/.config/keyd/app.conf')
 
 config = parse_config(CONFIG_PATH)
-ping_keyd()
 lock()
 
 def lookup_bindings(cls, title):
