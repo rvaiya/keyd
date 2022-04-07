@@ -13,8 +13,8 @@
 #define MAX_COMPOSITE_LAYERS	8
 #define MAX_TIMEOUTS		32
 
-#define MAX_MACRO_SIZE	128
-#define MAX_MACROS	64
+#define MAX_MACRO_SIZE	64
+#define MAX_MACROS	256
 
 #define LT_NORMAL	0
 #define LT_LAYOUT	1
