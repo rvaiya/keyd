@@ -22,6 +22,12 @@ CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
+
+debug_flag = os.getenv('KEYD_DEBUG')
+def dbg(s):
+    if debug_flag:
+        print(s)
+
 def die(msg):
     sys.stderr.write('ERROR: ')
     sys.stderr.write(msg)
@@ -334,6 +340,7 @@ def lookup_bindings(cls, title):
     bindings = []
     for cexp, texp, b in config:
         if fnmatch(cls, cexp) and fnmatch(title, texp):
+            dbg(f'\tMatched {cexp}|{texp}')
             bindings.extend(b)
 
     return bindings
