@@ -3,17 +3,17 @@ s down
 s up
 a down
 a up
-s down
-s up
-a down
-a up
 alt up
 
 alt down
+meta down
 control down
 alt up
 control up
+a down
+a up
 b down
 b up
-c down
-c up
+control down
+meta up
+control up

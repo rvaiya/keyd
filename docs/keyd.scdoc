@@ -350,7 +350,7 @@ arguments.
 *swap(<layer>[, <macro>])*
 	Swap the currently active layer with the supplied one. The supplied layer is
 	active for the duration of the depression of the current layer's activation
-	key. A macro may optionally be supplied to be performed before the layer
+	key. A macro may optionally be supplied to be performed immediately after the layer
 	change.
 
 ```

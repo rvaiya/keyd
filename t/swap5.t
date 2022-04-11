@@ -14,9 +14,7 @@ alt up
 control up
 tab down
 tab up
-alt down
 control down
-alt up
 x down
 x up
 control up

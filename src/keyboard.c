@@ -51,7 +51,7 @@ static void kbd_send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	}
 }
 
-/* 
+/*
  * refcounted to account for overlapping active mods without adding manual
  * accounting to the calling code, each send_mods(foo, 1) *must* be accompanied
  * by a corresponding send_mods(foo, 0) at some point. Failure to do so is
@@ -100,11 +100,29 @@ static void disarm_mods(struct keyboard *kbd, uint8_t mods)
 	send_mods(kbd, mods, 0);
 }
 
-
-static void execute_macro(struct keyboard *kbd, const struct macro *macro)
+static void execute_macro(struct keyboard *kbd, const struct macro *macro, uint8_t disable_mods)
 {
 	size_t i;
 	int hold_start = -1;
+
+	/*
+	 * Minimize unnecessary noise by avoiding redundant modifier key up/down
+	 * events in the case that the requisite modifiers are already present
+	 * in the layer modifier set and the macro is a simple key sequence.
+	 *
+	 * This makes common cases like:
+	 *
+	 * 	[meta]
+	 *
+	 * 	a = M-b
+	 *
+	 * less likely to produce undesirable side effects as a consequence of additional
+	 * meta up/down presses.
+	 */
+	if (macro->sz == 1 && macro->entries[0].type == MACRO_KEYSEQUENCE)
+		disable_mods &= ~(macro->entries[0].data >> 8);
+
+	disarm_mods(kbd, disable_mods);
 
 	for (i = 0; i < macro->sz; i++) {
 		const struct macro_entry *ent = &macro->entries[i];
@@ -167,6 +185,8 @@ static void execute_macro(struct keyboard *kbd, const struct macro *macro)
 		}
 
 	}
+
+	send_mods(kbd, disable_mods, 1);
 }
 
 int kbd_execute_expression(struct keyboard *kbd, const char *exp)
@@ -352,9 +372,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 		macro = &macros[d->args[0].idx];
 
 		if (pressed) {
-			disarm_mods(kbd, descriptor_layer_mods);
-
-			execute_macro(kbd, macro);
+			execute_macro(kbd, macro, descriptor_layer_mods);
 
 			active_macro = macro;
 			active_macro_mods = descriptor_layer_mods;
@@ -445,11 +463,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 
 		if (pressed) {
 			struct descriptor od;
-			if (macro) {
-				disarm_mods(kbd, descriptor_layer_mods);
-				execute_macro(kbd, macro);
-				send_mods(kbd, descriptor_layer_mods, 1);
-			}
 
 			if (!cache_get(kbd, kbd->last_layer_code, &od, NULL)) {
 				struct layer *oldlayer = &layers[od.args[0].idx];
@@ -459,6 +472,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 
 				activate_layer(kbd, layer);
 				deactivate_layer(kbd, oldlayer, 1);
+
+				if (macro)
+					execute_macro(kbd, macro, layer->mods);
 			}
 		} else
 			deactivate_layer(kbd, layer, 1);
@@ -475,9 +491,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code, struct descri
 			deactivate_layer(kbd, layer, 1);
 
 			if (kbd->last_pressed_keycode == code) {
-				disarm_mods(kbd, descriptor_layer_mods);
-				execute_macro(kbd, macro);
-				send_mods(kbd, descriptor_layer_mods, 1);
+				execute_macro(kbd, macro, descriptor_layer_mods);
 
 				oneshot_latch = 0;
 				clear_oneshot = 1;
@@ -543,7 +557,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 	/* timeout */
 	if (!code) {
 		if (active_macro) {
-			execute_macro(kbd, active_macro);
+			execute_macro(kbd, active_macro, active_macro_mods);
 			return kbd->config.macro_repeat_timeout;
 		} else if (kbd->pending_timeout.code) {
 			uint8_t mods = kbd->pending_timeout.mods;
@@ -568,10 +582,8 @@ long kbd_process_key_event(struct keyboard *kbd,
 		kbd->pending_timeout.code = 0;
 	}
 
-	if (active_macro) {
+	if (active_macro)
 		active_macro = NULL;
-		send_mods(kbd, active_macro_mods, 1);
-	}
 
 	if (pressed) {
 		lookup_descriptor(kbd, code, &descriptor_layer_mods, &d);

@@ -16,6 +16,8 @@ o up
 n down
 n up
 shift down
+shift up
+shift down
 a down
 a up
 shift up

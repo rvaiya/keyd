@@ -11,5 +11,7 @@ o down
 o up
 n down
 n up
+shift down
+shift up
 x down
 x up
