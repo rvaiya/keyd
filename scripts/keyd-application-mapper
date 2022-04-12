@@ -166,6 +166,8 @@ class XMonitor():
         return ("root", "")
 
     def run(self):
+        import Xlib
+
         last_active_class = ""
         last_active_title = ""
 
@@ -177,6 +179,8 @@ class XMonitor():
 
                 if isinstance(win, int):
                     continue
+
+                win.change_attributes(event_mask = Xlib.X.SubstructureNotifyMask|Xlib.X.PropertyChangeMask)
 
                 cls, title = self.get_window_info(win)
 
