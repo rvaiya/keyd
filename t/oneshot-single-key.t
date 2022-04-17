@@ -1,13 +1,13 @@
 2 down
-c down
 2 up
-c up
+u down
 i down
+u up
 i up
 
 shift down
-control down
-i down
-i up
+u down
 shift up
-control up
+i down
+u up
+i up

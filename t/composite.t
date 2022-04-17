@@ -8,14 +8,12 @@ alt up
 control down
 alt down
 alt up
-control up
 shift down
+control up
 h down
 h up
+alt down
 shift up
 control down
-alt down
 control up
-control down
 alt up
-control up

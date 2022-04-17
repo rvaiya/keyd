@@ -41,14 +41,14 @@ struct device_event {
 };
 
 
-struct device_event	*device_read_event(struct device *dev);
+struct device_event *device_read_event(struct device *dev);
 
-int			 device_scan(struct device devices[MAX_DEVICES]);
-int		 	 device_grab(struct device *dev);
-int		 	 device_ungrab(struct device *dev);
+int device_scan(struct device devices[MAX_DEVICES]);
+int device_grab(struct device *dev);
+int device_ungrab(struct device *dev);
 
-int		 devmon_create();
-struct device	*devmon_read_device(int fd);
-void		 device_set_led(const struct device *dev, int led, int state);
+int devmon_create();
+struct device *devmon_read_device(int fd);
+void device_set_led(const struct device *dev, int led, int state);
 
 #endif

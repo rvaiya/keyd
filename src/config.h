@@ -19,7 +19,7 @@ struct config {
 	long layer_indicator;
 };
 
-const char	*config_find_path(const char *dir, uint16_t vendor, uint16_t product);
-int		 config_parse(struct config *config, const char *path);
+int config_parse(struct config *config, const char *path);
+const char *config_find_path(const char *dir, uint16_t vendor, uint16_t product);
 
 #endif

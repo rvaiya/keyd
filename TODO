@@ -1,7 +1,7 @@
+streamline test logic
+organize tests
 cleanup manpage
 [idea] tmux like layer timeouts
-nested timeouts? (perhaps not...)
 toggleable composite layers?
 improved mouse support (integrate moused?)
-organize tests
 multi-user support (remove keyd group)

@@ -6,14 +6,12 @@ a up
 alt up
 
 alt down
-meta down
 control down
 alt up
 control up
+meta down
 a down
 a up
 b down
 b up
-control down
 meta up
-control up

@@ -20,10 +20,8 @@
 #define LT_LAYOUT	1
 #define LT_COMPOSITE	2
 
-#define LF_ACTIVE	0x1
-#define LF_TOGGLE	0x2
-#define LF_ONESHOT	0x4
-#define LF_ONESHOT_HELD	0x8
+#define LF_TOGGLED	0x1
+#define LF_ONESHOT	0x2
 
 /*
  * A layer is a map from keycodes to descriptors. It may optionally
@@ -45,6 +43,7 @@ struct layer {
 	struct descriptor keymap[256];
 
 	/* state */
+	uint8_t active;
 	uint8_t flags;
 	long activation_time;
 };
@@ -78,7 +77,7 @@ struct macro {
 
 struct layer_table {
 	struct layer layers[MAX_LAYERS];
-	size_t nr;
+	size_t nr_layers;
 
 	struct timeout timeouts[MAX_TIMEOUTS];
 	struct macro macros[MAX_MACROS];

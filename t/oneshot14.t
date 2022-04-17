@@ -11,7 +11,5 @@ shift down
 shift up
 a down
 a up
-shift down
-shift up
 b down
 b up

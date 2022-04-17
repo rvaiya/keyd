@@ -15,7 +15,7 @@
 struct cache_entry {
 	uint8_t code;
 	struct descriptor d;
-	uint8_t layermods;
+	struct layer *dl;
 };
 
 struct keyboard {
@@ -25,23 +25,34 @@ struct keyboard {
 
 	struct layer_table layer_table;
 
-	/* state*/
-
-	/* for key up events */
+	/* 
+	 * Cache descriptors to preserve code->descriptor
+	 * mappings in the event of mid-stroke layer changes.
+	 */
 	struct cache_entry cache[CACHE_SIZE];
 
+	uint8_t transient_mods;
+
 	uint8_t last_pressed_output_code;
-	uint8_t last_pressed_keycode;
+	uint8_t last_pressed_code;
 	uint8_t last_layer_code;
 
+	uint8_t oneshot_latch;
+
+	uint8_t inhibit_modifier_guard;
+
+	struct macro *active_macro;
+	struct layer *active_macro_layer;
+
 	struct {
+		uint8_t active;
+
 		uint8_t code;
-		uint8_t mods;
+		struct layer *dl;
 		struct timeout t;
 	} pending_timeout;
 
 	uint8_t keystate[256];
-	uint8_t modstate[MAX_MOD];
 };
 
 long	kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);

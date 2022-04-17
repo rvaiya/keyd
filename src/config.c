@@ -49,19 +49,19 @@ static int config_add_layer(struct config *config, const char *s)
 	if (name && layer_table_lookup(&config->layer_table, name) != -1)
 			return 1;
 
-	if (config->layer_table.nr >= MAX_LAYERS) {
+	if (config->layer_table.nr_layers >= MAX_LAYERS) {
 		err("max layers (%d) exceeded", MAX_LAYERS);
 		return -1;
 	}
 
-	ret = create_layer(&config->layer_table.layers[config->layer_table.nr],
+	ret = create_layer(&config->layer_table.layers[config->layer_table.nr_layers],
 		s,
 		&config->layer_table);
 
 	if (ret < 0)
 		return -1;
 
-	config->layer_table.nr++;
+	config->layer_table.nr_layers++;
 	return 0;
 }
 
@@ -82,8 +82,9 @@ static void config_init(struct config *config)
 
 	km = config->layer_table.layers[0].keymap;
 	for (i = 0; i < 256; i++) {
-		km[i].op = OP_KEYCODE;
+		km[i].op = OP_KEYSEQUENCE;
 		km[i].args[0].code = i;
+		km[i].args[1].mods = 0;
 	}
 
 	for (i = 0; i < MAX_MOD; i++) {
@@ -101,8 +102,7 @@ static void config_init(struct config *config)
 		ent2->args[0].idx = idx;
 	}
 
-	config->layer_table.layers[0].flags = LF_ACTIVE;
-
+	config->layer_table.layers[0].active = 1;
 	/* In ms */
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;

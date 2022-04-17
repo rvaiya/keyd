@@ -10,16 +10,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MOD_ALT_GR 0x10
-#define MOD_CTRL 0x8
-#define MOD_SHIFT 0x4
-#define MOD_SUPER 0x2
-#define MOD_ALT 0x1
+#define MOD_ALT_GR	0x10
+#define MOD_CTRL	0x8
+#define MOD_SHIFT	0x4
+#define MOD_SUPER	0x2
+#define MOD_ALT		0x1
 
 #define MAX_MOD 5
-
-uint8_t	keycode_to_mod(uint8_t code);
-int	parse_modset(const char *s, uint8_t *mods);
 
 struct keycode_table_ent {
 	const char *name;
@@ -290,6 +287,9 @@ struct modifier_table_ent {
 #define  KEYD_MOUSE_1          		252
 #define  KEYD_MOUSE_2          		253
 #define  KEYD_FN               		254
+
+uint8_t keycode_to_mod(uint8_t code);
+int parse_modset(const char *s, uint8_t *mods);
 
 extern const struct modifier_table_ent modifier_table[MAX_MOD];
 extern const struct keycode_table_ent keycode_table[256];

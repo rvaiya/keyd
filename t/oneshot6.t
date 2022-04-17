@@ -9,5 +9,5 @@ shift down
 control down
 i down
 i up
-control up
 shift up
+control up

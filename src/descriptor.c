@@ -85,21 +85,6 @@ exit:
 	}
 }
 
-static uint8_t parse_code(const char *s)
-{
-	size_t i;
-
-	for (i = 0; i < 256; i++) {
-		const struct keycode_table_ent *ent = &keycode_table[i];
-
-		if ((ent->name && !strcmp(ent->name, s)) || 
-		    (ent->alt_name && !strcmp(ent->alt_name, s)))
-			return i;
-	}
-
-	return 0;
-}
-
 static int parse_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
 {
 	const char *c = s;
@@ -390,7 +375,7 @@ int layer_table_lookup(const struct layer_table *lt, const char *name)
 {
 	size_t i;
 
-	for (i = 0; i < lt->nr; i++)
+	for (i = 0; i < lt->nr_layers; i++)
 		if (!strcmp(lt->layers[i].name, name))
 			return i;
 
@@ -566,7 +551,7 @@ int parse_descriptor(const char *descstr,
 	char *fn = NULL;
 	char *args[MAX_ARGS];
 	size_t nargs = 0;
-	uint8_t code;
+	uint8_t code, mods;
 	int idx;
 	int ret;
 
@@ -579,9 +564,10 @@ int parse_descriptor(const char *descstr,
 
 	strcpy(fnstr, descstr);
 
-	if ((code = parse_code(descstr))) {
-		d->op = OP_KEYCODE;
+	if (!parse_sequence(descstr, &code, &mods)) {
+		d->op = OP_KEYSEQUENCE;
 		d->args[0].code = code;
+		d->args[1].mods = mods;
 
 		/* TODO: fixme. */
 		if (keycode_to_mod(code))

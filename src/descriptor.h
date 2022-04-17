@@ -20,7 +20,7 @@ struct layer_table;
 
 enum op {
 	OP_UNDEFINED,
-	OP_KEYCODE,
+	OP_KEYSEQUENCE,
 
 	OP_ONESHOT,
 	OP_SWAP,
@@ -39,6 +39,7 @@ struct descriptor {
 
 	union {
 		uint8_t code;
+		uint8_t mods;
 		int16_t idx;
 		uint16_t sz;
 		uint16_t timeout;

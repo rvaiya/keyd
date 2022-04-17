@@ -22,9 +22,8 @@
 
 #define MAX_MESSAGE_SIZE 4096
 
-
-int	ipc_create_server(const char *path);
-void	ipc_server_process_connection(int sd, int (*handler) (int fd, const char *input));
-int	ipc_run(const char *socket, const char *input);
+int ipc_create_server(const char *path);
+void ipc_server_process_connection(int sd, int (*handler) (int fd, const char *input));
+int ipc_run(const char *socket, const char *input);
 
 #endif

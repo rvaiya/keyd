@@ -56,8 +56,8 @@ struct ini {
  *  freed.
  */
 
-struct ini	*ini_parse_file(const char *path, const char *default_section_name);
+struct ini *ini_parse_file(const char *path, const char *default_section_name);
 
-int		parse_kvp(char *s, char **key, char **value);
+int parse_kvp(char *s, char **key, char **value);
 
 #endif

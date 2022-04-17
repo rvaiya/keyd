@@ -7,12 +7,12 @@
 #include "keys.h"
 
 const struct modifier_table_ent modifier_table[MAX_MOD] = {
-	{"control", MOD_CTRL, KEYD_LEFTCTRL, KEYD_RIGHTCTRL},
+	{"alt", MOD_ALT, KEYD_LEFTALT, 0},
+	{"altgr", MOD_ALT_GR, KEYD_RIGHTALT, 0},
 	{"shift", MOD_SHIFT, KEYD_LEFTSHIFT, KEYD_RIGHTSHIFT},
 	{"meta", MOD_SUPER, KEYD_LEFTMETA, KEYD_RIGHTMETA},
 
-	{"alt", MOD_ALT, KEYD_LEFTALT, 0},
-	{"altgr", MOD_ALT_GR, KEYD_RIGHTALT, 0},
+	{"control", MOD_CTRL, KEYD_LEFTCTRL, KEYD_RIGHTCTRL},
 };
 
 const struct keycode_table_ent keycode_table[256] = {
