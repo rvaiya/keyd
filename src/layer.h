@@ -72,7 +72,10 @@ struct macro_entry {
  */
 struct macro {
 	struct macro_entry entries[MAX_MACRO_SIZE];
-	size_t sz;
+
+	int32_t timeout;
+	int32_t repeat_timeout;
+	uint32_t sz;
 };
 
 struct layer_table {

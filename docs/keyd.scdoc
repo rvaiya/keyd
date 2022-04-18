@@ -364,6 +364,15 @@ arguments.
 	b = S-insert
 ```
 
+*macro2(<timeout>, <repeat timeout>, <macro>)*
+	Creates a macro with the given timeout and repeat timeout. If a timeout value of 0 is used,
+	macro repeat is disabled.
+
+	E.G
+
+	macro2(400, 50, macro(Hello space World))
+
+
 *noop*
 	Do nothing.
 

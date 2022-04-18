@@ -447,7 +447,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
 
-			timeout = kbd->config.macro_timeout;
+			timeout = macro->timeout == -1 ?
+					kbd->config.macro_timeout :
+					macro->timeout;
 		}
 
 		break;
@@ -498,9 +500,11 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			}
 		} else {
 			deactivate_layer(kbd, layer);
-			update_mods(kbd, layer, mods);
+			update_mods(kbd, layer, 0);
 		}
 
+		break;
+	case OP_UNDEFINED:
 		break;
 	}
 
@@ -523,14 +527,16 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 long kbd_process_key_event(struct keyboard *kbd,
 			   uint8_t code, int pressed)
 {
-	struct layer *dl;
+	struct layer *dl = NULL;
 	struct descriptor d;
 
 	/* timeout */
 	if (!code) {
 		if (kbd->active_macro) {
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
-			return kbd->config.macro_repeat_timeout;
+			return kbd->active_macro->repeat_timeout == -1 ?
+					kbd->config.macro_repeat_timeout :
+					kbd->active_macro->repeat_timeout;
 		}
 
 		if (kbd->pending_timeout.active) {

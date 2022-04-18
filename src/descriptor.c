@@ -153,7 +153,7 @@ static int parse_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
 	return -1;
 }
 
-/* 
+/*
  * Returns the character size in bytes, or 0 in the case of the empty string.
  */
 static int utf8_read_char(const char *_s, uint32_t *code)
@@ -514,24 +514,33 @@ int create_layer(struct layer *layer, const char *desc, const struct layer_table
 	return 0;
 }
 
-/* 
+/*
  * Returns:
  *
  * > 0 if exp is a valid macro but the macro table is full
  * < 0 in the case of an invalid macro
  * 0 on success
  */
-int set_macro_arg(struct descriptor *d, int idx, struct layer_table *lt, const char *exp)
+int set_macro_arg(struct descriptor *d,
+		  int idx,
+		  struct layer_table *lt, const char *exp,
+		  int32_t timeout,
+		  int32_t repeat_timeout)
 {
+	struct macro *macro = &lt->macros[lt->nr_macros];
+
 	if (lt->nr_macros >= MAX_MACROS) {
 		err("max macros (%d), exceeded", MAX_MACROS);
 		return 1;
 	}
 
-	if (parse_macro(exp, &lt->macros[lt->nr_macros]) < 0) {
+	if (parse_macro(exp, macro) < 0) {
 		err("\"%s\" is not a valid macro", exp);
 		return -1;
 	}
+
+	macro->timeout = timeout;
+	macro->repeat_timeout = repeat_timeout;
 
 	d->args[idx].idx = lt->nr_macros;
 
@@ -573,7 +582,7 @@ int parse_descriptor(const char *descstr,
 		if (keycode_to_mod(code))
 			fprintf(stderr,
 				"WARNING: mapping modifier keycodes directly may produce unintended results, you probably want layer(<modifier name>) instead\n");
-	} else if ((ret=set_macro_arg(d, 0, lt, descstr)) >= 0) {
+	} else if ((ret=set_macro_arg(d, 0, lt, descstr, -1, -1)) >= 0) {
 		if (ret > 0)
 			return -1;
 		else
@@ -589,6 +598,8 @@ int parse_descriptor(const char *descstr,
 			d->op = OP_OVERLOAD;
 		else if (!strcmp(fn, "swap")) {
 			d->op = OP_SWAP;
+		} else if (!strcmp(fn, "macro2")) {
+			d->op = OP_MACRO;
 		} else if (!strcmp(fn, "timeout")) {
 			d->op = OP_TIMEOUT;
 		} else {
@@ -599,6 +610,25 @@ int parse_descriptor(const char *descstr,
 		if (nargs == 0) {
 			err("%s requires one or more arguments.", fn);
 			return -1;
+		}
+
+		if (d->op == OP_MACRO) {
+			int32_t timeout;
+			int32_t repeat_timeout;
+
+			if (nargs != 3) {
+				err("macro2 requires 3 arguments.");
+				return -1;
+			}
+
+			timeout = atoi(args[0]);
+			repeat_timeout = atoi(args[1]);
+
+			if (set_macro_arg(d, 0, lt, args[2], timeout, repeat_timeout) < 0)
+				return -1;
+
+
+			return 0;
 		}
 
 		if (d->op == OP_TIMEOUT) {
@@ -642,13 +672,13 @@ int parse_descriptor(const char *descstr,
 		d->args[1].idx = -1;
 
 		if (nargs > 1)
-			return set_macro_arg(d, 1, lt, args[1]);
+			return set_macro_arg(d, 1, lt, args[1], -1, -1);
 	} else if (utf8_strlen(descstr) == 1) {
 		char buf[32];
 		sprintf(buf, "macro(%s)", descstr);
 		d->op = OP_MACRO;
 
-		if (set_macro_arg(d, 0, lt, buf))
+		if (set_macro_arg(d, 0, lt, buf, -1, -1))
 			return -1;
 	} else {
 		err("invalid key or action");
