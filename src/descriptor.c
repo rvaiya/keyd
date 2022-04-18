@@ -219,20 +219,24 @@ static int do_parse_macro(struct macro *macro, char *s)
 
 		if (!parse_sequence(tok, &code, &mods)) {
 			macro_add(macro, MACRO_KEYSEQUENCE, (mods << 8) | code);
-		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
-			macro_add(macro, MACRO_TIMEOUT, atoi(tok));
 		} else if (strchr(tok, '+')) {
 			char *saveptr;
 			char *key;
 
 			for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
-				if (parse_sequence(key, &code, &mods))
-					return -1;
+				size_t len = strlen(key);
 
-				macro_add(macro, MACRO_HOLD, code);
+				if (len > 1 && key[len-2] == 'm' && key[len-1] == 's')
+					macro_add(macro, MACRO_TIMEOUT, atoi(key));
+				else if (!parse_sequence(key, &code, &mods))
+					macro_add(macro, MACRO_HOLD, code);
+				else
+					return -1;
 			}
 
 			macro_add(macro, MACRO_RELEASE, 0);
+		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
+			macro_add(macro, MACRO_TIMEOUT, atoi(tok));
 		} else {
 			uint32_t codepoint;
 			int chrsz;
