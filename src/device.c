@@ -247,8 +247,15 @@ struct device_event *device_read_event(struct device *dev)
 		}
 	}
 
-	if (ev.type != EV_KEY || ev.value == 2)
+	if (ev.type == EV_REL && ev.code == REL_WHEEL) {
+		devev.type = DEV_KEY;
+		devev.code = ev.value > 0 ? KEYD_SCROLL_UP : KEYD_SCROLL_DOWN;
+		devev.pressed = 1;
+
+		return &devev;
+	} else if (ev.type != EV_KEY || ev.value == 2) {
 		return NULL;
+	}
 
 	/*
 	 * KEYD_* codes <256 correspond to their evdev

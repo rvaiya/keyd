@@ -278,9 +278,10 @@ struct modifier_table_ent {
 
 /* These deviate from uinput codes. */
 
-#define  KEYD_EXTERNAL_MOUSE_BUTTON     196
-
 #define  KEYD_NOOP             		195
+#define  KEYD_EXTERNAL_MOUSE_BUTTON     196
+#define  KEYD_SCROLL_DOWN		197
+#define  KEYD_SCROLL_UP			198
 #define  KEYD_LEFT_MOUSE       		249
 #define  KEYD_MIDDLE_MOUSE     		250
 #define  KEYD_RIGHT_MOUSE		251

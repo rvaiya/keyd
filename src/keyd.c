@@ -126,7 +126,9 @@ static int daemon_event_cb(struct device *dev, uint8_t code, uint8_t pressed)
 		kbd = active_kbd;
 	} else if (dev->data) {
 		kbd = dev->data;
-	} else if (code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) {
+	} else if ((code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) ||
+		    code == KEYD_SCROLL_DOWN ||
+		    code == KEYD_SCROLL_UP) {
 		code = KEYD_EXTERNAL_MOUSE_BUTTON;
 
 		kbd = active_kbd;
