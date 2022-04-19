@@ -306,7 +306,7 @@ static int loop(int monitor_mode)
 		}
 
 		if (timeout)
-			poll_timeout = get_time_ms() - timeout_start;
+			poll_timeout = timeout - (get_time_ms() - timeout_start);
 		else
 			poll_timeout = -1;
 
