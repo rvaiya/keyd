@@ -29,6 +29,7 @@ enum op {
 	OP_TOGGLE,
 
 	OP_MACRO,
+	OP_COMMAND,
 	OP_TIMEOUT
 };
 

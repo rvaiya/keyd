@@ -324,6 +324,33 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, struct layer *lay
 	kbd->last_layer_code = code;
 }
 
+static void execute_command(const char *cmd)
+{
+	int fd;
+
+	dbg("Executing command: %s", cmd);
+
+	if (fork())
+		return;
+
+	fd = open("/dev/null", O_RDWR);
+
+	if (fd < 0) {
+		perror("open");
+		exit(-1);
+	}
+
+	close(0);
+	close(1);
+	close(2);
+
+	dup2(fd, 0);
+	dup2(fd, 1);
+	dup2(fd, 2);
+
+	execl("/bin/sh", "/bin/sh", "-c", cmd);
+}
+
 static void clear_oneshot(struct keyboard *kbd)
 {
 	size_t i = 0;
@@ -348,6 +375,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	struct macro *macros = kbd->layer_table.macros;
 	struct timeout *timeouts = kbd->layer_table.timeouts;
 	struct layer *layers = kbd->layer_table.layers;
+	struct command *commands = kbd->layer_table.commands;
 
 	switch (d->op) {
 		struct macro *macro;
@@ -475,6 +503,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			timeout = kbd->pending_timeout.t.timeout;
 		}
+		break;
+	case OP_COMMAND:
+		if (pressed)
+			execute_command(commands[d->args[0].idx].cmd);
 		break;
 	case OP_SWAP:
 		layer = &layers[d->args[0].idx];

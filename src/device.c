@@ -68,7 +68,7 @@ static int device_init(const char *path, struct device *dev)
 	int fd;
 	int type;
 
-	if ((fd = open(path, O_RDWR | O_NONBLOCK, 0600)) < 0) {
+	if ((fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC, 0600)) < 0) {
 		fprintf(stderr, "failed to open %s\n", path);
 		return -1;
 	}
@@ -167,7 +167,7 @@ int devmon_create()
 	assert(!init);
 	init = 1;
 
-	int fd = inotify_init1(IN_NONBLOCK);
+	int fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	if (fd < 0) {
 		perror("inotify");
 		exit(-1);

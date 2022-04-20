@@ -14,7 +14,9 @@
 
 #define MAX_ARGS 5
 
-/* modifies the input string */
+/* TODO: Make this a bit nicer. */
+
+/* Modifies the input string */
 static int parse_fn(char *s,
 		    char **name,
 		    char *args[MAX_ARGS],
@@ -314,13 +316,12 @@ static size_t escape(char *s)
 	return n;
 }
 
-
 static int parse_macro(const char *exp, struct macro *macro)
 {
-	char s[MAX_MACROEXP_LEN];
+	char s[MAX_MACROEXP_LEN+1];
 	int len = strlen(exp);
 
-	if (len >= MAX_MACROEXP_LEN) {
+	if (len > MAX_MACROEXP_LEN) {
 		err("macro exceeds maximum macro length (%d)", MAX_MACROEXP_LEN);
 		return -1;
 	}
@@ -394,7 +395,7 @@ int layer_table_lookup(const struct layer_table *lt, const char *name)
 int layer_table_add_entry(struct layer_table *lt, const char *exp)
 {
 	uint8_t code1, code2;
-	char *keystr, *descstr, *c, *s;
+	char *keystr, *descstr, *dot, *paren, *s;
 	char *layername = "main";
 	struct descriptor d;
 	struct layer *layer;
@@ -410,10 +411,13 @@ int layer_table_add_entry(struct layer_table *lt, const char *exp)
 	strcpy(buf, exp);
 	s = buf;
 
-	if ((c = strchr(s, '.'))) {
+	dot = strchr(s, '.');
+	paren = strchr(s, '(');
+
+	if (dot && (!paren || dot < paren)) {
 		layername = s;
-		*c = 0;
-		s = c+1;
+		*dot = 0;
+		s = dot+1;
 	}
 
 	if (parse_kvp(s, &keystr, &descstr) < 0) {
@@ -518,6 +522,36 @@ int create_layer(struct layer *layer, const char *desc, const struct layer_table
 	return 0;
 }
 
+int set_command_arg(struct descriptor *d, int idx,
+		    struct layer_table *lt, const char *exp)
+{
+	struct command *command = &lt->commands[lt->nr_commands];
+	int len = strlen(exp);
+
+	if (len == 0 || strstr(exp, "command(") != exp || exp[len-1] != ')')
+		return -1;
+
+	if (lt->nr_commands >= MAX_COMMANDS) {
+		err("maximum number of commands exceeded");
+		return 1;
+	}
+
+	if (len > MAX_COMMAND_LEN) {
+		err("maximum command length exceeded");
+		return 1;
+	}
+
+	strcpy(command->cmd, exp+8);
+	command->cmd[len-9] = 0;
+
+	command->cmd[len-1] = 0;
+	escape(command->cmd);
+
+	d->args[0].idx = lt->nr_commands;
+	lt->nr_commands++;
+	return 0;
+}
+
 /*
  * Returns:
  *
@@ -586,6 +620,11 @@ int parse_descriptor(const char *descstr,
 		if (keycode_to_mod(code))
 			fprintf(stderr,
 				"WARNING: mapping modifier keycodes directly may produce unintended results, you probably want layer(<modifier name>) instead\n");
+	} else if ((ret=set_command_arg(d, 0, lt, descstr)) >= 0) {
+		if (ret > 0)
+			return -1;
+		else
+			d->op = OP_COMMAND;
 	} else if ((ret=set_macro_arg(d, 0, lt, descstr, -1, -1)) >= 0) {
 		if (ret > 0)
 			return -1;

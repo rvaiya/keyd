@@ -372,6 +372,15 @@ arguments.
 
 	macro2(400, 50, macro(Hello space World))
 
+*command(<shell command>)*
+	Execute the given shell command.
+
+	E.G
+
+	command(brightness down)
+
+*NOTE:* Commands are executed by root, which means any user which has access
+to the keyd socket should be assumed to have root access.
 
 *noop*
 	Do nothing.

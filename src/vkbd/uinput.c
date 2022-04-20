@@ -36,7 +36,7 @@ static int create_virtual_keyboard(const char *name)
 	size_t code;
 	struct uinput_user_dev udev = {0};
 
-	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fd < 0) {
 		perror("open uinput");
 		exit(-1);
@@ -93,7 +93,7 @@ static int create_virtual_pointer(const char *name)
 	uint16_t code;
 	struct uinput_user_dev udev = {0};
 
-	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fd < 0) {
 		perror("open");
 		exit(-1);
