@@ -64,8 +64,7 @@ Some of the more interesting ones include:
 # Installation
 
 *Note:* master serves as the development branch, things may occasionally break
-between releases. Releases can be found in the
-[stable](https://github.com/rvaiya/keyd/tree/stable) branch.
+between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), and should be considered stable.
 
 ## From Source
 
