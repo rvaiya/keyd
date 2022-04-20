@@ -543,8 +543,6 @@ int set_command_arg(struct descriptor *d, int idx,
 
 	strcpy(command->cmd, exp+8);
 	command->cmd[len-9] = 0;
-
-	command->cmd[len-1] = 0;
 	escape(command->cmd);
 
 	d->args[0].idx = lt->nr_commands;
