@@ -348,7 +348,7 @@ static void execute_command(const char *cmd)
 	dup2(fd, 1);
 	dup2(fd, 2);
 
-	execl("/bin/sh", "/bin/sh", "-c", cmd);
+	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
 }
 
 static void clear_oneshot(struct keyboard *kbd)
