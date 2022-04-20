@@ -6,15 +6,11 @@ result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
 
-# UPDATE (v2.3.0-rc)
+# UPDATE (v2.4.0 released)
 
-master is currently tracking `v2.3.0-rc`. Things should be reasonably backwards
-compatible, but minor changes may be introduced before the final release. If
-you are looking for something a bit more stable you may be interested the
-[v1](https://github.com/rvaiya/keyd/tree/v1) branch.
-
-*NOTE: For those migrating their configs from v1, please see the
-[changelog](docs/CHANGELOG.md) for a list of changes.*
+The config format has undergone several iterations since the first
+release, for those migrating their configs from v1, please see the
+[changelog](docs/CHANGELOG.md)*.
 
 # Goals
 
@@ -36,8 +32,9 @@ Some of the more interesting ones include:
 - Keyboard specific configuration.
 - Instantaneous remapping (no more flashing :)).
 - A client-server model that facilitates scripting and display server agnostic application remapping. (Currently ships with support for X, sway, and gnome).
-- System wide config (works in a VT)
+- System wide config (works in a VT).
 - First class support for modifier overloading.
+- Unicode support.
 
 ### keyd is for people who:
 
@@ -52,7 +49,6 @@ Some of the more interesting ones include:
 
 ### What keyd isn't:
 
- - A tool for launching arbitrary system commands as root.
  - A tool for programming individual key up/down events.
 
 # Dependencies
@@ -66,6 +62,10 @@ Some of the more interesting ones include:
  - python-xlib (only for X support)
 
 # Installation
+
+*Note:* master serves as the development branch, things may occasionally break
+between releases. Releases can be found in the
+[stable](https://github.com/rvaiya/keyd/tree/stable) branch.
 
 ## From Source
 

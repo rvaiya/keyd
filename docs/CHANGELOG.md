@@ -1,3 +1,15 @@
+# v2.4.0
+
+ Fix macro timeouts
+ Allow timeouts to be used in conjunction with + (#181)
+ Add macro2() to allow for per-macro timeout values (#176)
+ Add command() to allow for command execution
+ Add [global] section
+ Improve unicode support
+ Add support for older kernels (#163)
+ Clear oneshot on click
+ Various bugfixes and enhancements
+
 # v2.3.1-rc
 
  - Add unicode support

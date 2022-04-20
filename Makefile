@@ -2,7 +2,7 @@
 DESTDIR=
 PREFIX=/usr
 
-VERSION=2.3.1-rc
+VERSION=2.4.0
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
 
