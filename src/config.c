@@ -156,7 +156,7 @@ int config_parse(struct config *config, const char *path)
 
 
 		if (config_add_layer(config, section->name) < 0)
-			fprintf(stderr, "ERROR %s:%zd: %s\n", path, section->lnum, errstr);
+			fprintf(stderr, "\tERROR %s:%zd: %s\n", path, section->lnum, errstr);
 	}
 
 	/* Populate each layer. */
@@ -179,7 +179,7 @@ int config_parse(struct config *config, const char *path)
 			struct ini_entry *ent = &section->entries[j];
 
 			if (config_add_binding(config, name, ent->line) < 0)
-				fprintf(stderr, "ERROR %s:%zd: %s\n", path, ent->lnum, errstr);
+				fprintf(stderr, "\tERROR %s:%zd: %s\n", path, ent->lnum, errstr);
 		}
 	}
 
