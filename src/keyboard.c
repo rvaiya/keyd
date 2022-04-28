@@ -519,20 +519,44 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			if (!cache_get(kbd, kbd->last_layer_code, &od, &odl)) {
 				struct layer *oldlayer = &layers[od.args[0].idx];
+				od.args[0].idx = d->args[0].idx;
 
-				cache_set(kbd, kbd->last_layer_code, d, odl);
-				cache_set(kbd, code, NULL, 0);
+				cache_set(kbd, kbd->last_layer_code, &od, odl);
 
-				activate_layer(kbd, kbd->last_layer_code, layer);
 				deactivate_layer(kbd, oldlayer);
-				update_mods(kbd, layer, 0);
+				activate_layer(kbd, kbd->last_layer_code, layer);
 
-				if (macro)
-					execute_macro(kbd, layer, macro);
+				if (macro) {
+					/*
+					 * If we are dealing with a simple macro of the form <mod>-<key>
+					 * keep the corresponding key sequence depressed for the duration
+					 * of the swapping key stroke. This is necessary to account for
+					 * pathological input systems (e.g Gnome) which expect a human-scale
+					 * interval between key down/up events.
+					 */
+					if (macro->sz == 1 &&
+					    macro->entries[0].type == MACRO_KEYSEQUENCE) {
+						uint8_t code = macro->entries[0].data;
+						uint8_t mods = macro->entries[0].data >> 8;
+
+						update_mods(kbd, layer, mods);
+						send_key(kbd, code, 1);
+					} else {
+						execute_macro(kbd, layer, macro);
+					}
+				} else {
+					update_mods(kbd, NULL, 0);
+				}
 			}
 		} else {
-			deactivate_layer(kbd, layer);
-			update_mods(kbd, layer, 0);
+			if (macro && macro->sz == 1 &&
+			    macro->entries[0].type == MACRO_KEYSEQUENCE) {
+				uint8_t code = macro->entries[0].data;
+				uint8_t mods = macro->entries[0].data >> 8;
+
+				send_key(kbd, code, 0);
+				update_mods(kbd, NULL, 0);
+			}
 		}
 
 		break;
