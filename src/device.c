@@ -220,7 +220,43 @@ struct device *devmon_read_device(int fd)
 
 int device_grab(struct device *dev)
 {
-	return ioctl(dev->fd, EVIOCGRAB, (void *) 1);
+	size_t i;
+	struct input_event ev;
+	uint8_t state[KEY_MAX / 8 + 1];
+
+	/*
+	 * await neutral key state to ensure any residual
+	 * key up events propagate.
+	 */
+
+	while (1) {
+		int n = 0;
+		memset(state, 0, sizeof(state));
+
+		if (ioctl(dev->fd, EVIOCGKEY(sizeof state), state) < 0) {
+			perror("ioctl EVIOCGKEY");
+			return -1;
+		}
+
+		for (i = 0; i < KEY_MAX; i++) {
+			if ((state[i / 8] >> (i % 8)) & 0x1)
+				n++;
+		}
+
+		if (n == 0)
+			break;
+	}
+
+	if (ioctl(dev->fd, EVIOCGRAB, (void *) 1) < 0) {
+		perror("EVIOCGRAB");
+		return -1;
+	}
+
+	/* drain any input events before the grab (assumes NONBLOCK is set on the fd) */
+	while (read(dev->fd, &ev, sizeof(ev)) > 0) {
+	}
+
+	return 0;
 }
 
 int device_ungrab(struct device *dev)
