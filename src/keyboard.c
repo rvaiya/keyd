@@ -648,13 +648,18 @@ void kbd_reset(struct keyboard *kbd)
 {
 	uint8_t ad[MAX_LAYERS];
 	long at[MAX_LAYERS];
+	uint8_t flags[MAX_LAYERS];
+
 	size_t i;
 
 	/* Preserve layer state to facilitate hotswapping (TODO: make this more robust) */
 
 	for (i = 0; i < kbd->config.layer_table.nr_layers; i++) {
-		ad[i] = kbd->layer_table.layers[i].active;
-		at[i] = kbd->layer_table.layers[i].activation_time;
+		struct layer *layer = &kbd->layer_table.layers[i];
+
+		ad[i] = layer->active;
+		flags[i] = layer->flags;
+		at[i] = layer->activation_time;
 	}
 
 	memcpy(&kbd->layer_table,
@@ -662,8 +667,11 @@ void kbd_reset(struct keyboard *kbd)
 		sizeof(kbd->layer_table));
 
 	for (i = 0; i < kbd->config.layer_table.nr_layers; i++) {
-		kbd->layer_table.layers[i].active = ad[i];
-		kbd->layer_table.layers[i].activation_time = at[i];
+		struct layer *layer = &kbd->layer_table.layers[i];
+
+		layer->active = ad[i];
+		layer->flags = flags[i];
+		layer->activation_time = at[i];
 	}
 }
 
