@@ -3,6 +3,7 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
+
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -17,10 +18,9 @@
 
 #include "ini.h"
 #include "keys.h"
-#include "descriptor.h"
 #include "layer.h"
+#include "error.h"
 #include "config.h"
-#include "keyd.h"
 
 int config_add_binding(struct config *config, const char *layer, const char *binding)
 {
@@ -30,7 +30,7 @@ int config_add_binding(struct config *config, const char *layer, const char *bin
 	return layer_table_add_entry(&config->layer_table, exp);
 }
 
-/* 
+/*
  * returns:
  * 	1 if the layer exists
  * 	0 if the layer was created successfully
@@ -186,7 +186,7 @@ int config_parse(struct config *config, const char *path)
 	return 0;
 }
 
-/* 
+/*
  * returns 1 in the case of a match and 2
  * in the case of an exact match.
  */
@@ -266,7 +266,7 @@ end:
 	return wildcard;
 }
 
-/* 
+/*
  * scan a directory for the most appropriate match for a given vendor/product
  * pair and return the result. returns NULL if not match is found.
  */

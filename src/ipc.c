@@ -3,6 +3,7 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
+
 #include "ipc.h"
 
 /* Establish a client connection to the given socket path. */
@@ -84,7 +85,7 @@ static int readmsg(int sd, char buf[MAX_MESSAGE_SIZE])
 	}
 }
 
-/* 
+/*
  * Consume a \x00\x00 terminated input string from the supplied connection and
  * delegate processing to the provided callback. The return value of 'handler'
  * will ultimately be returned by the corresponding ipc_run() call on the
@@ -121,7 +122,7 @@ int ipc_run(const char *socket, const char *input)
 		return -1;
 
 	write(sd, input, strlen(input));
-	write(sd, "\x00\x00", 2); 
+	write(sd, "\x00\x00", 2);
 
 	n = readmsg(sd, buf);
 	if (n < 0)

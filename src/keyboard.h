@@ -44,19 +44,24 @@ struct keyboard {
 	struct macro *active_macro;
 	struct layer *active_macro_layer;
 
+	long macro_repeat_timeout;
+
 	struct {
 		uint8_t active;
 
 		uint8_t code;
+
+		struct descriptor d1;
+		struct descriptor d2;
+
 		struct layer *dl;
-		struct timeout t;
 	} pending_timeout;
 
 	uint8_t keystate[256];
 };
 
-long	kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
-void	kbd_reset(struct keyboard *kbd);
-int	kbd_execute_expression(struct keyboard *kbd, const char *exp);
+long kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
+void kbd_reset(struct keyboard *kbd);
+int kbd_execute_expression(struct keyboard *kbd, const char *exp);
 
 #endif

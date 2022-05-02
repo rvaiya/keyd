@@ -6,9 +6,15 @@ VERSION=2.4.0
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
 
-CFLAGS+=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
+CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
-	-L/usr/local/lib
+	-L/usr/local/lib \
+	-Wall \
+	-Wextra \
+	-Wno-unused \
+	-std=c11 \
+	-D_DEFAULT_SOURCE \
+	-D_XOPEN_SOURCE=700 $(CFLAGS)
 
 platform=$(shell uname -s)
 
@@ -24,7 +30,7 @@ all:
 	cp scripts/keyd-application-mapper bin/
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -o bin/keyd -lpthread $(LDFLAGS)
 debug:
-	CFLAGS="-pedantic -Wall -Wextra -g" $(MAKE)
+	CFLAGS="-g -Wunused" $(MAKE)
 compose:
 	-mkdir data
 	./scripts/generate_xcompose

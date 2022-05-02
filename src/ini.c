@@ -169,7 +169,7 @@ int parse(char *s, struct ini *ini, const char *default_section_name)
 	return 0;
 }
 
-/* 
+/*
  * The result is statically allocated and should not be freed by the caller.
  * The returned ini struct is only valid until the next invocation.
  */

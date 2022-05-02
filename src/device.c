@@ -3,8 +3,10 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
+
 #include "device.h"
 #include "keys.h"
+
 
 #include <stdio.h>
 #include <pthread.h>

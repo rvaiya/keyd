@@ -291,6 +291,7 @@ struct modifier_table_ent {
 
 uint8_t keycode_to_mod(uint8_t code);
 int parse_modset(const char *s, uint8_t *mods);
+int parse_key_sequence(const char *s, uint8_t *code, uint8_t *mods);
 
 extern const struct modifier_table_ent modifier_table[MAX_MOD];
 extern const struct keycode_table_ent keycode_table[256];

@@ -18,4 +18,5 @@ void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state);
 
 void free_vkbd(struct vkbd *vkbd);
 
+extern struct vkbd *vkbd;
 #endif

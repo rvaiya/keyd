@@ -3,6 +3,7 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -26,7 +27,7 @@ struct vkbd {
 
 static int is_mouse_button(size_t code)
 {
-	return (((code) >= BTN_LEFT && (code) <= BTN_TASK) || 
+	return (((code) >= BTN_LEFT && (code) <= BTN_TASK) ||
 		((code) >= BTN_0 && (code) <= BTN_9));
 }
 
@@ -136,11 +137,11 @@ struct vkbd *vkbd_init(const char *name)
 	struct vkbd *vkbd = calloc(1, sizeof vkbd);
 	vkbd->fd = create_virtual_keyboard(name);
 
-	/* 
-	 * lazily initialize the virtual pointer to avoid presenting an 
+	/*
+	 * lazily initialize the virtual pointer to avoid presenting an
 	 * external mouse if it is unnecessary. This can cause issues higher
 	 * up the input stack (e.g libinput touchpad disabling in the presence
-	 * of an external mouse) 
+	 * of an external mouse)
 	 */
 
 	vkbd->pfd = -1;

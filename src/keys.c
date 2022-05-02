@@ -4,6 +4,7 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 #include <stdint.h>
+#include <string.h>
 #include "keys.h"
 
 const struct modifier_table_ent modifier_table[MAX_MOD] = {
@@ -362,3 +363,72 @@ int parse_modset(const char *s, uint8_t *mods)
 
 	return 0;
 }
+
+int parse_key_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
+{
+	const char *c = s;
+	size_t i;
+
+	if (!*s)
+		return -1;
+
+	uint8_t mods = 0;
+
+	while (c[1] == '-') {
+		switch (*c) {
+		case 'C':
+			mods |= MOD_CTRL;
+			break;
+		case 'M':
+			mods |= MOD_SUPER;
+			break;
+		case 'A':
+			mods |= MOD_ALT;
+			break;
+		case 'S':
+			mods |= MOD_SHIFT;
+			break;
+		case 'G':
+			mods |= MOD_ALT_GR;
+			break;
+		default:
+			return -1;
+			break;
+		}
+
+		c += 2;
+	}
+
+	for (i = 0; i < 256; i++) {
+		const struct keycode_table_ent *ent = &keycode_table[i];
+
+		if (ent->name) {
+			if (ent->shifted_name &&
+			    !strcmp(ent->shifted_name, c)) {
+
+				mods |= MOD_SHIFT;
+
+				if (modsp)
+					*modsp = mods;
+
+				if (codep)
+					*codep = i;
+
+				return 0;
+			} else if (!strcmp(ent->name, c) ||
+				   (ent->alt_name && !strcmp(ent->alt_name, c))) {
+
+				if (modsp)
+					*modsp = mods;
+
+				if (codep)
+					*codep = i;
+
+				return 0;
+			}
+		}
+	}
+
+	return -1;
+}
+

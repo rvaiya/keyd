@@ -3,7 +3,31 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
-#include "keyd.h"
+
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <termios.h>
+#include <unistd.h>
+#include <time.h>
+#include <grp.h>
+
+#include "device.h"
+#include "error.h"
+#include "keyboard.h"
+#include "vkbd.h"
+#include "vkbd.h"
+#include "ipc.h"
 
 /* config variables */
 
@@ -76,6 +100,8 @@ static void daemon_add_cb(struct device *dev)
 		return;
 	}
 
+	printf("\tmatched %s\n", config_path);
+
 	kbd = calloc(1, sizeof(struct keyboard));
 	if (config_parse(&kbd->config, config_path) < 0) {
 		free(kbd);
@@ -88,9 +114,6 @@ static void daemon_add_cb(struct device *dev)
 		printf("\tgrab failed\n");
 		return;
 	}
-
-	printf("\tmatched %s\n", config_path);
-
 
 	memcpy(&kbd->layer_table, &kbd->config.layer_table, sizeof(kbd->layer_table));
 

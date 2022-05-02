@@ -15,9 +15,9 @@
 #define MAX_DEVICES	64
 
 struct device {
-	/* 
+	/*
 	 * A file descriptor that can be used to monitor events subsequently read with
-	 * device_read_event(). 
+	 * device_read_event().
 	 */
 	int fd;
 

@@ -7,12 +7,15 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 
-#include "keyboard.h"
-#include "keyd.h"
 #include "vkbd.h"
-#include "descriptor.h"
+#include "error.h"
+#include "macro.h"
 #include "layer.h"
+#include "keyboard.h"
+#include "descriptor.h"
+#include "device.h"
 
 /*
  * Here be tiny dragons.
@@ -136,9 +139,9 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 
 static void update_mods(struct keyboard *kbd, struct layer *excluded_layer, uint8_t mods)
 {
-	int i;
+	size_t i;
 
-	for (i = 0; i < (int)kbd->layer_table.nr_layers; i++) {
+	for (i = 0; i < kbd->layer_table.nr_layers; i++) {
 		struct layer *layer = &kbd->layer_table.layers[i];
 		int excluded = 0;
 
@@ -151,7 +154,7 @@ static void update_mods(struct keyboard *kbd, struct layer *excluded_layer, uint
 			size_t j;
 
 			for (j = 0; j < excluded_layer->nr_layers; j++)
-				if (excluded_layer->layers[j] == i)
+				if ((size_t)excluded_layer->layers[j] == i)
 					excluded = 1;
 		}
 
@@ -328,7 +331,7 @@ static void execute_command(const char *cmd)
 {
 	int fd;
 
-	dbg("Executing command: %s", cmd);
+	dbg("executing command: %s", cmd);
 
 	if (fork())
 		return;
@@ -373,9 +376,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	int timeout = 0;
 
 	struct macro *macros = kbd->layer_table.macros;
-	struct timeout *timeouts = kbd->layer_table.timeouts;
 	struct layer *layers = kbd->layer_table.layers;
 	struct command *commands = kbd->layer_table.commands;
+	struct descriptor *descriptors = kbd->layer_table.descriptors;
 
 	switch (d->op) {
 		struct macro *macro;
@@ -465,19 +468,27 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_MACRO2:
 	case OP_MACRO:
-		macro = &macros[d->args[0].idx];
-
 		if (pressed) {
+			if (d->op == OP_MACRO2) {
+				macro = &macros[d->args[2].idx];
+
+				timeout = d->args[0].timeout;
+				kbd->macro_repeat_timeout = d->args[1].timeout;
+			} else {
+				macro = &macros[d->args[0].idx];
+
+				timeout = kbd->config.macro_timeout;
+				kbd->macro_repeat_timeout = kbd->config.macro_repeat_timeout;
+			}
+
 			clear_oneshot(kbd);
 
 			execute_macro(kbd, dl, macro);
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
 
-			timeout = macro->timeout == -1 ?
-					kbd->config.macro_timeout :
-					macro->timeout;
 		}
 
 		break;
@@ -496,12 +507,15 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		break;
 	case OP_TIMEOUT:
 		if (pressed) {
-			kbd->pending_timeout.t = timeouts[d->args[0].idx];
+			kbd->pending_timeout.d1 = descriptors[d->args[0].idx];
+			kbd->pending_timeout.d2 = descriptors[d->args[2].idx];
+
 			kbd->pending_timeout.code = code;
 			kbd->pending_timeout.dl = dl;
+
 			kbd->pending_timeout.active = 1;
 
-			timeout = kbd->pending_timeout.t.timeout;
+			timeout = d->args[1].timeout;
 		}
 		break;
 	case OP_COMMAND:
@@ -509,9 +523,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			execute_command(commands[d->args[0].idx].cmd);
 		break;
 	case OP_SWAP:
+	case OP_SWAP2:
 		layer = &layers[d->args[0].idx];
-		macro = d->args[1].idx == -1 ? NULL : &macros[d->args[1].idx];
-
+		macro = d->op == OP_SWAP2 ?  &macros[d->args[1].idx] : NULL;
 
 		if (pressed) {
 			struct descriptor od;
@@ -549,10 +563,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				}
 			}
 		} else {
-			if (macro && macro->sz == 1 &&
+			if (macro &&
+			    macro->sz == 1 &&
 			    macro->entries[0].type == MACRO_KEYSEQUENCE) {
 				uint8_t code = macro->entries[0].data;
-				uint8_t mods = macro->entries[0].data >> 8;
 
 				send_key(kbd, code, 0);
 				update_mods(kbd, NULL, 0);
@@ -590,15 +604,13 @@ long kbd_process_key_event(struct keyboard *kbd,
 	if (!code) {
 		if (kbd->active_macro) {
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
-			return kbd->active_macro->repeat_timeout == -1 ?
-					kbd->config.macro_repeat_timeout :
-					kbd->active_macro->repeat_timeout;
+			return kbd->macro_repeat_timeout;
 		}
 
 		if (kbd->pending_timeout.active) {
 			struct layer *dl = kbd->pending_timeout.dl;
 			uint8_t code = kbd->pending_timeout.code;
-			struct descriptor *d = &kbd->pending_timeout.t.d2;
+			struct descriptor *d = &kbd->pending_timeout.d2;
 
 			cache_set(kbd, code, d, dl);
 
@@ -609,7 +621,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		if (kbd->pending_timeout.active) {
 			struct layer *dl = kbd->pending_timeout.dl;
 			uint8_t code = kbd->pending_timeout.code;
-			struct descriptor *d = &kbd->pending_timeout.t.d1;
+			struct descriptor *d = &kbd->pending_timeout.d1;
 
 			cache_set(kbd, code, d, dl);
 			process_descriptor(kbd, code, d, dl, 1);
