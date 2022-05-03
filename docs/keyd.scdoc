@@ -365,7 +365,7 @@ arguments.
 
 *swap2(<layer>, <macro>)*
 
- Identical to *swap*, but accepts a macro to be executed immediately after the layer change.
+	Identical to *swap*, but accepts a macro to be executed immediately after the layer change.
 
 *macro2(<timeout>, <repeat timeout>, <macro>)*
 	Creates a macro with the given timeout and repeat timeout. If a timeout value of 0 is used,
@@ -374,9 +374,10 @@ arguments.
 	Note that <macro> must be a valid macro expression.
 
 	E.G
-
+```
 	macro2(400, 50, macro(Hello space World))
 	macro2(120, 80, left)
+```
 
 *command(<shell command>)*
 	Execute the given shell command.
