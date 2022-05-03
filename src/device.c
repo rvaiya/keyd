@@ -303,9 +303,9 @@ struct device_event *device_read_event(struct device *dev)
 		if (ev.code == BTN_LEFT)
 			ev.code = KEYD_LEFT_MOUSE;
 		else if (ev.code == BTN_MIDDLE)
-			ev.code = KEYD_RIGHT_MOUSE;
-		else if (ev.code == BTN_RIGHT)
 			ev.code = KEYD_MIDDLE_MOUSE;
+		else if (ev.code == BTN_RIGHT)
+			ev.code = KEYD_RIGHT_MOUSE;
 		else if (ev.code == BTN_SIDE)
 			ev.code = KEYD_MOUSE_1;
 		else if (ev.code == BTN_EXTRA)
