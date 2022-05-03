@@ -503,7 +503,7 @@ behaviour.
 
 	[control]
 
-	toggle(control)
+	control = toggle(control)
 ```
 
 ## Example 4
