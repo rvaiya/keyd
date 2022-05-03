@@ -332,8 +332,8 @@ arguments.
 *toggle(<layer>)*
 	Permanently toggle the state of the given layer.
 
-*overload(<layer>, <macro>)*
-	Activates the given layer while held and executes the provided macro when tapped.
+*overload(<layer>, <action>)*
+	Activates the given while held and executes <action> on tap.
 
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the first

@@ -383,6 +383,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	switch (d->op) {
 		struct macro *macro;
 		struct layer *layer;
+		struct descriptor *descriptor;
 		uint8_t mods;
 
 	case OP_KEYSEQUENCE:
@@ -428,7 +429,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		break;
 	case OP_OVERLOAD:
 		layer = &layers[d->args[0].idx];
-		macro = &macros[d->args[1].idx];
+		descriptor = &descriptors[d->args[1].idx];
 
 		if (pressed) {
 			activate_layer(kbd, code, layer);
@@ -438,8 +439,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			if (kbd->last_pressed_code == code) {
 				clear_oneshot(kbd);
-				update_mods(kbd, dl, 0);
-				execute_macro(kbd, dl, macro);
+
+				process_descriptor(kbd, code, descriptor, dl, 1);
+				process_descriptor(kbd, code, descriptor, dl, 0);
 			}
 
 			update_mods(kbd, NULL, 0);
