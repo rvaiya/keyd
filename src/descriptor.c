@@ -199,6 +199,7 @@ int parse_descriptor(const char *descstr,
 					int type = actions[i].args[j];
 					descriptor_arg_t *arg = &d->args[j];
 					const char *argstr = args[j];
+					struct descriptor desc;
 
 					switch (type) {
 					case ARG_LAYER:
@@ -210,17 +211,16 @@ int parse_descriptor(const char *descstr,
 
 						break;
 					case ARG_DESCRIPTOR:
+						if (parse_descriptor(argstr, &desc, lt))
+							return -1;
+
 						if (lt->nr_descriptors >= MAX_LAYER_TABLE_DESCRIPTORS) {
 							err("maximum descriptors exceeded");
 							return -1;
 						}
 
-						if (parse_descriptor(argstr, &lt->descriptors[lt->nr_descriptors], lt))
-							return -1;
-
-						arg->idx = lt->nr_descriptors;
-
-						lt->nr_descriptors++;
+						lt->descriptors[lt->nr_descriptors] = desc;
+						arg->idx = lt->nr_descriptors++;
 						break;
 					case ARG_TIMEOUT:
 						arg->timeout = atoi(argstr);
