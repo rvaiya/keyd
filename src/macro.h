@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #define MAX_MACRO_SIZE	64
+
 #define MAX_MACROEXP_LEN 512
 
 struct macro_entry {

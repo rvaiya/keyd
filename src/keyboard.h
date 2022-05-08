@@ -10,20 +10,21 @@
 #include "layer.h"
 
 #define MAX_ACTIVE_KEYS	32
+#define MAX_DEVICES	64
+
 #define CACHE_SIZE	16 //Effectively nkro
 
 struct cache_entry {
 	uint8_t code;
 	struct descriptor d;
-	struct layer *dl;
+	int dl;
 };
 
+/* May correspond to more than one physical input device. */
 struct keyboard {
-	struct device *dev;
+	struct config original_config;
 
 	struct config config;
-
-	struct layer_table layer_table;
 
 	/* 
 	 * Cache descriptors to preserve code->descriptor
@@ -42,9 +43,17 @@ struct keyboard {
 	uint8_t inhibit_modifier_guard;
 
 	struct macro *active_macro;
-	struct layer *active_macro_layer;
+	int active_macro_layer;
 
 	long macro_repeat_timeout;
+
+	struct {
+		long activation_time;
+
+		uint8_t active;
+		uint8_t toggled;
+		uint8_t oneshot;
+	} layer_state[MAX_LAYERS];
 
 	struct {
 		uint8_t active;
@@ -54,7 +63,7 @@ struct keyboard {
 		struct descriptor d1;
 		struct descriptor d2;
 
-		struct layer *dl;
+		int dl;
 	} pending_timeout;
 
 	uint8_t keystate[256];

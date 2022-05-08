@@ -26,7 +26,7 @@
 #include "error.h"
 #include "keyboard.h"
 #include "vkbd.h"
-#include "vkbd.h"
+#include "keys.h"
 #include "ipc.h"
 
 /* config variables */
@@ -52,9 +52,6 @@ static int (*device_event_cb) (struct device *dev, uint8_t code, uint8_t process
 /* globals */
 
 struct vkbd *vkbd;
-char errstr[2048];
-int debug_level;
-
 
 static void daemon_remove_cb(struct device *dev)
 {
@@ -75,7 +72,7 @@ static void daemon_remove_cb(struct device *dev)
 static void daemon_add_cb(struct device *dev)
 {
 	struct keyboard *kbd;
-	const char *config_path = config_find_path(config_dir, dev->vendor_id, dev->product_id);
+	const char *config_path = find_config_path(config_dir, dev->vendor_id, dev->product_id);
 
 	dev->data = NULL;
 
@@ -103,21 +100,24 @@ static void daemon_add_cb(struct device *dev)
 	printf("\tmatched %s\n", config_path);
 
 	kbd = calloc(1, sizeof(struct keyboard));
-	if (config_parse(&kbd->config, config_path) < 0) {
-		free(kbd);
+	if (config_parse(&kbd->config, config_path)) {
 		printf("\tfailed to parse %s\n", config_path);
+		free(kbd);
 		return;
 	}
+
+	memcpy(&kbd->original_config, &kbd->config, sizeof kbd->config);
+
+	kbd->layer_state[0].active = 1;
+	kbd->layer_state[0].activation_time = 1;
 
 	if (device_grab(dev) < 0) {
-		free(kbd);
 		printf("\tgrab failed\n");
+
+		free(kbd);
 		return;
 	}
 
-	memcpy(&kbd->layer_table, &kbd->config.layer_table, sizeof(kbd->layer_table));
-
-	kbd->dev = dev;
 	dev->data = kbd;
 }
 
@@ -460,6 +460,14 @@ static void eval_expressions(char *exps[], int n)
 	exit(ret);
 }
 
+/* TODO: find a better place for this. */
+void set_led(int led, int state)
+{
+	size_t i;
+
+	for (i = 0; i < nr_devices; i++)
+		device_set_led(&devices[i], led, state);
+}
 
 #define setvar(var, name, default) \
 	var = getenv(name); \

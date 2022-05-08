@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+struct config;
 struct layer;
 struct layer_table;
 
@@ -54,5 +55,5 @@ struct descriptor {
 
 int parse_descriptor(const char *descstr,
 		     struct descriptor *d,
-		     struct layer_table *lt);
+		     struct config *config);
 #endif

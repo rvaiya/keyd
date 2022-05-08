@@ -22,12 +22,116 @@
 #include "error.h"
 #include "config.h"
 
-int config_add_binding(struct config *config, const char *layer, const char *binding)
+/* Return up to two keycodes associated with the given name. */
+static int lookup_keycodes(const char *name, uint8_t *code1, uint8_t *code2)
 {
-	char exp[MAX_EXP_LEN];
-	snprintf(exp, sizeof exp, "%s.%s", layer, binding);
+	size_t i;
 
-	return layer_table_add_entry(&config->layer_table, exp);
+	/*
+	 * If the name is a modifier like 'control' we associate it with both
+	 * corresponding key codes (e.g 'rightcontrol'/'leftcontrol')
+	 */
+	for (i = 0; i < MAX_MOD; i++) {
+		const struct modifier_table_ent *mod = &modifier_table[i];
+
+		if (!strcmp(mod->name, name)) {
+			*code1 = mod->code1;
+			*code2 = mod->code2;
+
+			return 0;
+		}
+	}
+
+	for (i = 0; i < 256; i++) {
+		const struct keycode_table_ent *ent = &keycode_table[i];
+
+		if (ent->name &&
+		    (!strcmp(ent->name, name) ||
+		     (ent->alt_name && !strcmp(ent->alt_name, name)))) {
+			*code1 = i;
+			*code2 = 0;
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int config_get_layer_index(const struct config *config, const char *name)
+{
+	size_t i;
+
+	for (i = 0; i < config->nr_layers; i++)
+		if (!strcmp(config->layers[i].name, name))
+			return i;
+
+	return -1;
+}
+
+
+/*
+ * Consumes a string of the form `[<layer>.]<key> = <descriptor>` and adds the
+ * mapping to the corresponding layer in the config.
+ */
+
+int config_add_entry(struct config *config, const char *exp)
+{
+	uint8_t code1, code2;
+	char *keyname, *descstr, *dot, *paren, *s;
+	char *layername = "main";
+	struct descriptor d;
+	struct layer *layer;
+	int idx;
+
+	static char buf[MAX_EXP_LEN];
+
+	if (strlen(exp) >= MAX_EXP_LEN) {
+		err("%s exceeds maximum expression length (%d)", exp, MAX_EXP_LEN);
+		return -1;
+	}
+
+	strcpy(buf, exp);
+	s = buf;
+
+	dot = strchr(s, '.');
+	paren = strchr(s, '(');
+
+	if (dot && (!paren || dot < paren)) {
+		layername = s;
+		*dot = 0;
+		s = dot+1;
+	}
+
+	if (parse_kvp(s, &keyname, &descstr) < 0) {
+		err("Invalid key value pair.");
+		return -1;
+	}
+
+	idx = config_get_layer_index(config, layername);
+
+	if (idx == -1) {
+		err("%s is not a valid layer", layername);
+		return -1;
+	}
+
+	layer = &config->layers[idx];
+
+	if (lookup_keycodes(keyname, &code1, &code2) < 0) {
+		err("%s is not a valid key.", keyname);
+		return -1;
+	}
+
+	if (parse_descriptor(descstr, &d, config) < 0)
+		return -1;
+
+	if (code1)
+		layer->keymap[code1] = d;
+
+	if (code2)
+		layer->keymap[code2] = d;
+
+	return 0;
 }
 
 /*
@@ -46,22 +150,20 @@ static int config_add_layer(struct config *config, const char *s)
 	strcpy(buf, s);
 	name = strtok(buf, ":");
 
-	if (name && layer_table_lookup(&config->layer_table, name) != -1)
+	if (name && config_get_layer_index(config, name) != -1)
 			return 1;
 
-	if (config->layer_table.nr_layers >= MAX_LAYERS) {
+	if (config->nr_layers >= MAX_LAYERS) {
 		err("max layers (%d) exceeded", MAX_LAYERS);
 		return -1;
 	}
 
-	ret = create_layer(&config->layer_table.layers[config->layer_table.nr_layers],
-		s,
-		&config->layer_table);
+	ret = create_layer(&config->layers[config->nr_layers], s, config);
 
 	if (ret < 0)
 		return -1;
 
-	config->layer_table.nr_layers++;
+	config->nr_layers++;
 	return 0;
 }
 
@@ -70,7 +172,7 @@ static void config_init(struct config *config)
 	size_t i;
 	struct descriptor *km;
 
-	bzero(config, sizeof(*config));
+	memset(config, 0, sizeof *config);
 
 	config_add_layer(config, "main");
 
@@ -80,7 +182,8 @@ static void config_init(struct config *config)
 	config_add_layer(config, "altgr:G");
 	config_add_layer(config, "alt:A");
 
-	km = config->layer_table.layers[0].keymap;
+	km = config->layers[0].keymap;
+
 	for (i = 0; i < 256; i++) {
 		km[i].op = OP_KEYSEQUENCE;
 		km[i].args[0].code = i;
@@ -91,7 +194,7 @@ static void config_init(struct config *config)
 		struct descriptor *ent1 = &km[modifier_table[i].code1];
 		struct descriptor *ent2 = &km[modifier_table[i].code2];
 
-		int idx = layer_table_lookup(&config->layer_table, modifier_table[i].name);
+		int idx = config_get_layer_index(config, modifier_table[i].name);
 
 		assert(idx != -1);
 
@@ -102,7 +205,6 @@ static void config_init(struct config *config)
 		ent2->args[0].idx = idx;
 	}
 
-	config->layer_table.layers[0].active = 1;
 	/* In ms */
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;
@@ -134,6 +236,7 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 					key);
 	}
 }
+
 int config_parse(struct config *config, const char *path)
 {
 	size_t i;
@@ -162,7 +265,7 @@ int config_parse(struct config *config, const char *path)
 	/* Populate each layer. */
 	for (i = 0; i < ini->nr_sections; i++) {
 		size_t j;
-		char *name;
+		char *layername;
 		section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids"))
@@ -173,12 +276,15 @@ int config_parse(struct config *config, const char *path)
 			continue;
 		}
 
-		name = strtok(section->name, ":");
+		layername = strtok(section->name, ":");
 
 		for (j = 0; j < section->nr_entries;j++) {
+			char entry[MAX_EXP_LEN];
 			struct ini_entry *ent = &section->entries[j];
 
-			if (config_add_binding(config, name, ent->line) < 0)
+			snprintf(entry, sizeof entry, "%s.%s", layername, ent->line);
+
+			if (config_add_entry(config, entry) < 0)
 				fprintf(stderr, "\tERROR %s:%zd: %s\n", path, ent->lnum, errstr);
 		}
 	}
@@ -187,7 +293,7 @@ int config_parse(struct config *config, const char *path)
 }
 
 /*
- * returns 1 in the case of a match and 2
+ * Returns 1 in the case of a match and 2
  * in the case of an exact match.
  */
 static int config_check_match(const char *path, uint16_t vendor, uint16_t product)
@@ -267,10 +373,10 @@ end:
 }
 
 /*
- * scan a directory for the most appropriate match for a given vendor/product
+ * Scan a directory for the most appropriate match for a given vendor/product
  * pair and return the result. returns NULL if not match is found.
  */
-const char *config_find_path(const char *dir, uint16_t vendor, uint16_t product)
+const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product)
 {
 	static char result[1024];
 	DIR *dh = opendir(dir);

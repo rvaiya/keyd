@@ -10,9 +10,12 @@
 #include <stdio.h>
 
 #include "unicode.h"
+#include "macro.h"
 #include "layer.h"
 #include "descriptor.h"
 #include "ini.h"
+#include "command.h"
+#include "config.h"
 #include "error.h"
 #include "keys.h"
 #include "string.h"
@@ -110,13 +113,9 @@ exit:
 	}
 }
 
-/*
- * Modifies the input string. Layers names within the descriptor
- * are resolved using the provided layer table.
- */
 int parse_descriptor(const char *descstr,
 		     struct descriptor *d,
-		     struct layer_table *lt)
+		     struct config *config)
 {
 	char *fn = NULL;
 	char *args[MAX_DESCRIPTOR_ARGS];
@@ -152,28 +151,28 @@ int parse_descriptor(const char *descstr,
 			return -1;
 		}
 
-		if (lt->nr_commands >= MAX_COMMANDS) {
+		if (config->nr_commands >= MAX_COMMANDS) {
 			err("max commands (%d), exceeded", MAX_COMMANDS);
 			return -1;
 		}
 
 
 		d->op = OP_COMMAND;
-		d->args[0].idx = lt->nr_commands;
+		d->args[0].idx = config->nr_commands;
 
-		lt->commands[lt->nr_commands++] = cmd;
+		config->commands[config->nr_commands++] = cmd;
 
 		return 0;
 	} else if (!parse_macro(descstr, &macro)) {
-		if (lt->nr_macros >= MAX_MACROS) {
+		if (config->nr_macros >= MAX_MACROS) {
 			err("max macros (%d), exceeded", MAX_MACROS);
 			return -1;
 		}
 
 		d->op = OP_MACRO;
-		d->args[0].idx = lt->nr_macros;
+		d->args[0].idx = config->nr_macros;
 
-		lt->macros[lt->nr_macros++] = macro;
+		config->macros[config->nr_macros++] = macro;
 
 		return 0;
 	} else if (!parse_fn(fnstr, &fn, args, &nargs)) {
@@ -203,7 +202,7 @@ int parse_descriptor(const char *descstr,
 
 					switch (type) {
 					case ARG_LAYER:
-						arg->idx = layer_table_lookup(lt, argstr);
+						arg->idx = config_get_layer_index(config, argstr);
 						if (arg->idx == -1) {
 							err("%s is not a valid layer", argstr);
 							return -1;
@@ -211,33 +210,33 @@ int parse_descriptor(const char *descstr,
 
 						break;
 					case ARG_DESCRIPTOR:
-						if (parse_descriptor(argstr, &desc, lt))
+						if (parse_descriptor(argstr, &desc, config))
 							return -1;
 
-						if (lt->nr_descriptors >= MAX_LAYER_TABLE_DESCRIPTORS) {
+						if (config->nr_descriptors >= MAX_AUX_DESCRIPTORS) {
 							err("maximum descriptors exceeded");
 							return -1;
 						}
 
-						lt->descriptors[lt->nr_descriptors] = desc;
-						arg->idx = lt->nr_descriptors++;
+						config->descriptors[config->nr_descriptors] = desc;
+						arg->idx = config->nr_descriptors++;
 						break;
 					case ARG_TIMEOUT:
 						arg->timeout = atoi(argstr);
 						break;
 					case ARG_MACRO:
-						if (lt->nr_macros >= MAX_MACROS) {
+						if (config->nr_macros >= MAX_MACROS) {
 							err("max macros (%d), exceeded", MAX_MACROS);
 							return -1;
 						}
 
-						if (parse_macro(argstr, &lt->macros[lt->nr_macros])) {
+						if (parse_macro(argstr, &config->macros[config->nr_macros])) {
 							err("Invalid macro");
 							return -1;
 						}
 
-						arg->idx = lt->nr_macros;
-						lt->nr_macros++;
+						arg->idx = config->nr_macros;
+						config->nr_macros++;
 
 						break;
 					default:

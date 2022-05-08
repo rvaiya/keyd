@@ -8,14 +8,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "vkbd.h"
+#include "keys.h"
 #include "error.h"
 #include "macro.h"
 #include "layer.h"
 #include "keyboard.h"
 #include "descriptor.h"
 #include "device.h"
+#include "keyd.h"
 
 /*
  * Here be tiny dragons.
@@ -29,7 +32,7 @@ static long get_time()
 }
 
 static int cache_set(struct keyboard *kbd, uint8_t code,
-		     const struct descriptor *d, struct layer *dl)
+		     const struct descriptor *d, int dl)
 {
 	size_t i;
 	int slot = -1;
@@ -57,7 +60,7 @@ static int cache_set(struct keyboard *kbd, uint8_t code,
 }
 
 static int cache_get(struct keyboard *kbd, uint8_t code,
-		     struct descriptor *d, struct layer **dl)
+		     struct descriptor *d, int *dl)
 {
 	size_t i;
 
@@ -137,15 +140,18 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 	}
 }
 
-static void update_mods(struct keyboard *kbd, struct layer *excluded_layer, uint8_t mods)
+static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mods)
 {
 	size_t i;
+	struct layer *excluded_layer = excluded_layer_idx == -1 ?
+					NULL :
+					&kbd->config.layers[excluded_layer_idx];
 
-	for (i = 0; i < kbd->layer_table.nr_layers; i++) {
-		struct layer *layer = &kbd->layer_table.layers[i];
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
 		int excluded = 0;
 
-		if (!layer->active)
+		if (!kbd->layer_state[i].active)
 			continue;
 
 		if (layer == excluded_layer) {
@@ -153,8 +159,8 @@ static void update_mods(struct keyboard *kbd, struct layer *excluded_layer, uint
 		} else if (excluded_layer && excluded_layer->type == LT_COMPOSITE) {
 			size_t j;
 
-			for (j = 0; j < excluded_layer->nr_layers; j++)
-				if ((size_t)excluded_layer->layers[j] == i)
+			for (j = 0; j < excluded_layer->nr_constituents; j++)
+				if ((size_t)excluded_layer->constituents[j] == i)
 					excluded = 1;
 		}
 
@@ -165,7 +171,7 @@ static void update_mods(struct keyboard *kbd, struct layer *excluded_layer, uint
 	set_mods(kbd, mods);
 }
 
-static void execute_macro(struct keyboard *kbd, struct layer *dl, const struct macro *macro)
+static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
 {
 	size_t i;
 	int hold_start = -1;
@@ -233,58 +239,55 @@ static void execute_macro(struct keyboard *kbd, struct layer *dl, const struct m
 
 	}
 
-	update_mods(kbd, NULL, 0);
+	update_mods(kbd, -1, 0);
 }
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
-			      struct descriptor *d, struct layer **dl)
+			      struct descriptor *d, int *dl)
 {
 	size_t max;
 	size_t i;
-	uint8_t active[MAX_LAYERS];
-	struct layer_table *lt = &kbd->layer_table;
 
 	d->op = OP_UNDEFINED;
 
 	long maxts = 0;
 
-	for (i = 0; i < lt->nr_layers; i++) {
-		struct layer *layer = &lt->layers[i];
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
 
-		if (layer->active) {
-			active[i] = 1;
-			if (layer->keymap[code].op && layer->activation_time >= maxts) {
-				maxts = layer->activation_time;
+		if (kbd->layer_state[i].active) {
+			long activation_time = kbd->layer_state[i].activation_time;
+
+			if (layer->keymap[code].op && activation_time >= maxts) {
+				maxts = activation_time;
 				*d = layer->keymap[code];
-				*dl = layer;
+				*dl = i;
 			}
-		} else {
-			active[i] = 0;
 		}
 	}
 
 	max = 0;
 	/* Scan for any composite matches (which take precedence). */
-	for (i = 0; i < lt->nr_layers; i++) {
-		struct layer *layer = &lt->layers[i];
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
 
 		if (layer->type == LT_COMPOSITE) {
 			size_t j;
 			int match = 1;
 			uint8_t mods = 0;
 
-			for (j = 0; j < layer->nr_layers; j++) {
-				if (active[layer->layers[j]])
-					mods |= lt->layers[layer->layers[j]].mods;
+			for (j = 0; j < layer->nr_constituents; j++) {
+				if (kbd->layer_state[layer->constituents[j]].active)
+					mods |= kbd->config.layers[layer->constituents[j]].mods;
 				else
 					match = 0;
 			}
 
-			if (match && layer->keymap[code].op && (layer->nr_layers > max)) {
-				*dl = layer;
+			if (match && layer->keymap[code].op && (layer->nr_constituents > max)) {
 				*d = layer->keymap[code];
+				*dl = i;
 
-				max = layer->nr_layers;
+				max = layer->nr_constituents;
 			}
 		}
 	}
@@ -292,26 +295,24 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 
 static void update_leds(struct keyboard *kbd)
 {
-	struct layer_table *lt = &kbd->layer_table;
+	size_t i;
+	int active = 0;
 
 	if (!kbd->config.layer_indicator)
 		return;
 
-	size_t i;
-	int active = 0;
-
-	for (i = 0; i < lt->nr_layers; i++) {
-		if (lt->layers[i].active && lt->layers[i].mods)
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		if (kbd->layer_state[i].active && kbd->config.layers[i].mods)
 			active = 1;
 	}
 
-	device_set_led(kbd->dev, 1, active);
+	set_led(1, active);
 }
 
-static void deactivate_layer(struct keyboard *kbd, struct layer *layer)
+static void deactivate_layer(struct keyboard *kbd, int idx)
 {
-	if (layer->active > 0)
-		layer->active--;
+	assert(kbd->layer_state[idx].active > 0);
+	kbd->layer_state[idx].active--;
 }
 
 /*
@@ -319,11 +320,10 @@ static void deactivate_layer(struct keyboard *kbd, struct layer *layer)
  * corresponding deactivation call.
  */
 
-static void activate_layer(struct keyboard *kbd, uint8_t code, struct layer *layer)
+static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 {
-	layer->active++;
-	layer->activation_time = get_time();
-
+	kbd->layer_state[idx].activation_time = get_time();
+	kbd->layer_state[idx].active++;
 	kbd->last_layer_code = code;
 }
 
@@ -357,33 +357,26 @@ static void execute_command(const char *cmd)
 static void clear_oneshot(struct keyboard *kbd)
 {
 	size_t i = 0;
-	struct layer *layers = kbd->layer_table.layers;
-	size_t nr_layers = kbd->layer_table.nr_layers;
 
-	for (i = 0; i < nr_layers; i++)
-		if (layers[i].flags & LF_ONESHOT) {
-			layers[i].flags &= ~LF_ONESHOT;
-			deactivate_layer(kbd, &layers[i]);
+	for (i = 0; i < kbd->config.nr_layers; i++)
+		if (kbd->layer_state[i].oneshot) {
+			kbd->layer_state[i].oneshot = 0;
+			deactivate_layer(kbd, i);
 		}
 
 	kbd->oneshot_latch = 0;
 }
 
 static long process_descriptor(struct keyboard *kbd, uint8_t code,
-			       struct descriptor *d, struct layer *dl,
+			       struct descriptor *d, int dl,
 			       int pressed)
 {
 	int timeout = 0;
 
-	struct macro *macros = kbd->layer_table.macros;
-	struct layer *layers = kbd->layer_table.layers;
-	struct command *commands = kbd->layer_table.commands;
-	struct descriptor *descriptors = kbd->layer_table.descriptors;
-
 	switch (d->op) {
+		int idx;
 		struct macro *macro;
-		struct layer *layer;
-		struct descriptor *descriptor;
+		struct descriptor *action;
 		uint8_t mods;
 
 	case OP_KEYSEQUENCE:
@@ -405,67 +398,67 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			clear_oneshot(kbd);
 		} else {
 			send_key(kbd, code, 0);
-			update_mods(kbd, NULL, 0);
+			update_mods(kbd, -1, 0);
 		}
 
 		break;
 	case OP_LAYER:
-		layer = &layers[d->args[0].idx];
+		idx = d->args[0].idx;
 
 		if (pressed) {
-			activate_layer(kbd, code, layer);
+			activate_layer(kbd, code, idx);
 		} else {
-			deactivate_layer(kbd, layer);
+			deactivate_layer(kbd, idx);
 		}
 
 		if (kbd->last_pressed_code == code) {
 			kbd->inhibit_modifier_guard = 1;
-			update_mods(kbd, NULL, 0);
+			update_mods(kbd, -1, 0);
 			kbd->inhibit_modifier_guard = 0;
 		} else {
-			update_mods(kbd, NULL, 0);
+			update_mods(kbd, -1, 0);
 		}
 
 		break;
 	case OP_OVERLOAD:
-		layer = &layers[d->args[0].idx];
-		descriptor = &descriptors[d->args[1].idx];
+		idx = d->args[0].idx;
+		action = &kbd->config.descriptors[d->args[1].idx];
 
 		if (pressed) {
-			activate_layer(kbd, code, layer);
-			update_mods(kbd, NULL, 0);
+			activate_layer(kbd, code, idx);
+			update_mods(kbd, -1, 0);
 		} else {
-			deactivate_layer(kbd, layer);
+			deactivate_layer(kbd, idx);
 
 			if (kbd->last_pressed_code == code) {
 				clear_oneshot(kbd);
 
-				process_descriptor(kbd, code, descriptor, dl, 1);
-				process_descriptor(kbd, code, descriptor, dl, 0);
+				process_descriptor(kbd, code, action, dl, 1);
+				process_descriptor(kbd, code, action, dl, 0);
 			}
 
-			update_mods(kbd, NULL, 0);
+			update_mods(kbd, -1, 0);
 		}
 
 		break;
 	case OP_ONESHOT:
-		layer = &layers[d->args[0].idx];
+		idx = d->args[0].idx;
 
 		if (pressed) {
-			if (layer->active) {
+			if (kbd->layer_state[idx].active) {
 				/* Neutralize the upstroke. */
-				cache_set(kbd, code, NULL, NULL);
+				cache_set(kbd, code, NULL, -1);
 			} else {
-				activate_layer(kbd, code, layer);
+				activate_layer(kbd, code, idx);
 				update_mods(kbd, dl, 0);
 				kbd->oneshot_latch = 1;
 			}
 		} else {
 			if (kbd->oneshot_latch) {
-				layer->flags |= LF_ONESHOT;
+				kbd->layer_state[idx].oneshot = 1;
 			} else {
-				deactivate_layer(kbd, layer);
-				update_mods(kbd, NULL, 0);
+				deactivate_layer(kbd, idx);
+				update_mods(kbd, -1, 0);
 			}
 		}
 
@@ -474,12 +467,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_MACRO:
 		if (pressed) {
 			if (d->op == OP_MACRO2) {
-				macro = &macros[d->args[2].idx];
+				macro = &kbd->config.macros[d->args[2].idx];
 
 				timeout = d->args[0].timeout;
 				kbd->macro_repeat_timeout = d->args[1].timeout;
 			} else {
-				macro = &macros[d->args[0].idx];
+				macro = &kbd->config.macros[d->args[0].idx];
 
 				timeout = kbd->config.macro_timeout;
 				kbd->macro_repeat_timeout = kbd->config.macro_repeat_timeout;
@@ -495,22 +488,22 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_TOGGLE:
-		layer = &layers[d->args[0].idx];
+		idx = d->args[0].idx;
 
 		if (!pressed) {
-			layer->flags ^= LF_TOGGLED;
+			kbd->layer_state[idx].toggled = !kbd->layer_state[idx].toggled;
 
-			if (layer->flags & LF_TOGGLED)
-				activate_layer(kbd, code, layer);
+			if (kbd->layer_state[idx].toggled)
+				activate_layer(kbd, code, idx);
 			else
-				deactivate_layer(kbd, layer);
+				deactivate_layer(kbd, idx);
 		}
 
 		break;
 	case OP_TIMEOUT:
 		if (pressed) {
-			kbd->pending_timeout.d1 = descriptors[d->args[0].idx];
-			kbd->pending_timeout.d2 = descriptors[d->args[2].idx];
+			kbd->pending_timeout.d1 = kbd->config.descriptors[d->args[0].idx];
+			kbd->pending_timeout.d2 = kbd->config.descriptors[d->args[2].idx];
 
 			kbd->pending_timeout.code = code;
 			kbd->pending_timeout.dl = dl;
@@ -522,25 +515,25 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		break;
 	case OP_COMMAND:
 		if (pressed)
-			execute_command(commands[d->args[0].idx].cmd);
+			execute_command(kbd->config.commands[d->args[0].idx].cmd);
 		break;
 	case OP_SWAP:
 	case OP_SWAP2:
-		layer = &layers[d->args[0].idx];
-		macro = d->op == OP_SWAP2 ?  &macros[d->args[1].idx] : NULL;
+		idx = d->args[0].idx;
+		macro = d->op == OP_SWAP2 ?  &kbd->config.macros[d->args[1].idx] : NULL;
 
 		if (pressed) {
 			struct descriptor od;
-			struct layer *odl;
+			int odl;
 
 			if (!cache_get(kbd, kbd->last_layer_code, &od, &odl)) {
-				struct layer *oldlayer = &layers[od.args[0].idx];
+				int oldlayer = od.args[0].idx;
 				od.args[0].idx = d->args[0].idx;
 
 				cache_set(kbd, kbd->last_layer_code, &od, odl);
 
 				deactivate_layer(kbd, oldlayer);
-				activate_layer(kbd, kbd->last_layer_code, layer);
+				activate_layer(kbd, kbd->last_layer_code, idx);
 
 				if (macro) {
 					/*
@@ -555,13 +548,13 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 						uint8_t code = macro->entries[0].data;
 						uint8_t mods = macro->entries[0].data >> 8;
 
-						update_mods(kbd, layer, mods);
+						update_mods(kbd, idx, mods);
 						send_key(kbd, code, 1);
 					} else {
-						execute_macro(kbd, layer, macro);
+						execute_macro(kbd, idx, macro);
 					}
 				} else {
-					update_mods(kbd, NULL, 0);
+					update_mods(kbd, -1, 0);
 				}
 			}
 		} else {
@@ -571,7 +564,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				uint8_t code = macro->entries[0].data;
 
 				send_key(kbd, code, 0);
-				update_mods(kbd, NULL, 0);
+				update_mods(kbd, -1, 0);
 			}
 		}
 
@@ -599,7 +592,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 long kbd_process_key_event(struct keyboard *kbd,
 			   uint8_t code, int pressed)
 {
-	struct layer *dl = NULL;
+	int dl = -1;
 	struct descriptor d;
 
 	/* timeout */
@@ -610,7 +603,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		}
 
 		if (kbd->pending_timeout.active) {
-			struct layer *dl = kbd->pending_timeout.dl;
+			int dl = kbd->pending_timeout.dl;
 			uint8_t code = kbd->pending_timeout.code;
 			struct descriptor *d = &kbd->pending_timeout.d2;
 
@@ -621,7 +614,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		}
 	} else {
 		if (kbd->pending_timeout.active) {
-			struct layer *dl = kbd->pending_timeout.dl;
+			int dl = kbd->pending_timeout.dl;
 			uint8_t code = kbd->pending_timeout.code;
 			struct descriptor *d = &kbd->pending_timeout.d1;
 
@@ -631,7 +624,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 		if (kbd->active_macro) {
 			kbd->active_macro = NULL;
-			update_mods(kbd, NULL, 0);
+			update_mods(kbd, -1, 0);
 		}
 
 		kbd->pending_timeout.active = 0;
@@ -647,7 +640,7 @@ long kbd_process_key_event(struct keyboard *kbd,
 		if (cache_get(kbd, code, &d, &dl) < 0)
 			return 0;
 
-		cache_set(kbd, code, NULL, NULL);
+		cache_set(kbd, code, NULL, -1);
 	}
 
 	return process_descriptor(kbd, code, &d, dl, pressed);
@@ -655,37 +648,11 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 int kbd_execute_expression(struct keyboard *kbd, const char *exp)
 {
-	return layer_table_add_entry(&kbd->layer_table, exp);
+	return config_add_entry(&kbd->config, exp);
 }
 
 void kbd_reset(struct keyboard *kbd)
 {
-	uint8_t ad[MAX_LAYERS];
-	long at[MAX_LAYERS];
-	uint8_t flags[MAX_LAYERS];
-
-	size_t i;
-
-	/* Preserve layer state to facilitate hotswapping (TODO: make this more robust) */
-
-	for (i = 0; i < kbd->config.layer_table.nr_layers; i++) {
-		struct layer *layer = &kbd->layer_table.layers[i];
-
-		ad[i] = layer->active;
-		flags[i] = layer->flags;
-		at[i] = layer->activation_time;
-	}
-
-	memcpy(&kbd->layer_table,
-		&kbd->config.layer_table,
-		sizeof(kbd->layer_table));
-
-	for (i = 0; i < kbd->config.layer_table.nr_layers; i++) {
-		struct layer *layer = &kbd->layer_table.layers[i];
-
-		layer->active = ad[i];
-		layer->flags = flags[i];
-		layer->activation_time = at[i];
-	}
+	memcpy(&kbd->config, &kbd->original_config, sizeof(kbd->config));
 }
 
