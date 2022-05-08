@@ -101,6 +101,10 @@ esc = capslock
 Should you find yourself in this position, the special key sequence
 `backspace+escape+enter` should cause keyd to terminate.
 
+Some mice (e.g the Logitech MX Master) are capable of emitting keys and
+are consequently matched by the wildcard id. It may be necessary to
+explicitly blacklist these.
+
 ## Application Specific Remapping (experimental)
 
 - Add yourself to the keyd group:

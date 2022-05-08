@@ -100,6 +100,10 @@ will exclusively match any devices which do.
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
 
+Note: All keyboards defined within a given config file will share the
+same state. This is useful for linking separate input devices together
+(e.g foot pedals).
+
 ## Layers
 
 A layer is a collection of _bindings_, each of which specifies the behaviour of
@@ -258,14 +262,14 @@ If keyd encounters a valid UTF8 sequence as a right hand value, it will try and
 translate that sequence into a macro which emits a keyd-specific XKB sequence.
 
 In order for this to work, the sequences defined in the compose file shipped
-with keyd (_/etc/keyd/keyd.compose_) must be accessible. This can be achieved
+with keyd (_/usr/share/keyd/keyd.compose_) must be accessible. This can be achieved
 globally by copying the file to the appropriate location in
 _/usr/share/X11/locale_, or on a per-user basis by symlinking it to
 ~/.XCompose.
 
 E.G
 
-	ln -s /etc/keyd/keyd.compose ~/.XCompose
+	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
 *Note:* You may have to restart your applications for this to take effect.
 
@@ -386,7 +390,7 @@ arguments.
 
 	command(brightness down)
 
-*NOTE:* Commands are executed by the user running the keyd process (probably root), 
+*NOTE:* Commands are executed by the user running the keyd process (probably root),
 use this feature judiciously.
 
 *noop*

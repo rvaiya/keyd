@@ -60,6 +60,7 @@ install:
 
 	mkdir -p $(DESTDIR)/etc/keyd
 	mkdir -p $(DESTDIR)$(PREFIX)/bin/
+	mkdir -p $(DESTDIR)$(PREFIX)/share/keyd/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
@@ -69,7 +70,7 @@ install:
 	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
-	install -m644 data/keyd.compose $(DESTDIR)/etc/keyd/
+	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
 
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks \
