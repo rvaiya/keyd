@@ -6,6 +6,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#include "keyd.h"
 #include "config.h"
 #include "layer.h"
 
@@ -22,9 +23,10 @@ struct cache_entry {
 
 /* May correspond to more than one physical input device. */
 struct keyboard {
-	struct config original_config;
+	char config_path[PATH_MAX];
 
 	struct config config;
+	struct config original_config;
 
 	/* 
 	 * Cache descriptors to preserve code->descriptor

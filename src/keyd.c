@@ -29,6 +29,8 @@
 #include "keys.h"
 #include "ipc.h"
 
+#define MAX_KEYBOARDS 64
+
 /* config variables */
 
 static const char *virtual_keyboard_name;
@@ -39,7 +41,12 @@ static const char *socket_file;
 
 static struct device devices[MAX_DEVICES];
 static size_t nr_devices = 0;
+
 static struct keyboard *active_kbd = NULL;
+
+static struct keyboard *keyboards[MAX_KEYBOARDS];
+static size_t nr_keyboards;
+
 
 /* loop() callback functions */
 
@@ -52,6 +59,37 @@ static int (*device_event_cb) (struct device *dev, uint8_t code, uint8_t process
 /* globals */
 
 struct vkbd *vkbd;
+
+struct keyboard *get_keyboard(const char *config_path)
+{
+	size_t i;
+	struct keyboard *kbd;
+
+	for (i = 0; i < nr_keyboards; i++)
+		if (!strcmp(keyboards[i]->config_path, config_path))
+			return keyboards[i];
+
+
+	assert(nr_keyboards < MAX_KEYBOARDS);
+	kbd = calloc(1, sizeof(struct keyboard));
+
+	if (config_parse(&kbd->config, config_path)) {
+		printf("\tfailed to parse %s\n", config_path);
+		free(kbd);
+		return NULL;
+	}
+
+	memcpy(&kbd->original_config, &kbd->config, sizeof kbd->config);
+	strcpy(kbd->config_path, config_path);
+
+	kbd->layer_state[0].active = 1;
+	kbd->layer_state[0].activation_time = 1;
+
+	keyboards[nr_keyboards++] = kbd;
+
+	return kbd;
+}
+
 
 static void daemon_remove_cb(struct device *dev)
 {
@@ -99,26 +137,14 @@ static void daemon_add_cb(struct device *dev)
 
 	printf("\tmatched %s\n", config_path);
 
-	kbd = calloc(1, sizeof(struct keyboard));
-	if (config_parse(&kbd->config, config_path)) {
-		printf("\tfailed to parse %s\n", config_path);
-		free(kbd);
+	dev->data = get_keyboard(config_path);
+	if (!dev->data)
 		return;
-	}
-
-	memcpy(&kbd->original_config, &kbd->config, sizeof kbd->config);
-
-	kbd->layer_state[0].active = 1;
-	kbd->layer_state[0].activation_time = 1;
 
 	if (device_grab(dev) < 0) {
 		printf("\tgrab failed\n");
-
-		free(kbd);
 		return;
 	}
-
-	dev->data = kbd;
 }
 
 static void panic_check(uint8_t code, uint8_t pressed)
@@ -405,8 +431,8 @@ static void cleanup()
 {
 	size_t i;
 
-	for (i = 0; i < nr_devices; i++)
-		free(devices[i].data);
+	for (i = 0; i < nr_keyboards; i++)
+		free(keyboards[i]);
 
 	free_vkbd(vkbd);
 
