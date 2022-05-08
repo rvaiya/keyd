@@ -93,11 +93,6 @@ struct keyboard *get_keyboard(const char *config_path)
 
 static void daemon_remove_cb(struct device *dev)
 {
-	struct keyboard *kbd = dev->data;
-
-	if (kbd)
-		free(kbd);
-
 	active_kbd = NULL;
 
 	printf("device removed: %04x:%04x %s (%s)\n",
