@@ -632,6 +632,15 @@ long kbd_process_key_event(struct keyboard *kbd,
 
 
 	if (pressed) {
+		/*
+		 * Guard against successive key down events
+		 * of the same key code. This can be caused
+		 * by unorthodox hardware or by different
+		 * devices mapped to the same config.
+		 */
+		if (cache_get(kbd, code, &d, &dl) == 0)
+			return 0;
+
 		lookup_descriptor(kbd, code, &d, &dl);
 
 		if (cache_set(kbd, code, &d, dl) < 0)
