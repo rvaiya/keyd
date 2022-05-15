@@ -201,7 +201,7 @@ it. Finally it remaps insert to S-insert (paste on X11).
 
 xmodmap and friends are display server level tools with limited functionality.
 keyd is a system level solution which implements advanced features like
-layering and [oneshot](https://beta.docs.qmk.fm/using-qmk/software-features/one_shot_keys)
+layering and [oneshot](https://docs.qmk.fm/#/one_shot_keys)
 modifiers.  While some X tools offer similar functionality I am not aware of
 anything that is as flexible as keyd.
 
