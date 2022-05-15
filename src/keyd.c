@@ -184,6 +184,13 @@ static int daemon_event_cb(struct device *dev, uint8_t code, uint8_t pressed)
 	panic_check(code, pressed);
 	active_kbd = kbd;
 
+	dbg2("Processing %04x:%04x (%s): %s %s",
+			dev->vendor_id,
+			dev->product_id,
+			dev->name,
+			keycode_table[code].name ? keycode_table[code].name : "undefined",
+			pressed ? "down" : "up");
+
 	return kbd_process_key_event(kbd, code, pressed);
 }
 

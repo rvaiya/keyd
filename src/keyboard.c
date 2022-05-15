@@ -311,6 +311,8 @@ static void update_leds(struct keyboard *kbd)
 
 static void deactivate_layer(struct keyboard *kbd, int idx)
 {
+	dbg("Deactivating layer %s", kbd->config.layers[idx].name);
+
 	assert(kbd->layer_state[idx].active > 0);
 	kbd->layer_state[idx].active--;
 }
@@ -322,6 +324,8 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 
 static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 {
+	dbg("Activating layer %s", kbd->config.layers[idx].name);
+
 	kbd->layer_state[idx].activation_time = get_time();
 	kbd->layer_state[idx].active++;
 	kbd->last_layer_code = code;

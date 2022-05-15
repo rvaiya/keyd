@@ -11,7 +11,12 @@
 #define MAX_MESSAGE_SIZE 4096
 
 #define dbg(fmt, ...) { \
-	if (debug_level) \
+	if (debug_level >= 1) \
+		fprintf(stderr, "DEBUG: %s:%d: "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+}
+
+#define dbg2(fmt, ...) { \
+	if (debug_level >= 2) \
 		fprintf(stderr, "DEBUG: %s:%d: "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 }
 
