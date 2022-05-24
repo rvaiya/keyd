@@ -101,9 +101,12 @@ static int create_virtual_pointer(const char *name)
 	}
 
 	ioctl(fd, UI_SET_EVBIT, EV_REL);
+	ioctl(fd, UI_SET_EVBIT, EV_ABS);
 	ioctl(fd, UI_SET_EVBIT, EV_KEY);
 	ioctl(fd, UI_SET_EVBIT, EV_SYN);
 
+	ioctl(fd, UI_SET_ABSBIT, ABS_X);
+	ioctl(fd, UI_SET_ABSBIT, ABS_Y);
 	ioctl(fd, UI_SET_RELBIT, REL_X);
 	ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
 	ioctl(fd, UI_SET_RELBIT, REL_HWHEEL);
@@ -119,6 +122,9 @@ static int create_virtual_pointer(const char *name)
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
 	udev.id.product = 0x1ADE;
+
+	udev.absmax[ABS_X] = 1024;
+	udev.absmax[ABS_Y] = 1024;
 
 	snprintf(udev.name, sizeof(udev.name), "%s", name);
 
@@ -155,6 +161,8 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 
 	if (vkbd->pfd == -1) {
 		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
+		/* Give the device time to propagate up the input stack. */
+		usleep(100000);
 	}
 
 	if (x) {
@@ -185,6 +193,41 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 
 	write(vkbd->pfd, &ev, sizeof(ev));
 }
+
+void vkbd_move_mouse_abs(const struct vkbd *vkbd, int x, int y)
+{
+	if (vkbd->pfd == -1) {
+		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
+		usleep(100000);
+	}
+
+	struct input_event ev;
+
+	ev.type = EV_ABS;
+	ev.code = ABS_X;
+	ev.value = x;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_ABS;
+	ev.code = ABS_Y;
+	ev.value = y;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_SYN;
+	ev.code = 0;
+	ev.value = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+}
+
 
 void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
 {

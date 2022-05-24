@@ -27,6 +27,11 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 	printf("mouse movement: x: %d, y: %d\n", x, y);
 }
 
+void vkbd_move_mouse_abs(const struct vkbd *vkbd, int x, int y)
+{
+	printf("absolute mouse movement: x: %d, y: %d\n", x, y);
+}
+
 void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
 {
 	printf("mouse button: %d, state: %d\n", btn, state);
