@@ -155,7 +155,7 @@ struct vkbd *vkbd_init(const char *name)
 	return vkbd;
 }
 
-void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
+void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 {
 	struct input_event ev;
 
@@ -194,7 +194,41 @@ void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
 	write(vkbd->pfd, &ev, sizeof(ev));
 }
 
-void vkbd_move_mouse_abs(const struct vkbd *vkbd, int x, int y)
+void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
+{
+	if (vkbd->pfd == -1) {
+		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
+		usleep(100000);
+	}
+
+	struct input_event ev;
+
+	ev.type = EV_REL;
+	ev.code = REL_WHEEL;
+	ev.value = y;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_REL;
+	ev.code = REL_HWHEEL;
+	ev.value = x;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_SYN;
+	ev.code = 0;
+	ev.value = 0;
+
+	write(vkbd->pfd, &ev, sizeof(ev));
+}
+
+void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 {
 	if (vkbd->pfd == -1) {
 		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");

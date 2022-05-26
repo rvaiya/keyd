@@ -22,12 +22,17 @@ struct vkbd *vkbd_init(const char *name)
 	return NULL;
 }
 
-void vkbd_move_mouse(const struct vkbd *vkbd, int x, int y)
+void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
+{
+	printf("mouse scroll: x: %d, y: %d\n", x, y);
+}
+
+void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 {
 	printf("mouse movement: x: %d, y: %d\n", x, y);
 }
 
-void vkbd_move_mouse_abs(const struct vkbd *vkbd, int x, int y)
+void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 {
 	printf("absolute mouse movement: x: %d, y: %d\n", x, y);
 }

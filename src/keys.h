@@ -208,8 +208,6 @@ struct modifier_table_ent {
 #define KEYD_EXIT              174
 #define KEYD_MOVE              175
 #define KEYD_EDIT              176
-#define KEYD_SCROLLUP          177
-#define KEYD_SCROLLDOWN        178
 #define KEYD_KPLEFTPAREN       179
 #define KEYD_KPRIGHTPAREN      180
 #define KEYD_NEW               181
@@ -280,8 +278,6 @@ struct modifier_table_ent {
 
 #define  KEYD_NOOP             		195
 #define  KEYD_EXTERNAL_MOUSE_BUTTON     196
-#define  KEYD_SCROLL_DOWN		197
-#define  KEYD_SCROLL_UP			198
 #define  KEYD_LEFT_MOUSE       		249
 #define  KEYD_MIDDLE_MOUSE     		250
 #define  KEYD_RIGHT_MOUSE		251

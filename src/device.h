@@ -8,9 +8,13 @@
 
 #include <stdint.h>
 
-#define DEV_MOUSE	0
-#define DEV_KEY		1
-#define DEV_REMOVED	2
+#define DEV_MOUSE_MOVE		0
+#define DEV_MOUSE_SCROLL	1
+#define DEV_KEY			2
+#define DEV_REMOVED		3
+
+#define DEVT_MOUSE	0x1
+#define DEVT_KEYBOARD	0x2
 
 #define MAX_DEVICES	64
 
@@ -21,7 +25,7 @@ struct device {
 	 */
 	int fd;
 
-	uint8_t is_keyboard;
+	uint8_t type;
 	uint16_t product_id;
 	uint16_t vendor_id;
 	char name[64];
@@ -36,8 +40,8 @@ struct device_event {
 
 	uint8_t code;
 	uint8_t pressed;
-	uint8_t x;
-	uint8_t y;
+	uint32_t x;
+	uint32_t y;
 };
 
 

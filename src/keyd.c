@@ -54,7 +54,7 @@ static void (*device_add_cb) (struct device *dev);
 static void (*device_remove_cb) (struct device *dev);
 
 /* returns a minimum timeout value */
-static int (*device_event_cb) (struct device *dev, uint8_t code, uint8_t processed);
+static int (*device_event_cb) (struct device *dev, struct device_event *ev);
 
 /* globals */
 
@@ -116,7 +116,7 @@ static void daemon_add_cb(struct device *dev)
 	 * between these two, so we take a permissive approach and leave it up to
 	 * the user to blacklist mice which emit key events.
 	 */
-	if (!dev->is_keyboard)
+	if (!(dev->type & DEVT_KEYBOARD))
 		return;
 
 	printf("device added: %04x:%04x %s (%s)\n",
@@ -161,37 +161,61 @@ static void panic_check(uint8_t code, uint8_t pressed)
 		exit(-1);
 }
 
-static int daemon_event_cb(struct device *dev, uint8_t code, uint8_t pressed)
+static int daemon_event_cb(struct device *dev, struct device_event *ev)
 {
-	struct keyboard *kbd = NULL;
+	struct keyboard *kbd;
 
-	if (!dev) {
-		/* timeout */
-		kbd = active_kbd;
-	} else if (dev->data) {
-		kbd = dev->data;
-	} else if ((code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) ||
-		    code == KEYD_SCROLL_DOWN ||
-		    code == KEYD_SCROLL_UP) {
-		code = KEYD_EXTERNAL_MOUSE_BUTTON;
+	/* timeout */
+	if (!dev)
+		return kbd_process_key_event(active_kbd, 0, 0);
 
-		kbd = active_kbd;
+	kbd = dev->data;
+
+	switch (ev->type) {
+		uint8_t code, pressed;
+	case DEV_KEY:
+		code = ev->code;
+		pressed = ev->pressed;
+
+		/* Notify the active keyboard of mouse presses to neutralize any oneshots. */
+		if ((code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) && active_kbd)
+			kbd_process_key_event(active_kbd, KEYD_EXTERNAL_MOUSE_BUTTON, pressed);
+
+		if (!kbd)
+			return 0;
+
+		panic_check(code, pressed);
+
+		if (dev->type & DEVT_KEYBOARD)
+			active_kbd = kbd;
+
+		dbg2("Processing %04x:%04x (%s): %s %s",
+		     dev->vendor_id,
+		     dev->product_id,
+		     dev->name,
+		     keycode_table[code].name ? keycode_table[code].
+		     name : "undefined", pressed ? "down" : "up");
+
+		return kbd_process_key_event(kbd, code, pressed);
+		break;
+	case DEV_MOUSE_SCROLL:
+		/*
+		 * Treat scroll events as mouse buttons so oneshot and the like get
+		 * cleared.
+		 */
+		if (active_kbd) {
+			kbd_process_key_event(active_kbd, KEYD_EXTERNAL_MOUSE_BUTTON, 1);
+			kbd_process_key_event(active_kbd, KEYD_EXTERNAL_MOUSE_BUTTON, 0);
+		}
+
+		vkbd_mouse_scroll(vkbd, ev->x, ev->y);
+		break;
+	case DEV_MOUSE_MOVE:
+		vkbd_mouse_move(vkbd, ev->x, ev->y);
+		break;
 	}
 
-	if (!kbd)
-		return 0;
-
-	panic_check(code, pressed);
-	active_kbd = kbd;
-
-	dbg2("Processing %04x:%04x (%s): %s %s",
-			dev->vendor_id,
-			dev->product_id,
-			dev->name,
-			keycode_table[code].name ? keycode_table[code].name : "undefined",
-			pressed ? "down" : "up");
-
-	return kbd_process_key_event(kbd, code, pressed);
+	return 0;
 }
 
 static int ipc_cb(int fd, const char *input)
@@ -241,17 +265,29 @@ static void monitor_add_cb(struct device *dev)
 
 }
 
-static int monitor_event_cb(struct device *dev, uint8_t code, uint8_t pressed)
+static int monitor_event_cb(struct device *dev, struct device_event *ev)
 {
-	const char *name = keycode_table[code].name;
+	if (!ev)
+		return 0;
 
-	if (name) {
-		printf("%s\t%04x:%04x\t%s %s\n",
-				dev->name,
-				dev->vendor_id,
-				dev->product_id,
-				name,
-				pressed ? "down" : "up");
+	switch (ev->type) {
+	const char *name;
+	case DEV_MOUSE_MOVE:
+		printf("%s: move %d %d\n", dev->name, ev->x, ev->y);
+		break;
+	case DEV_MOUSE_SCROLL:
+		printf("%s: scroll %d %d\n", dev->name, ev->x, ev->y);
+		break;
+	case DEV_KEY:
+		name = keycode_table[ev->code].name;
+
+		if (name) {
+			printf("%s\t%04x:%04x\t%s %s\n",
+			       dev->name,
+			       dev->vendor_id,
+			       dev->product_id, name, ev->pressed ? "down" : "up");
+		}
+		break;
 	}
 
 	return 0;
@@ -366,7 +402,7 @@ static int loop(int monitor_mode)
 		if (timeout) {
 			int elapsed = get_time_ms() - timeout_start;
 			if (elapsed >= timeout) {
-				timeout = device_event_cb(NULL,  0, 0);
+				timeout = device_event_cb(NULL, NULL);
 				timeout_start = get_time_ms();
 			}
 		}
@@ -410,7 +446,7 @@ static int loop(int monitor_mode)
 						devices[i].fd = -1;
 						prune = 1;
 					} else {
-						timeout = device_event_cb(dev,  ev->code, ev->pressed);
+						timeout = device_event_cb(dev, ev);
 						timeout_start = get_time_ms();
 					}
 				}

@@ -44,25 +44,30 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-/*
- * returns 1 if keyboard, 2 if mouse, and 0 if neither.
- */
-static int device_type(int fd)
+static uint8_t resolve_device_type(int fd)
 {
 	uint32_t mask[BTN_LEFT/32+1] = {0};
+	uint8_t has_rel;
+	uint8_t type = 0;
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
 		perror("ioctl");
 		return 0;
 	}
 
+	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), &has_rel) < 0) {
+		perror("ioctl");
+		return 0;
+	}
+
+	if (has_rel)
+		type |= DEVT_MOUSE;
+
 	/* The first 31 bits correspond to [KEY_ESC-KEY_S] */
 	if (mask[0] == 0xFFFFFFFE)
-		return 1;
-	else if (mask[BTN_LEFT/32] >> BTN_LEFT%32)
-		return 2;
-	else
-		return 0;
+		type |= DEVT_KEYBOARD;
+
+	return type;
 }
 
 static int device_init(const char *path, struct device *dev)
@@ -75,7 +80,7 @@ static int device_init(const char *path, struct device *dev)
 		return -1;
 	}
 
-	type = device_type(fd);
+	type = resolve_device_type(fd);
 
 	if (type) {
 		struct input_id info;
@@ -94,7 +99,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->path[sizeof(dev->path)-1] = 0;
 
 		dev->fd = fd;
-		dev->is_keyboard = type == 1;
+		dev->type = type;
 		dev->vendor_id = info.vendor;
 		dev->product_id = info.product;
 
@@ -285,44 +290,83 @@ struct device_event *device_read_event(struct device *dev)
 		}
 	}
 
-	if (ev.type == EV_REL && ev.code == REL_WHEEL) {
-		devev.type = DEV_KEY;
-		devev.code = ev.value > 0 ? KEYD_SCROLL_UP : KEYD_SCROLL_DOWN;
-		devev.pressed = 1;
+	switch (ev.type) {
+	case EV_REL:
+		switch (ev.code) {
+		case REL_WHEEL:
+			devev.type = DEV_MOUSE_SCROLL;
+			devev.y = ev.value;
+			devev.x = 0;
 
-		return &devev;
-	} else if (ev.type != EV_KEY || ev.value == 2) {
-		return NULL;
-	}
+			break;
+		case REL_HWHEEL:
+			devev.type = DEV_MOUSE_SCROLL;
+			devev.y = 0;
+			devev.x = ev.value;
 
-	/*
-	 * KEYD_* codes <256 correspond to their evdev
-	 * counterparts.
-	 */
-	if (ev.code >= 256) {
-		if (ev.code == BTN_LEFT)
-			ev.code = KEYD_LEFT_MOUSE;
-		else if (ev.code == BTN_MIDDLE)
-			ev.code = KEYD_MIDDLE_MOUSE;
-		else if (ev.code == BTN_RIGHT)
-			ev.code = KEYD_RIGHT_MOUSE;
-		else if (ev.code == BTN_SIDE)
-			ev.code = KEYD_MOUSE_1;
-		else if (ev.code == BTN_EXTRA)
-			ev.code = KEYD_MOUSE_2;
-		else if (ev.code == KEY_FN)
-			ev.code = KEYD_FN;
-		else if (ev.code >= BTN_DIGI && ev.code <= BTN_TOOL_QUADTAP)
-			;
-		else {
-			fprintf(stderr, "ERROR: unsupported evdev code: 0x%x\n", ev.code);
+			break;
+		case REL_X:
+			devev.type = DEV_MOUSE_MOVE;
+			devev.x = ev.value;
+			devev.y = 0;
+
+			break;
+		case REL_Y:
+			devev.type = DEV_MOUSE_MOVE;
+			devev.y = ev.value;
+			devev.x = 0;
+
+			break;
+		case REL_WHEEL_HI_RES:
+		case REL_HWHEEL_HI_RES:
+			/* TODO: implement me */
+			break;
+		default:
+			fprintf(stderr, "Unrecognized EV_REL code: %d\n", ev.code);
 			return NULL;
 		}
-	}
 
-	devev.type = DEV_KEY;
-	devev.code = ev.code;
-	devev.pressed = ev.value;
+		break;
+	case EV_KEY:
+		/* Ignore repeat events */
+		if (ev.value == 2)
+			return NULL;
+
+		/*
+		 * KEYD_* codes <256 correspond to their evdev
+		 * counterparts.
+		 */
+		if (ev.code >= 256) {
+			if (ev.code == BTN_LEFT)
+				ev.code = KEYD_LEFT_MOUSE;
+			else if (ev.code == BTN_MIDDLE)
+				ev.code = KEYD_MIDDLE_MOUSE;
+			else if (ev.code == BTN_RIGHT)
+				ev.code = KEYD_RIGHT_MOUSE;
+			else if (ev.code == BTN_SIDE)
+				ev.code = KEYD_MOUSE_1;
+			else if (ev.code == BTN_EXTRA)
+				ev.code = KEYD_MOUSE_2;
+			else if (ev.code == KEY_FN)
+				ev.code = KEYD_FN;
+			else if (ev.code >= BTN_DIGI
+				 && ev.code <= BTN_TOOL_QUADTAP);
+			else {
+				fprintf(stderr,
+					"ERROR: unsupported evdev code: 0x%x\n",
+					ev.code);
+				return NULL;
+			}
+		}
+
+		devev.type = DEV_KEY;
+		devev.code = ev.code;
+		devev.pressed = ev.value;
+
+		break;
+	default:
+		return NULL;
+	}
 
 	return &devev;
 }
