@@ -208,6 +208,7 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 		case MACRO_UNICODE:
 			n = ent->data;
 
+			set_mods(kbd, 0);
 			send_key(kbd, KEYD_LINEFEED, 1);
 			send_key(kbd, KEYD_LINEFEED, 0);
 
