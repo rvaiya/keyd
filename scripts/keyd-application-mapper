@@ -199,7 +199,7 @@ class GnomeMonitor():
 
         self.on_window_change = on_window_change
 
-        self.version = '1.1'
+        self.version = '1.2'
         self.extension_dir = os.getenv('HOME') + '/.local/share/gnome-shell/extensions/keyd'
         self.fifo_path = self.extension_dir + '/keyd.fifo'
 
@@ -255,7 +255,7 @@ class GnomeMonitor():
                 "name": "keyd",
                 "description": "Used by keyd to obtain active window information.",
                 "uuid": "keyd",
-                "shell-version": [ "41" ]
+                "shell-version": [ "41", "42" ]
         }
         '''
 
