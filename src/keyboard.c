@@ -340,6 +340,8 @@ static void execute_command(const char *cmd)
 
 	if (fork())
 		return;
+	if (fork())
+		exit(0);
 
 	fd = open("/dev/null", O_RDWR);
 
