@@ -116,8 +116,10 @@ static void daemon_add_cb(struct device *dev)
 	 * between these two, so we take a permissive approach and leave it up to
 	 * the user to blacklist mice which emit key events.
 	 */
-	if (!(dev->type & DEVT_KEYBOARD))
+	if (!(dev->type & DEVT_KEYBOARD)) {
+		dbg("Ignoring %s (not a keyboard)", dev->name);
 		return;
+	}
 
 	printf("device added: %04x:%04x %s (%s)\n",
 	       dev->vendor_id,
@@ -170,6 +172,8 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 		return kbd_process_key_event(active_kbd, 0, 0);
 
 	kbd = dev->data;
+	if (!kbd)
+		return 0;
 
 	switch (ev->type) {
 		uint8_t code, pressed;

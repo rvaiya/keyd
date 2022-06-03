@@ -4,6 +4,7 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 
+#include "error.h"
 #include "device.h"
 #include "keys.h"
 
@@ -318,6 +319,8 @@ struct device_event *device_read_event(struct device *dev)
 
 			break;
 		case REL_WHEEL_HI_RES:
+			/* TODO: implement me */
+			break;
 		case REL_HWHEEL_HI_RES:
 			/* TODO: implement me */
 			break;
