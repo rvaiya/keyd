@@ -9,6 +9,9 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <errno.h>
 #include <linux/uinput.h>
 
 #ifdef __FreeBSD__
@@ -17,6 +20,9 @@
 #include <linux/input-event-codes.h>
 #endif
 
+#define REPEAT_INTERVAL 40
+#define REPEAT_TIMEOUT 200
+
 #include "../vkbd.h"
 #include "../keys.h"
 
@@ -24,6 +30,10 @@ struct vkbd {
 	int fd;
 	int pfd;
 };
+
+pthread_mutex_t repeater_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t repeater_cond = PTHREAD_COND_INITIALIZER;
+static uint8_t repeat_key = 0;
 
 static int is_mouse_button(size_t code)
 {
@@ -138,8 +148,83 @@ static int create_virtual_pointer(const char *name)
 	return fd;
 }
 
+static long get_time_ms()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec*1E3+ts.tv_nsec/1E6;
+}
+
+/*
+ * Sleep for timeout miliseconds or until repeater_cond is signaled.
+ * Returns 0 if sleep completed without interruption.
+ */
+int wait_for_repeat_cond(long timeout)
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+	ts.tv_nsec += timeout * 1E6;
+
+	ts.tv_sec += ts.tv_nsec / 1E9;
+	ts.tv_nsec %= (long) 1E9;
+
+	return pthread_cond_timedwait(&repeater_cond, &repeater_mtx, &ts) != ETIMEDOUT;
+}
+
+void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
+{
+	static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+	struct input_event ev;
+
+	pthread_mutex_lock(&mtx);
+
+	ev.type = EV_KEY;
+	ev.code = code;
+	ev.value = state;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	write(vkbd->fd, &ev, sizeof(ev));
+
+	ev.type = EV_SYN;
+	ev.code = 0;
+	ev.value = 0;
+
+
+	write(vkbd->fd, &ev, sizeof(ev));
+
+	pthread_mutex_unlock(&mtx);
+}
+
+/*
+ * Unlike X/Wayland, VTs rely on repeat events generated
+ * by the kernel drivers, so we have to simulate these.
+ */
+static void *repeater(void *arg)
+{
+	struct vkbd *vkbd = arg;
+	long last_repeated = 0;
+
+	while(1) {
+		while (!repeat_key)
+			pthread_cond_wait(&repeater_cond, &repeater_mtx);
+
+		if (wait_for_repeat_cond(REPEAT_TIMEOUT))
+			continue;
+
+		while (!wait_for_repeat_cond(REPEAT_INTERVAL))
+			write_key_event(vkbd, repeat_key, 2);
+	}
+
+	return NULL;
+}
+
 struct vkbd *vkbd_init(const char *name)
 {
+	pthread_t tid;
+
 	struct vkbd *vkbd = calloc(1, sizeof vkbd);
 	vkbd->fd = create_virtual_keyboard(name);
 
@@ -151,6 +236,7 @@ struct vkbd *vkbd_init(const char *name)
 	 */
 
 	vkbd->pfd = -1;
+	pthread_create(&tid, NULL, repeater, vkbd);
 
 	return vkbd;
 }
@@ -302,23 +388,19 @@ void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
 
 void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 {
-	struct input_event ev;
+	if (state) {
+		pthread_mutex_lock(&repeater_mtx);
+		repeat_key = code;
+		pthread_mutex_unlock(&repeater_mtx);
+		pthread_cond_signal(&repeater_cond);
+	} else {
+		pthread_mutex_lock(&repeater_mtx);
+		repeat_key = 0;
+		pthread_mutex_unlock(&repeater_mtx);
+		pthread_cond_signal(&repeater_cond);
+	}
 
-	ev.type = EV_KEY;
-	ev.code = code;
-	ev.value = state;
-
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
-
-	write(vkbd->fd, &ev, sizeof(ev));
-
-	ev.type = EV_SYN;
-	ev.code = 0;
-	ev.value = 0;
-
-
-	write(vkbd->fd, &ev, sizeof(ev));
+	write_key_event(vkbd, code, state);
 }
 
 void free_vkbd(struct vkbd *vkbd)
