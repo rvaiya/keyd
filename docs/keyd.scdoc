@@ -88,7 +88,7 @@ For example:
 ```
 
 
-Will match all devices which *do not* have the id _0123:4567_, while:
+Will match all devices which *do not*(2) have the id _0123:4567_, while:
 
 ```
 	[ids]
@@ -106,7 +106,7 @@ same state. This is useful for linking separate input devices together
 
 Note 2: The wildcard will only match devices which keyd identifies as keyboards.
 keyd is also capable of *managing mice* (e.g to facilitate clearing
-of oneshot modifies on click), but their ids must be explicitly listed.
+of oneshot modifiers on click), but their ids must be explicitly listed.
 
 ## Layers
 
