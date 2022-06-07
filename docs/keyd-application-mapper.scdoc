@@ -10,7 +10,7 @@ A script which reads _~/.config/keyd/app.conf_ and applies the supplied
 bindings whenever a window with a matching class comes into focus.
 
 You can think of each section as a set of application specific masks applied
-over the global rules defined in _/etc/keyd/\*.conf_. 
+over the global rules defined in _/etc/keyd/\*.conf_.
 
 The config file has the following form:
 
@@ -30,7 +30,7 @@ Where _<filter>_ has one of the following forms:
 and each _<expression>_ is a valid argument to _-e_ (see *Expressions*).
 
 _<class exp>_ and _<title exp>_ are strings which describe window class and title names
-to be matched, and may optionally contain unix style wildcards (\*). For example, 
+to be matched, and may optionally contain unix style wildcards (\*). For example,
 _[gnome|\*find\*]_ will match any window with a class of _gnome_ and a title
 containing the substring _find_.
 

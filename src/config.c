@@ -339,18 +339,21 @@ static int config_check_match(const char *path, uint16_t vendor, uint16_t produc
 							wildcard = 1;
 						} else {
 							char *id = line;
+							uint8_t omit = 0;
 							uint16_t p, v;
 							int ret;
 
-							if (line[0] == '-')
+							if (line[0] == '-') {
+								omit = 1;
 								id++;
+							}
 
 							if (line[0] != '#') {
 								ret = sscanf(id, "%hx:%hx", &v, &p);
 
 								if (ret == 2 && v == vendor && p == product) {
 									close(fd);
-									return wildcard ? 0 : 2;
+									return omit ? 0 : 2;
 								}
 							}
 						}
@@ -376,7 +379,7 @@ end:
  * Scan a directory for the most appropriate match for a given vendor/product
  * pair and return the result. returns NULL if not match is found.
  */
-const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product)
+const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product, uint8_t *is_exact_match)
 {
 	static char result[1024];
 	DIR *dh = opendir(dir);
@@ -406,5 +409,7 @@ const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product)
 	}
 
 	closedir(dh);
+
+	*is_exact_match = priority == 2;
 	return priority ? result : NULL;
 }

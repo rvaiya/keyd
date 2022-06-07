@@ -42,6 +42,6 @@ int config_parse(struct config *config, const char *path);
 int config_add_entry(struct config *config, const char *exp);
 int config_get_layer_index(const struct config *config, const char *name);
 
-const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product);
+const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product, uint8_t *is_exact_match);
 
 #endif

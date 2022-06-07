@@ -104,8 +104,10 @@ static void daemon_remove_cb(struct device *dev)
 
 static void daemon_add_cb(struct device *dev)
 {
+	uint8_t exact_match;
 	struct keyboard *kbd;
-	const char *config_path = find_config_path(config_dir, dev->vendor_id, dev->product_id);
+
+	const char *config_path = find_config_path(config_dir, dev->vendor_id, dev->product_id, &exact_match);
 
 	dev->data = NULL;
 
@@ -116,7 +118,7 @@ static void daemon_add_cb(struct device *dev)
 	 * between these two, so we take a permissive approach and leave it up to
 	 * the user to blacklist mice which emit key events.
 	 */
-	if (!(dev->type & DEVT_KEYBOARD)) {
+	if (!exact_match && !(dev->type & DEVT_KEYBOARD)) {
 		dbg("Ignoring %s (not a keyboard)", dev->name);
 		return;
 	}
@@ -180,10 +182,6 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 	case DEV_KEY:
 		code = ev->code;
 		pressed = ev->pressed;
-
-		/* Notify the active keyboard of mouse presses to neutralize any oneshots. */
-		if ((code >= KEYD_LEFT_MOUSE && code <= KEYD_MOUSE_2) && active_kbd)
-			kbd_process_key_event(active_kbd, KEYD_EXTERNAL_MOUSE_BUTTON, pressed);
 
 		if (!kbd)
 			return 0;

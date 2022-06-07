@@ -95,7 +95,7 @@ Will match all devices which *do not* have the id _0123:4567_, while:
 	0123:4567
 ```
 
-will exclusively match any devices which do.
+will exclusively match any devices which do. 
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
@@ -103,6 +103,10 @@ of _[global]_ (see _GLOBALS_).
 Note: All keyboards defined within a given config file will share the
 same state. This is useful for linking separate input devices together
 (e.g foot pedals).
+
+Note 2: The wildcard will only match devices which keyd identifies as keyboards.
+keyd is also capable of *managing mice* (e.g to facilitate clearing
+of oneshot modifies on click), but their ids must be explicitly listed.
 
 ## Layers
 
