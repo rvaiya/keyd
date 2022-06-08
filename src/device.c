@@ -320,10 +320,10 @@ struct device_event *device_read_event(struct device *dev)
 			break;
 		case REL_WHEEL_HI_RES:
 			/* TODO: implement me */
-			break;
+			return NULL;
 		case REL_HWHEEL_HI_RES:
 			/* TODO: implement me */
-			break;
+			return NULL;
 		default:
 			fprintf(stderr, "Unrecognized EV_REL code: %d\n", ev.code);
 			return NULL;
