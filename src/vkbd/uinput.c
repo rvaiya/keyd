@@ -367,6 +367,12 @@ void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
 	case 3:
 		ev.code = BTN_RIGHT;
 		break;
+	case 4:
+		ev.code = BTN_SIDE;
+		break;
+	case 5:
+		ev.code = BTN_EXTRA;
+		break;
 	default:
 		return;
 	}
