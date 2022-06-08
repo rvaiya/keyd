@@ -275,10 +275,10 @@ static int monitor_event_cb(struct device *dev, struct device_event *ev)
 	switch (ev->type) {
 	const char *name;
 	case DEV_MOUSE_MOVE:
-		printf("%s: move %d %d\n", dev->name, ev->x, ev->y);
+		dbg("%s: move %d %d", dev->name, ev->x, ev->y);
 		break;
 	case DEV_MOUSE_SCROLL:
-		printf("%s: scroll %d %d\n", dev->name, ev->x, ev->y);
+		dbg("%s: scroll %d %d", dev->name, ev->x, ev->y);
 		break;
 	case DEV_KEY:
 		name = keycode_table[ev->code].name;
