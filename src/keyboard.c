@@ -88,26 +88,7 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 
 	kbd->keystate[code] = pressed;
 
-	switch (code) {
-		case KEYD_LEFT_MOUSE:
-			vkbd_send_button(vkbd, 1, pressed);
-			break;
-		case KEYD_MIDDLE_MOUSE:
-			vkbd_send_button(vkbd, 2, pressed);
-			break;
-		case KEYD_RIGHT_MOUSE:
-			vkbd_send_button(vkbd, 3, pressed);
-			break;
-		case KEYD_MOUSE_1:
-			vkbd_send_button(vkbd, 4, pressed);
-			break;
-		case KEYD_MOUSE_2:
-			vkbd_send_button(vkbd, 5, pressed);
-			break;
-		default:
-			vkbd_send_key(vkbd, code, pressed);
-			break;
-	}
+	vkbd_send_key(vkbd, code, pressed);
 }
 
 static void set_mods(struct keyboard *kbd, uint8_t mods)

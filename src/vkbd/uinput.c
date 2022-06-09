@@ -35,12 +35,6 @@ pthread_mutex_t repeater_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t repeater_cond = PTHREAD_COND_INITIALIZER;
 static uint8_t repeat_key = 0;
 
-static int is_mouse_button(size_t code)
-{
-	return (((code) >= BTN_LEFT && (code) <= BTN_TASK) ||
-		((code) >= BTN_0 && (code) <= BTN_9));
-}
-
 static int create_virtual_keyboard(const char *name)
 {
 	int ret;
@@ -71,6 +65,12 @@ static int create_virtual_keyboard(const char *name)
 			}
 		}
 	}
+
+	for (code = BTN_LEFT; code <= BTN_TASK; code++)
+		ioctl(fd, UI_SET_KEYBIT, code);
+
+	for (code = BTN_0; code <= BTN_9; code++)
+		ioctl(fd, UI_SET_KEYBIT, code);
 
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
@@ -179,8 +179,19 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 
 	pthread_mutex_lock(&mtx);
 
+
+
 	ev.type = EV_KEY;
-	ev.code = code;
+
+	switch (code) {
+		case KEYD_LEFT_MOUSE:	ev.code = BTN_LEFT; break;
+		case KEYD_MIDDLE_MOUSE:	ev.code = BTN_MIDDLE; break;
+		case KEYD_RIGHT_MOUSE:	ev.code = BTN_RIGHT; break;
+		case KEYD_MOUSE_1:	ev.code = BTN_SIDE; break;
+		case KEYD_MOUSE_2:	ev.code = BTN_EXTRA; break;
+		default:		ev.code = code; break;
+	}
+
 	ev.value = state;
 
 	ev.time.tv_sec = 0;
@@ -335,50 +346,6 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 	ev.type = EV_ABS;
 	ev.code = ABS_Y;
 	ev.value = y;
-
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
-
-	write(vkbd->pfd, &ev, sizeof(ev));
-
-	ev.type = EV_SYN;
-	ev.code = 0;
-	ev.value = 0;
-
-	write(vkbd->pfd, &ev, sizeof(ev));
-}
-
-
-void vkbd_send_button(const struct vkbd *vkbd, uint8_t btn, int state)
-{
-	struct input_event ev;
-
-	if (vkbd->pfd == -1) {
-		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
-	}
-
-	switch (btn) {
-	case 1:
-		ev.code = BTN_LEFT;
-		break;
-	case 2:
-		ev.code = BTN_MIDDLE;
-		break;
-	case 3:
-		ev.code = BTN_RIGHT;
-		break;
-	case 4:
-		ev.code = BTN_SIDE;
-		break;
-	case 5:
-		ev.code = BTN_EXTRA;
-		break;
-	default:
-		return;
-	}
-
-	ev.type = EV_KEY;
-	ev.value = state;
 
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
