@@ -47,6 +47,12 @@ install:
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
+	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/user/ ]; then \
+		install -Dm644 keyd-application-mapper.service $(DESTDIR)$(PREFIX)/lib/systemd/user/keyd-application-mapper.service; \
+	else \
+		echo "NOTE: systemd user directory not found, keyd-applicaion-mapper.service not installed."; \
+	fi
+
 	@if [ -e $(DESTDIR)$(PREFIX)/share/libinput/ ]; then \
 		install -Dm644 keyd.quirks $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks; \
 	else \
@@ -75,6 +81,7 @@ install:
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		$(DESTDIR)$(PREFIX)/lib/systemd/user/keyd-application-mapper.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \

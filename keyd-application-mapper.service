@@ -1,0 +1,10 @@
+[Unit]
+Description=keyd application specific mappings
+Documentation=man:keyd-application-mapper
+ConditionUser=!root
+
+[Service]
+ExecStart=keyd-application-mapper
+
+[Install]
+WantedBy=default.target

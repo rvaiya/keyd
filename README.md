@@ -131,6 +131,15 @@ E.G
 
 You will probably want to put `keyd-application-mapper -d` somewhere in your 
 display server initialization logic (e.g ~/.xinitrc) unless you are running Gnome.
+If your computer is running systemd, you can start keyd-application-mapper
+automatically each login by enabling the supplied user service:
+
+	`systemctl --user enable keyd-application-mapper.service`
+
+After logging out and back in, the following command should show you if it
+is running:
+
+	`systemctl --user status keyd-application-mapper.service`
 
 See the man page for more details.
 
