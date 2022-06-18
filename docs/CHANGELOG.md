@@ -1,3 +1,12 @@
+# v2.4.1
+
+ - Route button presses through the virtual keyboard (#162)
+ - Improve mouse support
+ - Fix VT repeat bug
+ - Allow overload to accept an arbitrary action (#199)
+ - Add support for full key serquences to swap()
+ - Misc bugfixes
+
 # v2.4.0
 
  - Fix macro timeouts
