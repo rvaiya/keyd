@@ -15,12 +15,97 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "ini.h"
 #include "keys.h"
 #include "layer.h"
 #include "error.h"
 #include "config.h"
+
+#define MAX_FILE_SZ 65536
+#define MAX_LINE_LEN 256
+
+static char *read_file(const char *path) 
+{
+	const char include_prefix[] = "include ";
+
+	static char buf[MAX_FILE_SZ];
+	char line[MAX_LINE_LEN];
+	int sz = 0;
+
+	FILE *fh = fopen(path, "r");
+	if (!fh) {
+		fprintf(stderr, "\tERROR: Failed to open %s\n", path);
+		return NULL;
+	}
+
+	while (fgets(line, sizeof line, fh)) {
+		int len = strlen(line);
+
+		if (line[len-1] != '\n') {
+			fprintf(stderr, "\tERROR: Maximum line length exceed (%d).\n", MAX_LINE_LEN);
+			goto fail;
+		}
+
+		if ((len+sz) > MAX_FILE_SZ) {
+			fprintf(stderr, "\tERROR: Max file size (%d) exceeded.\n", MAX_FILE_SZ);
+			goto fail;
+		}
+
+		if (strstr(line, include_prefix) == line) {
+			int fd;
+			char include_path[PATH_MAX];
+			char resolved_path[PATH_MAX];
+
+			line[len-1] = 0;
+
+			char *tmp = strdup(path);
+			char *dir = dirname(tmp);
+
+			snprintf(include_path,
+				sizeof include_path,
+				"%s/%s", dir, line+sizeof(include_prefix)-1);
+
+			if(!realpath(include_path, resolved_path)) {
+				fprintf(stderr, "\tERROR: Failed to resolve include path: %s\n", include_path);
+				free(tmp);
+				continue;
+			}
+
+			if (strstr(resolved_path, dir) != resolved_path) {
+				fprintf(stderr, "\tERROR: Naughty path detected: %s\n", include_path);
+				free(tmp);
+				continue;
+			}
+
+			free(tmp);
+
+			fd = open(include_path, O_RDONLY);
+
+			if (fd < 0) {
+				fprintf(stderr, "\tERROR: Failed to include %s\n", include_path);
+				perror("open");
+			} else {
+				int n;
+				while ((n = read(fd, buf+sz, sizeof(buf)-sz)) > 0)
+					sz += n;
+				close(fd);
+			}
+		} else {
+			strcpy(buf+sz, line);
+			sz += len;
+		}
+	}
+
+	fclose(fh);
+	return buf;
+
+fail:
+	fclose(fh);
+	return NULL;
+}
+
 
 /* Return up to two keycodes associated with the given name. */
 static int lookup_keycodes(const char *name, uint8_t *code1, uint8_t *code2)
@@ -103,11 +188,7 @@ int config_add_entry(struct config *config, const char *exp)
 		s = dot+1;
 	}
 
-	if (parse_kvp(s, &keyname, &descstr) < 0) {
-		err("Invalid key value pair.");
-		return -1;
-	}
-
+	parse_kvp(s, &keyname, &descstr);
 	idx = config_get_layer_index(config, layername);
 
 	if (idx == -1) {
@@ -216,24 +297,19 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 	size_t i;
 
 	for (i = 0; i < section->nr_entries;i++) {
-		char *key, *val;
 		struct ini_entry *ent = &section->entries[i];
-		if (parse_kvp(ent->line, &key, &val)) {
-			fprintf(stderr, "\tERROR %s:%zd: malformed config entry\n", path, ent->lnum);
-			continue;
-		}
 
-		if (!strcmp(key, "macro_timeout"))
-			config->macro_timeout = atoi(val);
-		else if (!strcmp(key, "macro_repeat_timeout"))
-			config->macro_repeat_timeout = atoi(val);
-		else if (!strcmp(key, "layer_indicator"))
-			config->layer_indicator = atoi(val);
+		if (!strcmp(ent->key, "macro_timeout"))
+			config->macro_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "macro_repeat_timeout"))
+			config->macro_repeat_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "layer_indicator"))
+			config->layer_indicator = atoi(ent->val);
 		else
 			fprintf(stderr, "\tERROR %s:%zd: %s is not a valid global option.\n",
 					path,
 					ent->lnum,
-					key);
+					ent->key);
 	}
 }
 
@@ -241,12 +317,16 @@ int config_parse(struct config *config, const char *path)
 {
 	size_t i;
 
+	char *content;
 	struct ini *ini;
 	struct ini_section *section;
 
 	config_init(config);
 
-	if (!(ini = ini_parse_file(path, NULL)))
+	if (!(content = read_file(path)))
+		return -1;
+
+	if (!(ini = ini_parse_string(content, NULL)))
 		return -1;
 
 	/* First pass: create all layers based on section headers.  */
@@ -282,10 +362,15 @@ int config_parse(struct config *config, const char *path)
 			char entry[MAX_EXP_LEN];
 			struct ini_entry *ent = &section->entries[j];
 
-			snprintf(entry, sizeof entry, "%s.%s", layername, ent->line);
+			if (!ent->val) {
+				fprintf(stderr, "\tERROR parsing %s:%zd: invalid key value pair.\n", path, ent->lnum);
+				continue;
+			}
+
+			snprintf(entry, sizeof entry, "%s.%s = %s", layername, ent->key, ent->val);
 
 			if (config_add_entry(config, entry) < 0)
-				fprintf(stderr, "\tERROR %s:%zd: %s\n", path, ent->lnum, errstr);
+				fprintf(stderr, "\tERROR parsing %s:%zd: %s\n", path, ent->lnum, errstr);
 		}
 	}
 

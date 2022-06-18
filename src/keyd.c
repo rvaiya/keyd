@@ -599,4 +599,6 @@ int main(int argc, char *argv[])
 		chgid();
 		loop(0);
 	}
+
+	return 0;
 }

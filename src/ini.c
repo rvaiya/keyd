@@ -18,11 +18,11 @@
 
 /*
  * Parse a value of the form 'key = value'. The value may contain =
- * and the key may itself be = as a special case. The returned
- * values are pointers within the modified input string.
+ * and the key may itself be = as a special case. value may be NULL
+ * if '=' is not present in the original string.
  */
 
-int parse_kvp(char *s, char **key, char **value)
+void parse_kvp(char *s, char **key, char **value)
 {
 	char *last_space = NULL;
 	char *c = s;
@@ -31,6 +31,8 @@ int parse_kvp(char *s, char **key, char **value)
 	if (*c == '=')
 		c++;
 
+	*key = s;
+	*value = NULL;
 	while (*c) {
 		switch (*c) {
 		case '=':
@@ -38,18 +40,11 @@ int parse_kvp(char *s, char **key, char **value)
 				*last_space = 0;
 			else
 				*c = 0;
-			c++;
 
-			while (*c && *c == ' ')
-				c++;
+			while (*++c == ' ');
 
-			if (!*s)
-				return -1;
-
-			*key = s;
 			*value = c;
-
-			return 0;
+			return;
 		case ' ':
 			if (!last_space)
 				last_space = c;
@@ -61,36 +56,19 @@ int parse_kvp(char *s, char **key, char **value)
 
 		c++;
 	}
-
-	return -1;
 }
 
-static void read_file(const char *path, char *buf, size_t buf_sz)
+/*
+ * The result is statically allocated and should not be freed by the caller.
+ * The returned struct is only valid until the next invocation. The
+ * input string may be modified and should only be freed after the
+ * returned ini struct is no longer required.
+ */
+
+struct ini *ini_parse_string(char *s, const char *default_section_name)
 {
-	struct stat st;
-	size_t sz;
-	int fd;
-	ssize_t n = 0, nr;
+	static struct ini ini;
 
-	if (stat(path, &st)) {
-		perror("stat");
-		exit(-1);
-	}
-
-	sz = st.st_size;
-	assert(sz < buf_sz);
-
-	fd = open(path, O_RDONLY);
-	while ((nr = read(fd, buf + n, sz - n))) {
-		n += nr;
-	}
-
-	buf[sz] = '\0';
-	close(fd);
-}
-
-int parse(char *s, struct ini *ini, const char *default_section_name)
-{
 	int ln = 0;
 	size_t n = 0;
 
@@ -130,7 +108,7 @@ int parse(char *s, struct ini *ini, const char *default_section_name)
 			if (line[len-1] == ']') {
 				assert(n < MAX_SECTIONS);
 
-				section = &ini->sections[n++];
+				section = &ini.sections[n++];
 
 				line[len-1] = 0;
 
@@ -148,39 +126,22 @@ int parse(char *s, struct ini *ini, const char *default_section_name)
 
 		if (!section) {
 			if(default_section_name) {
-				section = &ini->sections[n++];
+				section = &ini.sections[n++];
 				strcpy(section->name, default_section_name);
 
 				section->nr_entries = 0;
 				section->lnum = 0;
 			} else
-				return -1;
+				return NULL;
 		}
 
 		assert(section->nr_entries < MAX_SECTION_ENTRIES);
 
 		ent = &section->entries[section->nr_entries++];
-
-		ent->line = line;
+		parse_kvp(line, &ent->key, &ent->val);
 		ent->lnum = ln;
 	}
 
-	ini->nr_sections = n;
-	return 0;
-}
-
-/*
- * The result is statically allocated and should not be freed by the caller.
- * The returned ini struct is only valid until the next invocation.
- */
-struct ini *ini_parse_file(const char *path, const char *default_section_name)
-{
-	static char buf[MAX_INI_SIZE];
-	static struct ini ini;
-
-	read_file(path, buf, sizeof buf);
-	if (parse(buf, &ini, default_section_name) < 0)
-		return NULL;
-
+	ini.nr_sections = n;
 	return &ini;
 }
