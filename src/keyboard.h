@@ -28,7 +28,7 @@ struct keyboard {
 	struct config config;
 	struct config original_config;
 
-	/* 
+	/*
 	 * Cache descriptors to preserve code->descriptor
 	 * mappings in the event of mid-stroke layer changes.
 	 */

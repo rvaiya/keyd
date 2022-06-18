@@ -95,7 +95,7 @@ Will match all devices which *do not*(2) have the id _0123:4567_, while:
 	0123:4567
 ```
 
-will exclusively match any devices which do. 
+will exclusively match any devices which do.
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
@@ -276,6 +276,68 @@ E.G
 	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
 *Note:* You may have to restart your applications for this to take effect.
+
+## File Inclusion
+
+Config files may include other files located within the config directory using
+the _include_ keyword. A line of the form *include <file>* may appear at any
+point after the [ids] section. The resultant config will behave as though the
+contents of the included file appear in place of the include statement.
+
+Making strategic use of these statements makes it possible to share common
+functionality between configs.
+
+E.G
+
+```
+/etc/keyd/default.conf:
+	[ids]
+	*
+
+	include common
+
+	# Appends bindings to the main layer
+	# defined in /etc/keyd/common (order matters)
+	[main]
+	include layouts/dvorak
+	f11 = toggle(colemak)
+
+	[colemak]
+	include layouts/colemak
+	capslock = backspace
+
+/etc/keyd/common:
+	[main]
+
+	rightmeta = layer(nav)
+
+	[nav]
+
+	h = left
+	j = down
+	k = up
+	l = right
+
+/etc/keyd/layouts/dvorak:
+	a = a
+	s = o
+	...
+
+```
+
+Limitations:
+
+	- All include statements should appear after the [ids] section in the including file.
+	- Included files should not contain an ids section.
+	- Included files should not include other files (inclusion is non-recursive).
+	- Included files should not end in .conf.
+
+
+For convenience, keyd ships with a number of common letter layouts in
+/etc/keyd/layouts. Before including these, it is instructive to inspect them.
+Non-english layouts include a dedicated shift layer (making order of inclusion
+important) and *require the use of keyd's compose definitions* (see *Unicode
+Support*)
 
 # GLOBALS
 

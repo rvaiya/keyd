@@ -26,7 +26,7 @@
 #define MAX_FILE_SZ 65536
 #define MAX_LINE_LEN 256
 
-static char *read_file(const char *path) 
+static char *read_file(const char *path)
 {
 	const char include_prefix[] = "include ";
 
