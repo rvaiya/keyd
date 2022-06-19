@@ -14,7 +14,7 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-Wno-unused \
 	-std=c11 \
 	-D_DEFAULT_SOURCE \
-	-D_XOPEN_SOURCE=700 $(CFLAGS)
+	$(CFLAGS)
 
 platform=$(shell uname -s)
 
