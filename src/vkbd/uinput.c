@@ -66,12 +66,6 @@ static int create_virtual_keyboard(const char *name)
 		}
 	}
 
-	for (code = BTN_LEFT; code <= BTN_TASK; code++)
-		ioctl(fd, UI_SET_KEYBIT, code);
-
-	for (code = BTN_0; code <= BTN_9; code++)
-		ioctl(fd, UI_SET_KEYBIT, code);
-
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
 	udev.id.product = 0x0ADE;
@@ -148,6 +142,15 @@ static int create_virtual_pointer(const char *name)
 	return fd;
 }
 
+static void init_pfd(const struct vkbd *vkbd)
+{
+	if (vkbd->pfd == -1) {
+		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
+		/* Give the device time to propagate up the input stack. */
+		usleep(100000);
+	}
+}
+
 static long get_time_ms()
 {
 	struct timespec ts;
@@ -176,20 +179,36 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 {
 	static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 	struct input_event ev;
+	int fd;
+	int is_btn;
 
 	pthread_mutex_lock(&mtx);
 
-
+	fd = vkbd->fd;
 
 	ev.type = EV_KEY;
 
+	is_btn = 1;
 	switch (code) {
 		case KEYD_LEFT_MOUSE:	ev.code = BTN_LEFT; break;
 		case KEYD_MIDDLE_MOUSE:	ev.code = BTN_MIDDLE; break;
 		case KEYD_RIGHT_MOUSE:	ev.code = BTN_RIGHT; break;
 		case KEYD_MOUSE_1:	ev.code = BTN_SIDE; break;
 		case KEYD_MOUSE_2:	ev.code = BTN_EXTRA; break;
-		default:		ev.code = code; break;
+		default:
+			ev.code = code;
+			is_btn = 0;
+			break;
+	}
+
+	/*
+	 * Send all buttons through the virtual pointer
+	 * to prevent X from identifying the virtual
+	 * keyboard as a mouse.
+	 */
+	if (is_btn) {
+		init_pfd(vkbd);
+		fd = vkbd->pfd;
 	}
 
 	ev.value = state;
@@ -197,14 +216,14 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(vkbd->fd, &ev, sizeof(ev));
+	write(fd, &ev, sizeof(ev));
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
 
-	write(vkbd->fd, &ev, sizeof(ev));
+	write(fd, &ev, sizeof(ev));
 
 	pthread_mutex_unlock(&mtx);
 }
@@ -254,13 +273,9 @@ struct vkbd *vkbd_init(const char *name)
 
 void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 {
-	struct input_event ev;
+	init_pfd(vkbd);
 
-	if (vkbd->pfd == -1) {
-		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
-		/* Give the device time to propagate up the input stack. */
-		usleep(100000);
-	}
+	struct input_event ev;
 
 	if (x) {
 		ev.type = EV_REL;
@@ -293,10 +308,7 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 {
-	if (vkbd->pfd == -1) {
-		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
-		usleep(100000);
-	}
+	init_pfd(vkbd);
 
 	struct input_event ev;
 
@@ -327,10 +339,7 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 {
-	if (vkbd->pfd == -1) {
-		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
-		usleep(100000);
-	}
+	init_pfd(vkbd);
 
 	struct input_event ev;
 
