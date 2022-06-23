@@ -209,6 +209,7 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	if (is_btn) {
 		init_pfd(vkbd);
 		fd = vkbd->pfd;
+		usleep(100000);
 	}
 
 	ev.value = state;
