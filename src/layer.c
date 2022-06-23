@@ -78,7 +78,7 @@ int create_layer(struct layer *layer, const char *desc, const struct config *cfg
 	}
 
 
-	dbg("created [%s] from \"%s\"", layer->name, desc);
+	dbg2("created [%s] from \"%s\"", layer->name, desc);
 	return 0;
 }
 

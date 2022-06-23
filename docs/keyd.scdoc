@@ -287,6 +287,11 @@ contents of the included file appear in place of the include statement.
 Making strategic use of these statements makes it possible to share common
 functionality between configs.
 
+Include paths are relative and must be placed in one of the following
+directories:
+	- /etc/keyd/
+	- /usr/share/keyd/
+
 E.G
 
 ```
@@ -334,7 +339,7 @@ Limitations:
 
 
 For convenience, keyd ships with a number of common letter layouts in
-/etc/keyd/layouts. Before including these, it is instructive to inspect them.
+/usr/share/keyd/layouts. Before including these, it is instructive to inspect them.
 Non-english layouts include a dedicated shift layer (making order of inclusion
 important) and *require the use of keyd's compose definitions* (see *Unicode
 Support*)

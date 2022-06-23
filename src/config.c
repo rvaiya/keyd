@@ -26,6 +26,30 @@
 #define MAX_FILE_SZ 65536
 #define MAX_LINE_LEN 256
 
+static const char *resolve_include_path(const char *path, const char *include_path)
+{
+	static char resolved_path[PATH_MAX];
+	char tmp[PATH_MAX];
+	const char *dir;
+
+	if (strstr(include_path, "."))
+		return NULL;
+
+	strcpy(tmp, path);
+	dir = dirname(tmp);
+	snprintf(resolved_path, sizeof resolved_path, "%s/%s", dir, include_path);
+
+	if (!access(resolved_path, F_OK))
+		return resolved_path;
+
+	snprintf(resolved_path, sizeof resolved_path, "/usr/share/keyd/%s", include_path);
+
+	if (!access(resolved_path, F_OK))
+		return resolved_path;
+
+	return NULL;
+}
+
 static char *read_file(const char *path)
 {
 	const char include_prefix[] = "include ";
@@ -55,33 +79,21 @@ static char *read_file(const char *path)
 
 		if (strstr(line, include_prefix) == line) {
 			int fd;
-			char include_path[PATH_MAX];
-			char resolved_path[PATH_MAX];
+			const char *resolved_path;
+			char *include_path = line+sizeof(include_prefix)-1;
 
 			line[len-1] = 0;
 
-			char *tmp = strdup(path);
-			char *dir = dirname(tmp);
+			resolved_path = resolve_include_path(path, include_path);
 
-			snprintf(include_path,
-				sizeof include_path,
-				"%s/%s", dir, line+sizeof(include_prefix)-1);
-
-			if(!realpath(include_path, resolved_path)) {
+			if (!resolved_path) {
 				fprintf(stderr, "\tERROR: Failed to resolve include path: %s\n", include_path);
-				free(tmp);
 				continue;
 			}
 
-			if (strstr(resolved_path, dir) != resolved_path) {
-				fprintf(stderr, "\tERROR: Naughty path detected: %s\n", include_path);
-				free(tmp);
-				continue;
-			}
+			dbg("Including %s from %s", resolved_path, path);
 
-			free(tmp);
-
-			fd = open(include_path, O_RDONLY);
+			fd = open(resolved_path, O_RDONLY);
 
 			if (fd < 0) {
 				fprintf(stderr, "\tERROR: Failed to include %s\n", include_path);
@@ -408,7 +420,7 @@ static int config_check_match(const char *path, uint16_t vendor, uint16_t produc
 				case ' ':
 					break;
 				case '#':
-					while ((buf[i] != '\n') && (i < n))
+					while ((i < n) && (buf[i] != '\n'))
 						i++;
 					break;
 				case '[':
