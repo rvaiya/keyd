@@ -407,6 +407,10 @@ static int config_check_match(const char *path, uint16_t vendor, uint16_t produc
 			switch (buf[i]) {
 				case ' ':
 					break;
+				case '#':
+					while ((buf[i] != '\n') && (i < n))
+						i++;
+					break;
 				case '[':
 					if (seen_ids)
 						goto end;
