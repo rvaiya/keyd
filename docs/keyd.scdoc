@@ -629,6 +629,25 @@ of _will thus produce A-tab instead of M-\\_.
 	rightshift = capslock
 ```
 
+## Example 7
+
+```
+	# holding capslock + tapping h/j/k/l will work as left/down/up/right.
+	# holding capslock + tapping keys (any other than h/j/k/l) will work as control+keys
+	# Tapping ESC  will toggle capslock.
+	# Tapping capslock  will activate esc.
+
+	[main]
+	capslock = overload(capslock, esc)
+	esc = capslock
+
+	[capslock:C]
+	h = left
+	k = up
+	j = down
+	l = right
+```
+
 # AUTHOR
 
 Written by Raheman Vaiya (2017-).
