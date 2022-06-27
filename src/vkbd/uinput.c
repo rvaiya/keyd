@@ -142,15 +142,6 @@ static int create_virtual_pointer(const char *name)
 	return fd;
 }
 
-static void init_pfd(const struct vkbd *vkbd)
-{
-	if (vkbd->pfd == -1) {
-		((struct vkbd *)vkbd)->pfd = create_virtual_pointer("keyd virtual pointer");
-		/* Give the device time to propagate up the input stack. */
-		usleep(100000);
-	}
-}
-
 static long get_time_ms()
 {
 	struct timespec ts;
@@ -206,10 +197,8 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	 * to prevent X from identifying the virtual
 	 * keyboard as a mouse.
 	 */
-	if (is_btn) {
-		init_pfd(vkbd);
+	if (is_btn)
 		fd = vkbd->pfd;
-	}
 
 	ev.value = state;
 
@@ -257,15 +246,8 @@ struct vkbd *vkbd_init(const char *name)
 
 	struct vkbd *vkbd = calloc(1, sizeof vkbd);
 	vkbd->fd = create_virtual_keyboard(name);
+	vkbd->pfd = create_virtual_pointer("keyd virtual pointer");
 
-	/*
-	 * lazily initialize the virtual pointer to avoid presenting an
-	 * external mouse if it is unnecessary. This can cause issues higher
-	 * up the input stack (e.g libinput touchpad disabling in the presence
-	 * of an external mouse)
-	 */
-
-	vkbd->pfd = -1;
 	pthread_create(&tid, NULL, repeater, vkbd);
 
 	return vkbd;
@@ -273,8 +255,6 @@ struct vkbd *vkbd_init(const char *name)
 
 void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 {
-	init_pfd(vkbd);
-
 	struct input_event ev;
 
 	if (x) {
@@ -308,8 +288,6 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 {
-	init_pfd(vkbd);
-
 	struct input_event ev;
 
 	ev.type = EV_REL;
@@ -339,8 +317,6 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 {
-	init_pfd(vkbd);
-
 	struct input_event ev;
 
 	ev.type = EV_ABS;
