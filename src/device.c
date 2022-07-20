@@ -83,13 +83,15 @@ static int device_init(const char *path, struct device *dev)
 
 	type = resolve_device_type(fd);
 
+	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
+		perror("ioctl EVIOCGNAME");
+		return -1;
+	}
+
+	dbg2("device type of %s (%s): %x", path, dev->name, type);
+
 	if (type) {
 		struct input_id info;
-
-		if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
-			perror("ioctl EVIOCGNAME");
-			return -1;
-		}
 
 		if (ioctl(fd, EVIOCGID, &info) == -1) {
 			perror("ioctl EVIOCGID");
