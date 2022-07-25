@@ -4,26 +4,24 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 #include <string.h>
-#include <assert.h>
-
 #include "macro.h"
 #include "keys.h"
 #include "error.h"
 #include "unicode.h"
 #include "string.h"
 
-static void add_entry(struct macro *m, uint8_t type, uint16_t data)
-{
-	assert(m->sz < MAX_MACRO_SIZE);
-
-	m->entries[m->sz].type = type;
-	m->entries[m->sz].data = data;
-
-	m->sz++;
-}
-
 static int parse(struct macro *macro, char *s)
 {
+	#define ADD_ENTRY(t, d) do { \
+		if (macro->sz >= MAX_MACRO_SIZE) { \
+			err("maxium macro size (%d) exceeded", MAX_MACRO_SIZE); \
+			return 1; \
+		} \
+		macro->entries[macro->sz].type = t; \
+		macro->entries[macro->sz].data = d; \
+		macro->sz++; \
+	} while(0)
+
 	char *tok;
 	macro->sz = 0;
 
@@ -32,7 +30,7 @@ static int parse(struct macro *macro, char *s)
 		size_t len = strlen(tok);
 
 		if (!parse_key_sequence(tok, &code, &mods)) {
-			add_entry(macro, MACRO_KEYSEQUENCE, (mods << 8) | code);
+			ADD_ENTRY(MACRO_KEYSEQUENCE, (mods << 8) | code);
 		} else if (strchr(tok, '+')) {
 			char *saveptr;
 			char *key;
@@ -41,16 +39,18 @@ static int parse(struct macro *macro, char *s)
 				size_t len = strlen(key);
 
 				if (len > 1 && key[len-2] == 'm' && key[len-1] == 's')
-					add_entry(macro, MACRO_TIMEOUT, atoi(key));
+					ADD_ENTRY(MACRO_TIMEOUT, atoi(key));
 				else if (!parse_key_sequence(key, &code, &mods))
-					add_entry(macro, MACRO_HOLD, code);
-				else
+					ADD_ENTRY(MACRO_HOLD, code);
+				else {
+					err("%s is not a valid key", key);
 					return -1;
+				}
 			}
 
-			add_entry(macro, MACRO_RELEASE, 0);
+			ADD_ENTRY(MACRO_RELEASE, 0);
 		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
-			add_entry(macro, MACRO_TIMEOUT, atoi(tok));
+			ADD_ENTRY(MACRO_TIMEOUT, atoi(tok));
 		} else {
 			uint32_t codepoint;
 			int chrsz;
@@ -65,17 +65,17 @@ static int parse(struct macro *macro, char *s)
 						const char *shiftname = keycode_table[i].shifted_name;
 
 						if (name && name[0] == tok[0] && name[1] == 0) {
-							add_entry(macro, MACRO_KEYSEQUENCE, i);
+							ADD_ENTRY(MACRO_KEYSEQUENCE, i);
 							break;
 						}
 
 						if (shiftname && shiftname[0] == tok[0] && shiftname[1] == 0) {
-							add_entry(macro, MACRO_KEYSEQUENCE, (MOD_SHIFT << 8) | i);
+							ADD_ENTRY(MACRO_KEYSEQUENCE, (MOD_SHIFT << 8) | i);
 							break;
 						}
 					}
 				} else if ((xcode = lookup_xcompose_code(codepoint)) > 0)
-					add_entry(macro, MACRO_UNICODE, xcode);
+					ADD_ENTRY(MACRO_UNICODE, xcode);
 
 				tok += chrsz;
 			}
@@ -85,6 +85,11 @@ static int parse(struct macro *macro, char *s)
 	return 0;
 }
 
+/* Returns:
+ *   0 on success
+ *   -1 in the case of an invalid macro expression
+ *   >0 for all other errors
+ */
 int parse_macro(const char *exp, struct macro *macro)
 {
 	char s[MAX_MACROEXP_LEN+1];
@@ -101,10 +106,12 @@ int parse_macro(const char *exp, struct macro *macro)
 
 	if (!parse_key_sequence(s, NULL, NULL) || utf8_strlen(s) == 1) {
 		return parse(macro, s);
-	} else if (strstr(s, "macro(") == s && s[len-1] == ')') {
+	} else if (!strncmp(s, "macro(", 6) && s[len-1] == ')') {
 		s[len-1] = 0;
 
 		return parse(macro, s+6);
-	} else
+	} else {
+		err("invalid macro");
 		return -1;
+	}
 }

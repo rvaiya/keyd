@@ -163,7 +163,11 @@ int parse_descriptor(const char *descstr,
 		config->commands[config->nr_commands++] = cmd;
 
 		return 0;
-	} else if (!parse_macro(descstr, &macro)) {
+	} else if ((ret=parse_macro(descstr, &macro)) >= 0) {
+		if (ret) {
+			return -1;
+		}
+
 		if (config->nr_macros >= MAX_MACROS) {
 			err("max macros (%d), exceeded", MAX_MACROS);
 			return -1;
@@ -231,7 +235,6 @@ int parse_descriptor(const char *descstr,
 						}
 
 						if (parse_macro(argstr, &config->macros[config->nr_macros])) {
-							err("Invalid macro");
 							return -1;
 						}
 
