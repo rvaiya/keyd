@@ -1,3 +1,11 @@
+# v2.4.2
+
+ - Add include directive to the config syntax
+ - Ship includable common layouts
+ - Allow comments in the ids section (#245)
+ - Create virtual pointer on initialization (#249)
+ - Misc bug fixes
+
 # v2.4.1
 
  - Route button presses through the virtual keyboard (#162)
