@@ -1,5 +1,7 @@
 # Impetus
 
+[![Packaging status](https://repology.org/badge/tiny-repos/keyd.svg)](https://repology.org/project/keyd/versions)
+
 Linux lacks a good key remapping solution. In order to achieve satisfactory
 results a medley of tools need to be employed (e.g xcape, xmodmap) with the end
 result often being tethered to a specified environment (X11). keyd attempts to
