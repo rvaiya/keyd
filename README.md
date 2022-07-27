@@ -1,5 +1,7 @@
 # Impetus
 
+[![Packaging status](https://repology.org/badge/tiny-repos/keyd.svg)](https://repology.org/project/keyd/versions)
+
 Linux lacks a good key remapping solution. In order to achieve satisfactory
 results a medley of tools need to be employed (e.g xcape, xmodmap) with the end
 result often being tethered to a specified environment (X11). keyd attempts to
@@ -146,6 +148,10 @@ See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
 Third party packages for the some distributions also exist. If you wish to add
 yours to the list please file a PR. These are kindly maintained by community
 members, no personal responsibility is taken for them.
+
+### Alpine Linux
+
+[keyd](https://pkgs.alpinelinux.org/packages?name=keyd) package maintained by [@jirutka](https://github.com/jirutka).
 
 ### Arch
 
