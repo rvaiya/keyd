@@ -120,24 +120,9 @@ fail:
 
 
 /* Return up to two keycodes associated with the given name. */
-static int lookup_keycodes(const char *name, uint8_t *code1, uint8_t *code2)
+static uint8_t lookup_keycode(const char *name)
 {
 	size_t i;
-
-	/*
-	 * If the name is a modifier like 'control' we associate it with both
-	 * corresponding key codes (e.g 'rightcontrol'/'leftcontrol')
-	 */
-	for (i = 0; i < MAX_MOD; i++) {
-		const struct modifier_table_ent *mod = &modifier_table[i];
-
-		if (!strcmp(mod->name, name)) {
-			*code1 = mod->code1;
-			*code2 = mod->code2;
-
-			return 0;
-		}
-	}
 
 	for (i = 0; i < 256; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
@@ -145,14 +130,11 @@ static int lookup_keycodes(const char *name, uint8_t *code1, uint8_t *code2)
 		if (ent->name &&
 		    (!strcmp(ent->name, name) ||
 		     (ent->alt_name && !strcmp(ent->alt_name, name)))) {
-			*code1 = i;
-			*code2 = 0;
-
-			return 0;
+			return i;
 		}
 	}
 
-	return -1;
+	return 0;
 }
 
 int config_get_layer_index(const struct config *config, const char *name)
@@ -166,11 +148,40 @@ int config_get_layer_index(const struct config *config, const char *name)
 	return -1;
 }
 
-
 /*
  * Consumes a string of the form `[<layer>.]<key> = <descriptor>` and adds the
  * mapping to the corresponding layer in the config.
  */
+
+int set_layer_entry(const struct config *config, struct layer *layer,
+	const char *key, const struct descriptor *d)
+{
+	size_t i;
+	int found = 0;
+
+	for (i = 0; i < config->nr_aliases; i++) {
+		const struct alias *alias = &config->aliases[i];
+
+		if (!strcmp(alias->name, key)) {
+			layer->keymap[alias->code] = *d;
+			found = 1;
+		}
+	}
+
+	if (!found) {
+		uint8_t code;
+
+		if (!(code = lookup_keycode(key))) {
+			err("%s is not a valid keycode or alias.", key);
+			return -1;
+		}
+
+		layer->keymap[code] = *d;
+
+	}
+
+	return 0;
+}
 
 int config_add_entry(struct config *config, const char *exp)
 {
@@ -210,21 +221,10 @@ int config_add_entry(struct config *config, const char *exp)
 
 	layer = &config->layers[idx];
 
-	if (lookup_keycodes(keyname, &code1, &code2) < 0) {
-		err("%s is not a valid key.", keyname);
-		return -1;
-	}
-
 	if (parse_descriptor(descstr, &d, config) < 0)
 		return -1;
 
-	if (code1)
-		layer->keymap[code1] = d;
-
-	if (code2)
-		layer->keymap[code2] = d;
-
-	return 0;
+	return set_layer_entry(config, layer, keyname, &d);
 }
 
 /*
@@ -325,6 +325,71 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 	}
 }
 
+static void add_alias(struct config *config, const char *name, uint8_t code)
+{
+	if (config->nr_aliases >= MAX_ALIASES) {
+		fprintf(stderr, "\tERROR: Max aliases (%d) exceeded\n",
+			MAX_ALIASES);
+		return;
+	}
+
+	struct alias *alias = &config->aliases[config->nr_aliases];
+
+	alias->name[sizeof(alias->name)-1] = 0;
+	strncpy(alias->name, name, sizeof(alias->name)-1);
+	alias->code = code;
+
+	config->nr_aliases++;
+}
+
+void create_modifier_aliases(struct config *config)
+{
+	uint8_t aliased_mods[MAX_MOD] = { 0 };
+	size_t i;
+
+	for (i = 0; i < config->nr_aliases; i++) {
+		size_t j;
+
+		for (j = 0; j < MAX_MOD; j++) {
+			const struct modifier_table_ent *mod = &modifier_table[j];
+			const struct alias *alias = &config->aliases[i];
+
+			if (!strcmp(alias->name, mod->name))
+			    aliased_mods[j] = 1;
+		}
+	}
+
+	for (i = 0; i < MAX_MOD; i++) {
+		const struct modifier_table_ent *mod = &modifier_table[i];
+
+		// Don't create modifier aliases for modifier names which are explicitly
+		// redefined by the user.
+		if (!aliased_mods[i]) {
+			add_alias(config, mod->name, mod->code1);
+			add_alias(config, mod->name, mod->code2);
+		}
+	}
+}
+
+static void parse_aliases(const char *path, struct config *config, struct ini_section *section)
+{
+	size_t i;
+
+	for (i = 0; i < section->nr_entries;i++) {
+		uint8_t code;
+		struct ini_entry *ent = &section->entries[i];
+
+		if ((code = lookup_keycode(ent->val))) {
+			add_alias(config, ent->key, code);
+		} else {
+			fprintf(stderr,
+				"\tERROR %s:%zd: Failed to define alias %s, %s is not a valid keycode\n",
+				path, ent->lnum,
+				ent->key, ent->val);
+		}
+	}
+}
+
 int config_parse(struct config *config, const char *path)
 {
 	size_t i;
@@ -345,28 +410,29 @@ int config_parse(struct config *config, const char *path)
 	for (i = 0; i < ini->nr_sections; i++) {
 		section = &ini->sections[i];
 
-		if (!strcmp(section->name, "ids") ||
-		    !strcmp(section->name, "global"))
-			continue;
-
-
-		if (config_add_layer(config, section->name) < 0)
-			fprintf(stderr, "\tERROR %s:%zd: %s\n", path, section->lnum, errstr);
+		if (!strcmp(section->name, "ids")) {
+			;;
+		} else if (!strcmp(section->name, "aliases")) {
+			parse_aliases(path, config, section);
+		} else if (!strcmp(section->name, "global")) {
+			parse_globals(path, config, section);
+		} else {
+			if (config_add_layer(config, section->name) < 0)
+				fprintf(stderr, "\tERROR %s:%zd: %s\n", path, section->lnum, errstr);
+		}
 	}
 
+	create_modifier_aliases(config);
 	/* Populate each layer. */
 	for (i = 0; i < ini->nr_sections; i++) {
 		size_t j;
 		char *layername;
 		section = &ini->sections[i];
 
-		if (!strcmp(section->name, "ids"))
+		if (!strcmp(section->name, "ids") ||
+		    !strcmp(section->name, "aliases") ||
+		    !strcmp(section->name, "globals"))
 			continue;
-
-		if (!strcmp(section->name, "global")) {
-			parse_globals(path, config, section);
-			continue;
-		}
 
 		layername = strtok(section->name, ":");
 

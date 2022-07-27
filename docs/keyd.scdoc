@@ -177,7 +177,7 @@ and each modifier is one of:
 
 Finally, each layer heading is followed by a set of bindings which take the form:
 
-	<key> = <keycode>|<macro>|<action>
+	<key> | <alias> = <key>|<macro>|<action>
 
 for a description of <action> and <macro> see _ACTIONS_ and _MACROS_.
 
@@ -276,6 +276,58 @@ E.G
 	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
 *Note:* You may have to restart your applications for this to take effect.
+
+## Aliases
+
+A config file may include *aliases* which can be used as valid left hand values
+in place of one or more keycodes. For example, the default alias *meta* is bound
+to leftmeta and rightmeta. Thus the binding 'meta = a' is equivalent to the
+bindings 'leftmeta = a' and 'rightmeta = a'.
+
+Aliases are defined in a special section called 'aliases' where each line takes the form:
+
+	<name> = <key>
+
+and _<key>_ must be a valid key name.
+
+Note that <name> may itself be a valid key, in which case all references to the
+key will be replaced with the new key. When used judiciously, aliases can be
+used in conjunction with the include directive to share bindings between
+keyboards with different physical layouts.
+
+For example:
+
+```
+/etc/keyd/common:
+	meta = oneshot(meta)
+	alt = oneshot(alt)
+
+	a = a
+	s = o
+	# etc..
+
+/etc/keyd/default.conf:
+	[ids]
+	*
+
+	[main]
+	include common
+
+/etc/keyd/magic_keyboard.conf:
+	[ids]
+	004c:0267
+
+	[aliases]
+	meta = leftalt
+	meta = rightalt
+	alt = leftmeta
+	alt = rightmeta
+
+	[main]
+	include common
+```
+
+Allows the user to define a set of universal bindings in /etc/keyd/common without having to explicitly account for the transposed meta and alt keys on an apple keyboard.
 
 ## File Inclusion
 
