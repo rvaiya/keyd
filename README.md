@@ -147,6 +147,10 @@ Third party packages for the some distributions also exist. If you wish to add
 yours to the list please file a PR. These are kindly maintained by community
 members, no personal responsibility is taken for them.
 
+### Alpine Linux
+
+[keyd](https://pkgs.alpinelinux.org/packages?name=keyd) package maintained by [@jirutka](https://github.com/jirutka).
+
 ### Arch
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
