@@ -431,7 +431,7 @@ int config_parse(struct config *config, const char *path)
 
 		if (!strcmp(section->name, "ids") ||
 		    !strcmp(section->name, "aliases") ||
-		    !strcmp(section->name, "globals"))
+		    !strcmp(section->name, "global"))
 			continue;
 
 		layername = strtok(section->name, ":");
