@@ -279,21 +279,23 @@ E.G
 
 ## Aliases
 
-A config file may include *aliases* which can be used as valid left hand values
-in place of one or more keycodes. For example, the default alias *meta* is bound
-to leftmeta and rightmeta. Thus the binding 'meta = a' is equivalent to the
-bindings 'leftmeta = a' and 'rightmeta = a'.
+An *alias* may be assigned to a key and used as a valid left hand value.
+Multiple keys may be bound to a single alias, but _a given key may only be
+assigned to one alias at a time_. For example, the keys 'leftmeta' and
+'rightmeta' are bound to the alias *meta* by default. Thus the binding 'meta =
+a' is equivalent to the bindings 'leftmeta = a' and 'rightmeta = a'.
 
-Aliases are defined in a special section called 'aliases' where each line takes the form:
+Aliases are defined in a special section called 'aliases' where each line takes
+the form:
 
-	<name> = <key>
+	<key> = <name>
 
-and _<key>_ must be a valid key name.
+where _<key>_ must be a valid key name.
 
-Note that <name> may itself be a valid key, in which case all references to the
-key will be replaced with the new key. When used judiciously, aliases can be
-used in conjunction with the include directive to share bindings between
-keyboards with different physical layouts.
+Note that <name> may itself be a valid key name, in which case all references
+to the key within the config file will be replaced with the new key. When used
+judiciously, aliases can be used in conjunction with the include directive to
+share bindings between keyboards with different physical layouts.
 
 For example:
 
@@ -318,16 +320,18 @@ For example:
 	004c:0267
 
 	[aliases]
-	meta = leftalt
-	meta = rightalt
-	alt = leftmeta
-	alt = rightmeta
+	leftalt = meta
+	rightalt = meta
+	rightmeta = alt
+	leftmeta = alt
 
 	[main]
 	include common
 ```
 
-Allows the user to define a set of universal bindings in /etc/keyd/common without having to explicitly account for the transposed meta and alt keys on an apple keyboard.
+Allows the user to define a set of universal bindings in /etc/keyd/common
+without having to explicitly account for the transposed meta and alt keys within
+the included config snippet.
 
 ## File Inclusion
 

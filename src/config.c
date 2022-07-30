@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -159,11 +160,9 @@ int set_layer_entry(const struct config *config, struct layer *layer,
 	size_t i;
 	int found = 0;
 
-	for (i = 0; i < config->nr_aliases; i++) {
-		const struct alias *alias = &config->aliases[i];
-
-		if (!strcmp(alias->name, key)) {
-			layer->keymap[alias->code] = *d;
+	for (i = 0; i < 256; i++) {
+		if (!strcmp(config->aliases[i], key)) {
+			layer->keymap[i] = *d;
 			found = 1;
 		}
 	}
@@ -284,18 +283,23 @@ static void config_init(struct config *config)
 	}
 
 	for (i = 0; i < MAX_MOD; i++) {
-		struct descriptor *ent1 = &km[modifier_table[i].code1];
-		struct descriptor *ent2 = &km[modifier_table[i].code2];
+		const struct modifier_table_ent *mod = &modifier_table[i];
 
-		int idx = config_get_layer_index(config, modifier_table[i].name);
+		struct descriptor *d1 = &km[mod->code1];
+		struct descriptor *d2 = &km[mod->code2];
+
+		int idx = config_get_layer_index(config, mod->name);
 
 		assert(idx != -1);
 
-		ent1->op = OP_LAYER;
-		ent1->args[0].idx = idx;
+		d1->op = OP_LAYER;
+		d1->args[0].idx = idx;
 
-		ent2->op = OP_LAYER;
-		ent2->args[0].idx = idx;
+		d2->op = OP_LAYER;
+		d2->args[0].idx = idx;
+
+		strcpy(config->aliases[mod->code1], mod->name);
+		strcpy(config->aliases[mod->code2], mod->name);
 	}
 
 	/* In ms */
@@ -325,67 +329,28 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 	}
 }
 
-static void add_alias(struct config *config, const char *name, uint8_t code)
-{
-	if (config->nr_aliases >= MAX_ALIASES) {
-		fprintf(stderr, "\tERROR: Max aliases (%d) exceeded\n",
-			MAX_ALIASES);
-		return;
-	}
-
-	struct alias *alias = &config->aliases[config->nr_aliases];
-
-	alias->name[sizeof(alias->name)-1] = 0;
-	strncpy(alias->name, name, sizeof(alias->name)-1);
-	alias->code = code;
-
-	config->nr_aliases++;
-}
-
-void create_modifier_aliases(struct config *config)
-{
-	uint8_t aliased_mods[MAX_MOD] = { 0 };
-	size_t i;
-
-	for (i = 0; i < config->nr_aliases; i++) {
-		size_t j;
-
-		for (j = 0; j < MAX_MOD; j++) {
-			const struct modifier_table_ent *mod = &modifier_table[j];
-			const struct alias *alias = &config->aliases[i];
-
-			if (!strcmp(alias->name, mod->name))
-			    aliased_mods[j] = 1;
-		}
-	}
-
-	for (i = 0; i < MAX_MOD; i++) {
-		const struct modifier_table_ent *mod = &modifier_table[i];
-
-		// Don't create modifier aliases for modifier names which are explicitly
-		// redefined by the user.
-		if (!aliased_mods[i]) {
-			add_alias(config, mod->name, mod->code1);
-			add_alias(config, mod->name, mod->code2);
-		}
-	}
-}
-
 static void parse_aliases(const char *path, struct config *config, struct ini_section *section)
 {
 	size_t i;
 
-	for (i = 0; i < section->nr_entries;i++) {
+	for (i = 0; i < section->nr_entries; i++) {
 		uint8_t code;
 		struct ini_entry *ent = &section->entries[i];
 
-		if ((code = lookup_keycode(ent->val))) {
-			add_alias(config, ent->key, code);
+		if ((code = lookup_keycode(ent->key))) {
+			ssize_t len = strlen(ent->val);
+
+			if (len > MAX_ALIAS_LEN) {
+				fprintf(stderr,
+					"\tERROR: %s exceeds the maximum alias length (%d)\n",
+					ent->val, MAX_ALIAS_LEN);
+			} else {
+				strcpy(config->aliases[code], ent->val);
+			}
 		} else {
 			fprintf(stderr,
 				"\tERROR %s:%zd: Failed to define alias %s, %s is not a valid keycode\n",
-				path, ent->lnum,
-				ent->key, ent->val);
+				path, ent->lnum, ent->key, ent->val);
 		}
 	}
 }
@@ -422,7 +387,6 @@ int config_parse(struct config *config, const char *path)
 		}
 	}
 
-	create_modifier_aliases(config);
 	/* Populate each layer. */
 	for (i = 0; i < ini->nr_sections; i++) {
 		size_t j;

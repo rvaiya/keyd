@@ -14,18 +14,11 @@
 #define MAX_AUX_DESCRIPTORS	64
 
 #define MAX_ALIAS_LEN		32
-#define MAX_ALIASES		64
 
 #include "layer.h"
 #include "descriptor.h"
 #include "macro.h"
 #include "command.h"
-
-
-struct alias {
-	char name[MAX_ALIAS_LEN];
-	uint8_t code;
-};
 
 struct config {
 	struct layer layers[MAX_LAYERS];
@@ -34,9 +27,8 @@ struct config {
 	struct descriptor descriptors[MAX_AUX_DESCRIPTORS];
 	struct macro macros[MAX_MACROS];
 	struct command commands[MAX_COMMANDS];
-	struct alias aliases[MAX_ALIASES];
+	char aliases[256][MAX_ALIAS_LEN+1];
 
-	size_t nr_aliases;
 	size_t nr_layers;
 	size_t nr_macros;
 	size_t nr_descriptors;
