@@ -336,21 +336,32 @@ static void parse_aliases(const char *path, struct config *config, struct ini_se
 	for (i = 0; i < section->nr_entries; i++) {
 		uint8_t code;
 		struct ini_entry *ent = &section->entries[i];
+		const char *name = ent->val;
 
 		if ((code = lookup_keycode(ent->key))) {
-			ssize_t len = strlen(ent->val);
+			ssize_t len = strlen(name);
 
 			if (len > MAX_ALIAS_LEN) {
 				fprintf(stderr,
 					"\tERROR: %s exceeds the maximum alias length (%d)\n",
-					ent->val, MAX_ALIAS_LEN);
+					name, MAX_ALIAS_LEN);
 			} else {
-				strcpy(config->aliases[code], ent->val);
+				uint8_t alias_code;
+
+				if ((alias_code = lookup_keycode(name))) {
+					struct descriptor *d = &config->layers[0].keymap[code];
+
+					d->op = OP_KEYSEQUENCE;
+					d->args[0].code = alias_code;
+					d->args[1].mods = 0;
+				}
+
+				strcpy(config->aliases[code], name);
 			}
 		} else {
 			fprintf(stderr,
 				"\tERROR %s:%zd: Failed to define alias %s, %s is not a valid keycode\n",
-				path, ent->lnum, ent->key, ent->val);
+				path, ent->lnum, ent->key, name);
 		}
 	}
 }

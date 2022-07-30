@@ -279,9 +279,11 @@ E.G
 
 ## Aliases
 
-An *alias* may be assigned to a key and used as a valid left hand value.
-Multiple keys may be bound to a single alias, but _a given key may only be
-assigned to one alias at a time_. For example, the keys 'leftmeta' and
+Each key may optionally be assigned to an *alias*. This alias may be used in place
+of the key as a valid left hand value. Multiple keys may be bound to the same alias,
+but only one alias may be assigned to a key at a given time.
+
+For example, the keys 'leftmeta' and
 'rightmeta' are bound to the alias *meta* by default. Thus the binding 'meta =
 a' is equivalent to the bindings 'leftmeta = a' and 'rightmeta = a'.
 
@@ -293,9 +295,11 @@ the form:
 where _<key>_ must be a valid key name.
 
 Note that <name> may itself be a valid key name, in which case all references
-to the key within the config file will be replaced with the new key. When used
-judiciously, aliases can be used in conjunction with the include directive to
-share bindings between keyboards with different physical layouts.
+to the key within the config file will be replaced with the new key.
+Additionally, if the assigned alias is a valid key name, the corresponding
+keycode will be assigned to the key by default. This makes it possible to
+redefine keys before any bindings are applied and is particularly useful in
+conjunction with the include mechanism to account for variations in hardware.
 
 For example:
 
