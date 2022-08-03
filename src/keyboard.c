@@ -225,6 +225,8 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 			break;
 		}
 
+		if (kbd->config.macro_sequence_timeout)
+			usleep(kbd->config.macro_sequence_timeout);
 	}
 
 	update_mods(kbd, -1, 0);

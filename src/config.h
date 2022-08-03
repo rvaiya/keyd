@@ -35,6 +35,7 @@ struct config {
 	size_t nr_commands;
 
 	long macro_timeout;
+	long macro_sequence_timeout;
 	long macro_repeat_timeout;
 	long layer_indicator;
 };

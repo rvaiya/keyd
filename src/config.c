@@ -317,6 +317,8 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 
 		if (!strcmp(ent->key, "macro_timeout"))
 			config->macro_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "macro_sequence_timeout"))
+			config->macro_sequence_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_repeat_timeout"))
 			config->macro_repeat_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "layer_indicator"))
