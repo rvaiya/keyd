@@ -47,6 +47,13 @@
 
 static uint8_t resolve_device_type(int fd)
 {
+	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
+					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
+					1<<KEY_7 | 1<<KEY_8 | 1<<KEY_9 |
+					1<<KEY_0 | 1<<KEY_Q | 1<<KEY_W |
+					1<<KEY_E | 1<<KEY_R | 1<<KEY_T |
+					1<<KEY_Y;
+
 	uint32_t mask[BTN_LEFT/32+1] = {0};
 	uint8_t has_rel;
 	uint8_t type = 0;
@@ -64,8 +71,8 @@ static uint8_t resolve_device_type(int fd)
 	if (has_rel)
 		type |= DEVT_MOUSE;
 
-	/* The first 31 bits correspond to [KEY_ESC-KEY_S] */
-	if (mask[0] == 0xFFFFFFFE)
+
+	if ((mask[0] & keyboard_mask) == keyboard_mask)
 		type |= DEVT_KEYBOARD;
 
 	return type;
