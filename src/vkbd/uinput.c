@@ -66,6 +66,9 @@ static int create_virtual_keyboard(const char *name)
 		}
 	}
 
+	for (code = BTN_LEFT; code <= BTN_TASK; code++)
+		ioctl(fd, UI_SET_KEYBIT, code);
+
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
 	udev.id.product = 0x0ADE;
@@ -197,8 +200,8 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	 * to prevent X from identifying the virtual
 	 * keyboard as a mouse.
 	 */
-	if (is_btn)
-		fd = vkbd->pfd;
+	//if (is_btn)
+	//	fd = vkbd->pfd;
 
 	ev.value = state;
 
