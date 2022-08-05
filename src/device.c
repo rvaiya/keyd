@@ -240,6 +240,7 @@ int device_grab(struct device *dev)
 	size_t i;
 	struct input_event ev;
 	uint8_t state[KEY_MAX / 8 + 1];
+	int pending_release = 0;
 
 	/*
 	 * await neutral key state to ensure any residual
@@ -262,11 +263,15 @@ int device_grab(struct device *dev)
 
 		if (n == 0)
 			break;
+		else
+			pending_release = 1;
 	}
 
-	//Allow the key up events to propagate before
-	//grabbing the device.
-	usleep(100);
+	if (pending_release) {
+		//Allow the key up events to propagate before
+		//grabbing the device.
+		usleep(100);
+	}
 
 	if (ioctl(dev->fd, EVIOCGRAB, (void *) 1) < 0) {
 		perror("EVIOCGRAB");
