@@ -118,7 +118,7 @@ static void daemon_add_cb(struct device *dev)
 	 * between these two, so we take a permissive approach and leave it up to
 	 * the user to blacklist mice which emit key events.
 	 */
-	if (!exact_match && !(dev->type & DEVT_KEYBOARD)) {
+	if (!exact_match && !(dev->capabilities & CAP_KEYBOARD)) {
 		dbg("Ignoring %s (not a keyboard)", dev->name);
 		return;
 	}
@@ -188,7 +188,7 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 
 		panic_check(code, pressed);
 
-		if (dev->type & DEVT_KEYBOARD)
+		if (dev->capabilities & CAP_KEYBOARD)
 			active_kbd = kbd;
 
 		dbg2("Processing %04x:%04x (%s): %s %s",
@@ -214,6 +214,9 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 		break;
 	case DEV_MOUSE_MOVE:
 		vkbd_mouse_move(vkbd, ev->x, ev->y);
+		break;
+	case DEV_MOUSE_MOVE_ABS:
+		vkbd_mouse_move_abs(vkbd, ev->x, ev->y);
 		break;
 	}
 
@@ -276,6 +279,9 @@ static int monitor_event_cb(struct device *dev, struct device_event *ev)
 	const char *name;
 	case DEV_MOUSE_MOVE:
 		dbg("%s: move %d %d", dev->name, ev->x, ev->y);
+		break;
+	case DEV_MOUSE_MOVE_ABS:
+		dbg("%s: move abs %d %d", dev->name, ev->x, ev->y);
 		break;
 	case DEV_MOUSE_SCROLL:
 		dbg("%s: scroll %d %d", dev->name, ev->x, ev->y);

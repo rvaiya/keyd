@@ -45,7 +45,7 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-static uint8_t resolve_device_type(int fd)
+static uint8_t resolve_device_capabilities(int fd)
 {
 	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
 					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
@@ -56,7 +56,8 @@ static uint8_t resolve_device_type(int fd)
 
 	uint32_t mask[BTN_LEFT/32+1] = {0};
 	uint8_t has_rel;
-	uint8_t type = 0;
+	uint8_t has_abs;
+	uint8_t capabilities = 0;
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
 		perror("ioctl");
@@ -68,36 +69,62 @@ static uint8_t resolve_device_type(int fd)
 		return 0;
 	}
 
-	if (has_rel)
-		type |= DEVT_MOUSE;
+	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), &has_abs) < 0) {
+		perror("ioctl");
+		return 0;
+	}
 
+	if (has_rel || has_abs)
+		capabilities |= CAP_MOUSE;
+
+	if (has_abs)
+		capabilities |= CAP_MOUSE_ABS;
 
 	if ((mask[0] & keyboard_mask) == keyboard_mask)
-		type |= DEVT_KEYBOARD;
+		capabilities |= CAP_KEYBOARD;
 
-	return type;
+	return capabilities;
 }
 
 static int device_init(const char *path, struct device *dev)
 {
 	int fd;
-	int type;
+	int capabilities;
+	struct input_absinfo absinfo;
 
 	if ((fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC, 0600)) < 0) {
 		fprintf(stderr, "failed to open %s\n", path);
 		return -1;
 	}
 
-	type = resolve_device_type(fd);
+	capabilities = resolve_device_capabilities(fd);
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
 		perror("ioctl EVIOCGNAME");
 		return -1;
 	}
 
-	dbg2("device type of %s (%s): %x", path, dev->name, type);
+	if (capabilities & CAP_MOUSE_ABS) {
+		if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) < 0) {
+			perror("ioctl");
+			return 0;
+		}
 
-	if (type) {
+		dev->_minx = absinfo.minimum;
+		dev->_maxx = absinfo.maximum;
+
+		if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0) {
+			perror("ioctl");
+			return 0;
+		}
+
+		dev->_miny = absinfo.minimum;
+		dev->_maxy = absinfo.maximum;
+	}
+
+	dbg2("capabilities of %s (%s): %x", path, dev->name, capabilities);
+
+	if (capabilities) {
 		struct input_id info;
 
 		if (ioctl(fd, EVIOCGID, &info) == -1) {
@@ -109,7 +136,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->path[sizeof(dev->path)-1] = 0;
 
 		dev->fd = fd;
-		dev->type = type;
+		dev->capabilities = capabilities;
 		dev->vendor_id = info.vendor;
 		dev->product_id = info.product;
 
@@ -348,6 +375,26 @@ struct device_event *device_read_event(struct device *dev)
 		}
 
 		break;
+	case EV_ABS:
+		switch (ev.code) {
+		case ABS_X:
+			devev.type = DEV_MOUSE_MOVE_ABS;
+			devev.x = (ev.value * 1024) / (dev->_maxx - dev->_minx);
+			devev.y = 0;
+
+			break;
+		case ABS_Y:
+			devev.type = DEV_MOUSE_MOVE_ABS;
+			devev.y = (ev.value * 1024) / (dev->_maxy - dev->_miny);
+			devev.x = 0;
+
+			break;
+		default:
+			fprintf(stderr, "Unrecognized EV_ABS code: %d\n", ev.code);
+			break;
+		}
+
+		break;
 	case EV_KEY:
 		/* Ignore repeat events */
 		if (ev.value == 2)
@@ -386,6 +433,8 @@ struct device_event *device_read_event(struct device *dev)
 
 		break;
 	default:
+		if (ev.type)
+			dbg2("unrecognized evdev event type: %d %d %d", ev.type, ev.code, ev.value);
 		return NULL;
 	}
 

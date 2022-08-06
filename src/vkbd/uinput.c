@@ -197,8 +197,9 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	 * to prevent X from identifying the virtual
 	 * keyboard as a mouse.
 	 */
-	if (is_btn)
+	if (is_btn) {
 		fd = vkbd->pfd;
+	}
 
 	ev.value = state;
 
@@ -319,23 +320,27 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 {
 	struct input_event ev;
 
-	ev.type = EV_ABS;
-	ev.code = ABS_X;
-	ev.value = x;
+	if (x) {
+		ev.type = EV_ABS;
+		ev.code = ABS_X;
+		ev.value = x;
 
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
+		ev.time.tv_sec = 0;
+		ev.time.tv_usec = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+		write(vkbd->pfd, &ev, sizeof(ev));
+	}
 
-	ev.type = EV_ABS;
-	ev.code = ABS_Y;
-	ev.value = y;
+	if (y) {
+		ev.type = EV_ABS;
+		ev.code = ABS_Y;
+		ev.value = y;
 
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
+		ev.time.tv_sec = 0;
+		ev.time.tv_usec = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+		write(vkbd->pfd, &ev, sizeof(ev));
+	}
 
 	ev.type = EV_SYN;
 	ev.code = 0;
