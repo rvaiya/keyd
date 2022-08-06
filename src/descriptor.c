@@ -36,6 +36,7 @@ static struct {
 	{ "swap2",	OP_SWAP2,	{ ARG_LAYER, ARG_MACRO } },
 	{ "oneshot",	OP_ONESHOT,	{ ARG_LAYER } },
 	{ "toggle",	OP_TOGGLE,	{ ARG_LAYER } },
+	{ "toggle2",	OP_TOGGLE2,	{ ARG_LAYER, ARG_MACRO } },
 	{ "layer",	OP_LAYER,	{ ARG_LAYER } },
 	{ "overload",	OP_OVERLOAD,	{ ARG_LAYER, ARG_DESCRIPTOR } },
 	{ "timeout",	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },

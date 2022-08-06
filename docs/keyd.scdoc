@@ -467,6 +467,10 @@ arguments.
 *toggle(<layer>)*
 	Permanently toggle the state of the given layer.
 
+*toggle2(<layer>, <macro>)*
+	Equivalent to *toggle*, but additionally executes the supplied macro before
+	toggling the layer.
+
 *overload(<layer>, <action>)*
 	Activates the given layer while held and executes <action> on tap.
 

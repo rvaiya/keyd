@@ -483,16 +483,26 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_TOGGLE2:
 	case OP_TOGGLE:
 		idx = d->args[0].idx;
 
 		if (!pressed) {
+			if (d->op == OP_TOGGLE2) {
+				macro = &kbd->config.macros[d->args[1].idx];
+				execute_macro(kbd, dl, macro);
+			}
+
 			kbd->layer_state[idx].toggled = !kbd->layer_state[idx].toggled;
 
 			if (kbd->layer_state[idx].toggled)
 				activate_layer(kbd, code, idx);
 			else
 				deactivate_layer(kbd, idx);
+
+			update_mods(kbd, -1, 0);
+		} else {
+			clear_oneshot(kbd);
 		}
 
 		break;
