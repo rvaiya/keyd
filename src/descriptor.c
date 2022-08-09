@@ -209,6 +209,11 @@ int parse_descriptor(const char *descstr,
 
 					switch (type) {
 					case ARG_LAYER:
+						if (!strcmp(argstr, "main")) {
+							err("the main layer cannot be toggled");
+							return -1;
+						}
+
 						arg->idx = config_get_layer_index(config, argstr);
 						if (arg->idx == -1 || config->layers[arg->idx].type == LT_LAYOUT) {
 							err("%s is not a valid layer", argstr);
