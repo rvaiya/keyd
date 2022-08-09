@@ -16,13 +16,13 @@ struct layer_table;
 #define MAX_DESCRIPTOR_ARGS 3
 
 enum op {
-	OP_UNDEFINED,
-	OP_KEYSEQUENCE,
+	OP_KEYSEQUENCE = 1,
 
 	OP_ONESHOT,
 	OP_SWAP,
 	OP_SWAP2,
 	OP_LAYER,
+	OP_LAYOUT,
 	OP_OVERLOAD,
 	OP_TOGGLE,
 	OP_TOGGLE2,
@@ -57,4 +57,5 @@ struct descriptor {
 int parse_descriptor(const char *descstr,
 		     struct descriptor *d,
 		     struct config *config);
+
 #endif

@@ -238,7 +238,7 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 	size_t max;
 	size_t i;
 
-	d->op = OP_UNDEFINED;
+	d->op = 0;
 
 	long maxts = 0;
 
@@ -281,6 +281,12 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 			}
 		}
 	}
+
+	if (!d->op) {
+		d->op = OP_KEYSEQUENCE;
+		d->args[0].code = code;
+		d->args[1].mods = 0;
+	}
 }
 
 static void update_leds(struct keyboard *kbd)
@@ -297,6 +303,21 @@ static void update_leds(struct keyboard *kbd)
 	}
 
 	set_led(1, active);
+}
+
+static void setlayout(struct keyboard *kbd, uint8_t idx)
+{
+	/* Only only layout may be active at a time */
+	size_t i;
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
+
+		if (layer->type == LT_LAYOUT)
+			kbd->layer_state[i].active = 0;
+	}
+
+	kbd->layer_state[idx].activation_time = get_time();
+	kbd->layer_state[idx].active = 1;
 }
 
 static void deactivate_layer(struct keyboard *kbd, int idx)
@@ -396,6 +417,11 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			send_key(kbd, code, 0);
 			update_mods(kbd, -1, 0);
 		}
+
+		break;
+	case OP_LAYOUT:
+		if (pressed)
+			setlayout(kbd, d->args[0].idx);
 
 		break;
 	case OP_LAYER:
@@ -574,8 +600,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			}
 		}
 
-		break;
-	case OP_UNDEFINED:
 		break;
 	}
 

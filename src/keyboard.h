@@ -34,6 +34,7 @@ struct keyboard {
 	 */
 	struct cache_entry cache[CACHE_SIZE];
 
+	uint8_t active_layout;
 	uint8_t transient_mods;
 
 	uint8_t last_pressed_output_code;

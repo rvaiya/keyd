@@ -274,19 +274,12 @@ static void config_init(struct config *config)
 	config_add_layer(config, "altgr:G");
 	config_add_layer(config, "alt:A");
 
-	km = config->layers[0].keymap;
-
-	for (i = 0; i < 256; i++) {
-		km[i].op = OP_KEYSEQUENCE;
-		km[i].args[0].code = i;
-		km[i].args[1].mods = 0;
-	}
-
+	/* Add default modifier bindings to the main layer. */
 	for (i = 0; i < MAX_MOD; i++) {
 		const struct modifier_table_ent *mod = &modifier_table[i];
 
-		struct descriptor *d1 = &km[mod->code1];
-		struct descriptor *d2 = &km[mod->code2];
+		struct descriptor *d1 = &config->layers[0].keymap[mod->code1];
+		struct descriptor *d2 = &config->layers[0].keymap[mod->code2];
 
 		int idx = config_get_layer_index(config, mod->name);
 
@@ -319,6 +312,9 @@ static void parse_globals(const char *path, struct config *config, struct ini_se
 			config->macro_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_sequence_timeout"))
 			config->macro_sequence_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "default_layout"))
+			snprintf(config->default_layout, sizeof config->default_layout,
+				 "%s", ent->val);
 		else if (!strcmp(ent->key, "macro_repeat_timeout"))
 			config->macro_repeat_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "layer_indicator"))

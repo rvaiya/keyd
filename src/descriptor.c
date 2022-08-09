@@ -28,6 +28,7 @@ static struct {
 
 		ARG_MACRO,
 		ARG_LAYER,
+		ARG_LAYOUT,
 		ARG_TIMEOUT,
 		ARG_DESCRIPTOR,
 	} args[MAX_DESCRIPTOR_ARGS];
@@ -41,6 +42,7 @@ static struct {
 	{ "overload",	OP_OVERLOAD,	{ ARG_LAYER, ARG_DESCRIPTOR } },
 	{ "timeout",	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },
 	{ "macro2",	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
+	{ "setlayout",	OP_LAYOUT,	{ ARG_LAYOUT } },
 };
 
 /* Modifies the input string */
@@ -208,8 +210,16 @@ int parse_descriptor(const char *descstr,
 					switch (type) {
 					case ARG_LAYER:
 						arg->idx = config_get_layer_index(config, argstr);
-						if (arg->idx == -1) {
+						if (arg->idx == -1 || config->layers[arg->idx].type == LT_LAYOUT) {
 							err("%s is not a valid layer", argstr);
+							return -1;
+						}
+
+						break;
+					case ARG_LAYOUT:
+						arg->idx = config_get_layer_index(config, argstr);
+						if (arg->idx == -1 || config->layers[arg->idx].type != LT_LAYOUT) {
+							err("%s is not a valid layout", argstr);
 							return -1;
 						}
 

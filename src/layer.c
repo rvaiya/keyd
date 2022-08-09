@@ -21,7 +21,7 @@ int create_layer(struct layer *layer, const char *desc, const struct config *cfg
 {
 	uint8_t mods;
 	char *name;
-	char *modstr;
+	char *type;
 
 	static char s[MAX_LAYER_NAME_LEN];
 
@@ -33,7 +33,7 @@ int create_layer(struct layer *layer, const char *desc, const struct config *cfg
 	strcpy(s, desc);
 
 	name = strtok(s, ":");
-	modstr = strtok(NULL, ":");
+	type = strtok(NULL, ":");
 
 	strcpy(layer->name, name);
 
@@ -42,8 +42,8 @@ int create_layer(struct layer *layer, const char *desc, const struct config *cfg
 		int n = 0;
 		int layers[MAX_COMPOSITE_LAYERS];
 
-		if (modstr) {
-			err("composite layers cannot have a modifier set.");
+		if (type) {
+			err("composite layers cannot have a type.");
 			return -1;
 		}
 
@@ -66,12 +66,14 @@ int create_layer(struct layer *layer, const char *desc, const struct config *cfg
 		layer->nr_constituents = n;
 
 		memcpy(layer->constituents, layers, sizeof(layer->constituents));
-	}  else if (modstr && !parse_modset(modstr, &mods)) {
+	} else if (type && !strcmp(type, "layout")) {
+			layer->type = LT_LAYOUT;
+	} else if (type && !parse_modset(type, &mods)) {
 			layer->type = LT_NORMAL;
 			layer->mods = mods;
 	} else {
-		if (modstr)
-			fprintf(stderr, "WARNING: \"%s\" is not a valid modifier set, ignoring\n", modstr);
+		if (type)
+			fprintf(stderr, "\tWARNING: \"%s\" is not a valid layer type, ignoring\n", type);
 
 		layer->type = LT_NORMAL;
 		layer->mods = 0;

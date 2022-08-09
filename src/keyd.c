@@ -83,7 +83,25 @@ struct keyboard *get_keyboard(const char *config_path)
 	strcpy(kbd->config_path, config_path);
 
 	kbd->layer_state[0].active = 1;
-	kbd->layer_state[0].activation_time = 1;
+	kbd->layer_state[0].activation_time = 0;
+
+	if (kbd->config.default_layout[0]) {
+		int found = 0;
+		for (i = 0; i < kbd->config.nr_layers; i++) {
+			struct layer *layer = &kbd->config.layers[i];
+
+			if (layer->type == LT_LAYOUT &&
+			    !strcmp(layer->name, kbd->config.default_layout)) {
+				kbd->layer_state[i].active = 1;
+				kbd->layer_state[i].activation_time = 1;
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found)
+			fprintf(stderr, "\tWARNING: could not find default layout %s.\n", kbd->config.default_layout);
+	}
 
 	keyboards[nr_keyboards++] = kbd;
 

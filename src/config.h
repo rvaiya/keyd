@@ -37,7 +37,9 @@ struct config {
 	long macro_timeout;
 	long macro_sequence_timeout;
 	long macro_repeat_timeout;
-	long layer_indicator;
+
+	uint8_t layer_indicator;
+	char default_layout[MAX_LAYER_NAME_LEN];
 };
 
 int config_parse(struct config *config, const char *path);
