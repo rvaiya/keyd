@@ -130,6 +130,11 @@ int parse_descriptor(const char *descstr,
 
 	char fnstr[MAX_EXP_LEN+1];
 
+	if (!descstr || !descstr[0]) {
+		d->op = 0;
+		return 0;
+	}
+
 	if (strlen(descstr) > MAX_EXP_LEN) {
 		err("maximum descriptor length exceeded");
 		return -1;

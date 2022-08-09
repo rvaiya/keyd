@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,7 @@
 #include <sys/un.h>
 #include <termios.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <time.h>
 #include <grp.h>
 
@@ -241,6 +243,7 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 	return 0;
 }
 
+/* TODO: make this more useful and less ugly. */
 static int ipc_cb(int fd, const char *input)
 {
 	int ret = 0;
@@ -532,22 +535,25 @@ static void print_help()
 			"Options:\n"
 			"    -m, --monitor      Start keyd in monitor mode.\n"
 			"    -l, --list-keys    List key names.\n"
+			"    -e, --expression   Interpret the remaining arguments as bindings to be added to the active config.\n"
+			"    -a, --all          When used with -e, apply the supplied bindings to *all* configs.\n"
 			"    -v, --version      Print the current version and exit.\n"
 			"    -h, --help         Print help and exit.\n");
 }
 
-static void eval_expressions(char *exps[], int n)
+static int eval_expressions(char *exps[], int n)
 {
 	int i;
 	int ret = 0;
 
 	for (i = 0; i < n; i++) {
 		int rc;
+
 		if ((rc = ipc_run(socket_file, exps[i])))
 			ret = rc;
 	}
 
-	exit(ret);
+	return ret;
 }
 
 /* TODO: find a better place for this. */
@@ -559,6 +565,18 @@ void set_led(int led, int state)
 		device_set_led(&devices[i], led, state);
 }
 
+static void monitor_loop()
+{
+	device_add_cb = monitor_add_cb;
+	device_remove_cb = monitor_remove_cb;
+	device_event_cb = monitor_event_cb;
+
+	if (isatty(1))
+		set_echo(0);
+
+	loop(1);
+}
+
 #define setvar(var, name, default) \
 	var = getenv(name); \
 	if (!var) \
@@ -566,8 +584,11 @@ void set_led(int led, int state)
 
 int main(int argc, char *argv[])
 {
-	int monitor_flag = 0;
+	int c;
+	int all_flag = 0;
+	int eval_flag = 0;
 
+	/* For internal use, do not rely on these. */
 	setvar(virtual_keyboard_name,	"KEYD_NAME",		"keyd virtual device");
 	setvar(config_dir,		"KEYD_CONFIG_DIR",	"/etc/keyd");
 	setvar(socket_file,		"KEYD_SOCKET",		"/var/run/keyd.socket");
@@ -582,47 +603,55 @@ int main(int argc, char *argv[])
 	signal(SIGINT, exit);
 	signal(SIGPIPE, SIG_IGN);
 
-	if (argc >= 2) {
-		if (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--list-keys"))
-			print_keys();
-		else if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version"))
-			print_version();
-		else if (!strcmp(argv[1], "-m") || !strcmp(argv[1], "--monitor"))
-			monitor_flag = 1;
-		else if (!strcmp(argv[1], "-e") || !strcmp(argv[1], "--expression"))
-			eval_expressions(argv+2, argc-2);
-		else
-			print_help();
+	struct option opts[] = {
+		{"list-keys", no_argument, NULL, 'l'},
+		{"version", no_argument, NULL, 'v'},
+		{"monitor", no_argument, NULL, 'm'},
+		{"expression", no_argument, NULL, 'e'},
+		{"all", no_argument, NULL, 'a'},
+		{"help", no_argument, NULL, 'h'},
+	};
 
-		if (!monitor_flag)
-			exit(0);
+	while ((c = getopt_long(argc, argv, "hlvmae", opts, NULL)) > 0) {
+		switch (c) {
+			case 'l':
+				print_keys();
+				return 0;
+			case 'v':
+				print_version();
+				return 0;
+			case 'm':
+				monitor_loop();
+				return 0;
+			case 'e':
+				eval_flag = 1;
+				break;
+			case 'a':
+				all_flag = 1;
+				break;
+			default:
+				print_help();
+				return 0;
+		}
 	}
 
+	if (eval_flag) {
+		return eval_expressions(argv+optind, argc-optind);
+	}
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
-	if (monitor_flag) {
-		device_add_cb = monitor_add_cb;
-		device_remove_cb = monitor_remove_cb;
-		device_event_cb = monitor_event_cb;
+	device_add_cb = daemon_add_cb;
+	device_remove_cb = daemon_remove_cb;
+	device_event_cb = daemon_event_cb;
 
-		if (isatty(1))
-			set_echo(0);
+	vkbd = vkbd_init(virtual_keyboard_name);
 
-		loop(1);
-	} else {
-		device_add_cb = daemon_add_cb;
-		device_remove_cb = daemon_remove_cb;
-		device_event_cb = daemon_event_cb;
+	printf("Starting keyd "VERSION"\n");
 
-		vkbd = vkbd_init(virtual_keyboard_name);
-
-		printf("Starting keyd "VERSION"\n");
-
-		chgid();
-		loop(0);
-	}
+	chgid();
+	loop(0);
 
 	return 0;
 }
