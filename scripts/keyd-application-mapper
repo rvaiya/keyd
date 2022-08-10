@@ -377,7 +377,7 @@ def on_window_change(cls, title):
         print(f'Active window: {cls}|{title}')
 
     bindings = lookup_bindings(cls, title)
-    subprocess.run(['keyd', '-e', 'reset', *bindings])
+    subprocess.run(['keyd', '--all', '-e', 'reset', *bindings])
 
 
 mon = get_monitor(on_window_change)
