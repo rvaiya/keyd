@@ -15,6 +15,8 @@ keyd(1)
 
 *-e, --expression <expression> [<expression>...]*
 	Modify bindings of the currently active keyboard. See _Expressions_ for details.
+*--all*
+	When used with -e, apply the supplied expressions to all configs rather than just the active one.
 
 *-l, --list-keys*
 	List valid key names.

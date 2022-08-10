@@ -22,8 +22,18 @@
 
 #define MAX_MESSAGE_SIZE 4096
 
+enum ipc_messsage_type {
+	IPC_SUCCESS,
+	IPC_FAIL,
+
+	IPC_EXEC,
+	IPC_EXEC_ALL,
+};
+
 int ipc_create_server(const char *path);
-void ipc_server_process_connection(int sd, int (*handler) (int fd, const char *input));
-int ipc_run(const char *socket, const char *input);
+int ipc_connect(const char *path);
+
+void ipc_readmsg(int sd, enum ipc_messsage_type *type, char data[MAX_MESSAGE_SIZE], size_t *sz);
+void ipc_writemsg(int sd, enum ipc_messsage_type type, const char *data, size_t sz);
 
 #endif

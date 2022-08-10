@@ -685,13 +685,17 @@ long kbd_process_key_event(struct keyboard *kbd,
 	return process_descriptor(kbd, code, &d, dl, pressed);
 }
 
-int kbd_execute_expression(struct keyboard *kbd, const char *exp)
-{
-	return config_add_entry(&kbd->config, exp);
-}
-
 void kbd_reset(struct keyboard *kbd)
 {
 	memcpy(&kbd->config, &kbd->original_config, sizeof(kbd->config));
 }
 
+int kbd_execute_expression(struct keyboard *kbd, const char *exp)
+{
+	if (!strcmp(exp, "reset")) {
+		kbd_reset(kbd);
+		return 0;
+	} else {
+		return config_add_entry(&kbd->config, exp);
+	}
+}

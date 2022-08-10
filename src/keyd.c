@@ -243,37 +243,6 @@ static int daemon_event_cb(struct device *dev, struct device_event *ev)
 	return 0;
 }
 
-/* TODO: make this more useful and less ugly. */
-static int ipc_cb(int fd, const char *input)
-{
-	int ret = 0;
-
-	if (!strcmp(input, "ping")) {
-		char s[] = "pong\n";
-		write(fd, s, sizeof s);
-
-		return 0;
-	} else if (!strcmp(input, "reset")) {
-		if (!active_kbd)
-			return -1;
-
-		kbd_reset(active_kbd);
-	}  else {
-		if (!active_kbd)
-			return -1;
-
-		ret = kbd_execute_expression(active_kbd, input);
-		if (ret < 0) {
-			write(fd, "ERROR: ", 7);
-			write(fd, errstr, strlen(errstr));
-			write(fd, "\n\x00", 2);
-		}
-	}
-
-	return ret;
-}
-
-
 static void monitor_remove_cb(struct device *dev)
 {
 	fprintf(stderr, "device removed: %04x:%04x (%s)\n",
@@ -373,6 +342,48 @@ static void init_devices(struct device devices[MAX_DEVICES], int exclude_vkbd)
 	}
 }
 
+static void process_client_connection(int con)
+{
+	enum ipc_messsage_type type;
+	char buf[MAX_MESSAGE_SIZE];
+	size_t sz;
+	size_t i;
+
+	ipc_readmsg(con, &type, buf, &sz);
+	buf[sz] = 0;
+
+	switch (type) {
+	int success;
+
+	case IPC_EXEC_ALL:
+		success = 0;
+		for (i = 0; i < nr_keyboards; i++) {
+			if (!kbd_execute_expression(keyboards[i], buf))
+				success = 1;
+		}
+
+		if (success) {
+			ipc_writemsg(con, IPC_SUCCESS, NULL, 0);
+		} else {
+			size_t n = snprintf(buf, sizeof buf, "ERROR: %s", errstr);
+			ipc_writemsg(con, IPC_FAIL, buf, n);
+		}
+
+		break;
+	case IPC_EXEC:
+		if (kbd_execute_expression(active_kbd, buf) < 0) {
+			size_t n = snprintf(buf, sizeof buf, "ERROR: %s", errstr);
+
+			ipc_writemsg(con, IPC_FAIL, buf, n);
+		} else {
+			ipc_writemsg(con, IPC_SUCCESS, NULL, 0);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 static int loop(int monitor_mode)
 {
 	int timeout_start = 0;
@@ -461,7 +472,7 @@ static int loop(int monitor_mode)
 				continue;
 			}
 
-			ipc_server_process_connection(con, ipc_cb);
+			process_client_connection(con);
 		}
 
 		for (i = 0; i < nr_devices; i++) {
@@ -541,19 +552,37 @@ static void print_help()
 			"    -h, --help         Print help and exit.\n");
 }
 
-static int eval_expressions(char *exps[], int n)
+static int eval_expressions(char *exps[], int n, int all)
 {
 	int i;
-	int ret = 0;
+	int rc = 0;
+
+	enum ipc_messsage_type type;
+	size_t sz;
 
 	for (i = 0; i < n; i++) {
-		int rc;
+		char buf[MAX_MESSAGE_SIZE];
+		int sd = ipc_connect(socket_file);
 
-		if ((rc = ipc_run(socket_file, exps[i])))
-			ret = rc;
+		if (sd < 0) {
+			perror("connect");
+			exit(-1);
+		}
+
+		ipc_writemsg(sd, all ? IPC_EXEC_ALL : IPC_EXEC, exps[i], strlen(exps[i]));
+		ipc_readmsg(sd, &type, buf, &sz);
+		close(sd);
+
+		if (sz) {
+			write(1, buf, sz);
+			write(1, "\n", 1);
+		}
+
+		if (type == IPC_FAIL)
+			rc = -1;
 	}
 
-	return ret;
+	return rc;
 }
 
 /* TODO: find a better place for this. */
@@ -636,7 +665,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (eval_flag) {
-		return eval_expressions(argv+optind, argc-optind);
+		return eval_expressions(argv+optind, argc-optind, all_flag);
 	}
 
 	setvbuf(stdout, NULL, _IOLBF, 0);

@@ -5,9 +5,62 @@
  */
 
 #include "ipc.h"
+#include <assert.h>
+
+/* TODO (maybe): settle on an API and publish the protocol. */
+
+static void xwrite(int fd, const void *buf, size_t sz)
+{
+	size_t nwr = 0;
+	ssize_t n;
+
+	while(sz != nwr) {
+		n = write(fd, buf+nwr, sz-nwr);
+		if (n < 0) {
+			perror("write");
+			exit(-1);
+		}
+		nwr += n;
+	}
+}
+
+static void xread(int fd, void *buf, size_t sz)
+{
+	size_t nrd = 0;
+	ssize_t n;
+
+	while(sz != nrd) {
+		n = read(fd, buf+nrd, sz-nrd);
+		if (n < 0) {
+			perror("read");
+			exit(-1);
+		}
+		nrd += n;
+	}
+}
+
+/* TODO: make this more robust (allow for the possibility of untrusted/malicious clients). */
+void ipc_readmsg(int sd, enum ipc_messsage_type *type, char data[MAX_MESSAGE_SIZE], size_t *sz)
+{
+	xread(sd, type, sizeof(*type));
+	xread(sd, sz, sizeof(*sz));
+
+	assert(*sz < MAX_MESSAGE_SIZE);
+
+	xread(sd, data, *sz);
+}
+
+void ipc_writemsg(int sd, enum ipc_messsage_type type, const char *data, size_t sz)
+{
+	assert(sz < MAX_MESSAGE_SIZE);
+
+	xwrite(sd, &type, sizeof(type));
+	xwrite(sd, &sz, sizeof(sz));
+	xwrite(sd, data, sz);
+}
 
 /* Establish a client connection to the given socket path. */
-static int client_connect(const char *path)
+int ipc_connect(const char *path)
 {
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	struct sockaddr_un addr = {0};
@@ -66,70 +119,4 @@ int ipc_create_server(const char *path)
 
 	chmod(path, 0660);
 	return sd;
-}
-
-static int readmsg(int sd, char buf[MAX_MESSAGE_SIZE])
-{
-	int n = 0;
-
-	while (1) {
-		int ret = read(sd, buf+n, MAX_MESSAGE_SIZE-n);
-		if (ret < 0)
-			return -1;
-
-		n += ret;
-		if (n > 1 && buf[n-1] == 0 && buf[n-2] == 0)
-			return n-2;
-
-		assert(n < MAX_MESSAGE_SIZE);
-	}
-}
-
-/*
- * Consume a \x00\x00 terminated input string from the supplied connection and
- * delegate processing to the provided callback. The return value of 'handler'
- * will ultimately be returned by the corresponding ipc_run() call on the
- * client and all output written to 'output_fd' will be printed to the client's
- * standard output stream.
- */
-
-void ipc_server_process_connection(int sd, int (*handler) (int output_fd, const char *input))
-{
-	char input[MAX_MESSAGE_SIZE];
-	uint8_t ret = 0;
-
-	if (readmsg(sd, input) < 0) {
-		fprintf(stderr, "ipc: failed to read input\n");
-		return;
-	}
-
-	ret = handler(sd, input);
-
-	write(sd, &ret, 1);
-	write(sd, "\x00\x00", 2);
-	close(sd);
-}
-
-int ipc_run(const char *socket, const char *input)
-{	
-	int n;
-	uint8_t ret;
-	char buf[MAX_MESSAGE_SIZE];
-
-	int sd = client_connect(socket);
-
-	if (sd < 0)
-		return -1;
-
-	write(sd, input, strlen(input));
-	write(sd, "\x00\x00", 2);
-
-	n = readmsg(sd, buf);
-	if (n < 0)
-		return -1;
-
-	printf("%s", buf);
-
-	ret = buf[n-1];
-	return (int)ret;
 }
