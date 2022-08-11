@@ -262,6 +262,39 @@ and not
 [layer2]
 ```
 
+## Layouts
+
+A layout is a special kind of layer intended for modifying alpha keys. Unlike
+layers, layouts cannot have any associated modifiers, and only one layout may
+be active at a given time. The current layout can be set using the _setlayout_
+action.
+
+For convenience, keyd ships with a number of common letter layouts in
+/usr/share/keyd/layouts. Before including these, it is instructive to inspect them.
+Non-english layouts include a dedicated shift layer (making order of inclusion
+important) and *require the use of keyd's compose definitions* (see *Unicode
+Support*)
+
+E.G
+
+```
+# Include the shipped colemak layout.
+include layouts/colemak
+
+[global]
+default_layout = mylayout
+
+[mylayout:layout]
+a = b
+b = c
+#etc...
+
+[control]
+1 = setlayout(customlayout)
+2 = setlayout(colemak)
+```
+
+
 ## Unicode Support
 
 If keyd encounters a valid UTF8 sequence as a right hand value, it will try and
@@ -361,17 +394,17 @@ E.G
 	[ids]
 	*
 
+	# Add our shared custom bindings.
 	include common
 
 	# Appends bindings to the main layer
 	# defined in /etc/keyd/common (order matters)
 	[main]
-	include layouts/dvorak
-	f11 = toggle(colemak)
+	capslock = layer(capslock)
 
-	[colemak]
-	include layouts/colemak
-	capslock = backspace
+	[capslock]
+	1 = setlayout(colemak)
+	2 = setlayout(dvorak)
 
 /etc/keyd/common:
 	[main]
@@ -385,7 +418,7 @@ E.G
 	k = up
 	l = right
 
-/etc/keyd/layouts/dvorak:
+/usr/share/keyd/layouts/dvorak:
 	a = a
 	s = o
 	...
@@ -399,12 +432,6 @@ Limitations:
 	- Included files should not include other files (inclusion is non-recursive).
 	- Included files should not end in .conf.
 
-
-For convenience, keyd ships with a number of common letter layouts in
-/usr/share/keyd/layouts. Before including these, it is instructive to inspect them.
-Non-english layouts include a dedicated shift layer (making order of inclusion
-important) and *require the use of keyd's compose definitions* (see *Unicode
-Support*)
 
 # GLOBALS
 
@@ -464,7 +491,10 @@ arguments.
 	corresponding modifiers while held.
 
 *layer(<layer>)*
-	Activates the given layer for the duration of the keypress.
+	Activate the given layer for the duration of the keypress.
+
+*setlayout(<layout>)*
+	Set the current layout.
 
 *toggle(<layer>)*
 	Permanently toggle the state of the given layer.
