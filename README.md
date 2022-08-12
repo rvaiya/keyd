@@ -238,3 +238,4 @@ good candidates for inclusion.
 # Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md).
+IRC Channel: #keyd on oftc
