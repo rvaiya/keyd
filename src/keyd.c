@@ -382,6 +382,8 @@ static void process_client_connection(int con)
 	default:
 		break;
 	}
+
+	close(con);
 }
 
 static int loop(int monitor_mode)

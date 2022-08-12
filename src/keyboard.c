@@ -77,6 +77,18 @@ static int cache_get(struct keyboard *kbd, uint8_t code,
 	return -1;
 }
 
+static void reset_keystate(struct keyboard *kbd)
+{
+	size_t i;
+
+	for (i = 0; i < 256; i++) {
+		if (kbd->keystate[i]) {
+			vkbd_send_key(vkbd, i, 0);
+			kbd->keystate[i] = 0;
+		}
+	}
+
+}
 
 static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 {
@@ -305,21 +317,6 @@ static void update_leds(struct keyboard *kbd)
 	set_led(1, active);
 }
 
-static void setlayout(struct keyboard *kbd, uint8_t idx)
-{
-	/* Only only layout may be active at a time */
-	size_t i;
-	for (i = 0; i < kbd->config.nr_layers; i++) {
-		struct layer *layer = &kbd->config.layers[i];
-
-		if (layer->type == LT_LAYOUT)
-			kbd->layer_state[i].active = 0;
-	}
-
-	kbd->layer_state[idx].activation_time = get_time();
-	kbd->layer_state[idx].active = 1;
-}
-
 static void deactivate_layer(struct keyboard *kbd, int idx)
 {
 	dbg("Deactivating layer %s", kbd->config.layers[idx].name);
@@ -400,8 +397,25 @@ static void clear(struct keyboard *kbd)
 	kbd->oneshot_latch = 0;
 	kbd->active_macro = NULL;
 
-	update_mods(kbd, -1, 0);
+	reset_keystate(kbd);
 }
+
+static void setlayout(struct keyboard *kbd, uint8_t idx)
+{
+	clear(kbd);
+	/* Only only layout may be active at a time */
+	size_t i;
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
+
+		if (layer->type == LT_LAYOUT)
+			kbd->layer_state[i].active = 0;
+	}
+
+	kbd->layer_state[idx].activation_time = 1;
+	kbd->layer_state[idx].active = 1;
+}
+
 
 static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			       struct descriptor *d, int dl,
