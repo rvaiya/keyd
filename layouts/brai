@@ -1,5 +1,7 @@
 [brai:layout]
 
+\ = \
 shift = layer(brai_shift)
 
 [brai_shift:S]
+\ = |
