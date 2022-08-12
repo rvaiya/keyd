@@ -35,6 +35,7 @@ static struct {
 } actions[] =  {
 	{ "swap",	OP_SWAP,	{ ARG_LAYER } },
 	{ "swap2",	OP_SWAP2,	{ ARG_LAYER, ARG_MACRO } },
+	{ "clear",	OP_CLEAR,	{} },
 	{ "oneshot",	OP_ONESHOT,	{ ARG_LAYER } },
 	{ "toggle",	OP_TOGGLE,	{ ARG_LAYER } },
 	{ "toggle2",	OP_TOGGLE2,	{ ARG_LAYER, ARG_MACRO } },
@@ -101,8 +102,10 @@ exit:
 		if (!*c)
 			return -1;
 
-		assert(*nargs < MAX_DESCRIPTOR_ARGS);
-		args[(*nargs)++] = arg;
+		if (arg != c) {
+			assert(*nargs < MAX_DESCRIPTOR_ARGS);
+			args[(*nargs)++] = arg;
+		}
 
 		if (*c == ')') {
 			*c = 0;

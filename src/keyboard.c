@@ -384,6 +384,25 @@ static void clear_oneshot(struct keyboard *kbd)
 	kbd->oneshot_latch = 0;
 }
 
+static void clear(struct keyboard *kbd)
+{
+	size_t i;
+	for (i = 1; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
+
+		if (layer->type != LT_LAYOUT)
+			memset(&kbd->layer_state[i], 0, sizeof kbd->layer_state[0]);
+	}
+
+	/* Neutralize upstroke for active keys. */
+	memset(kbd->cache, 0, sizeof(kbd->cache));
+
+	kbd->oneshot_latch = 0;
+	kbd->active_macro = NULL;
+
+	update_mods(kbd, -1, 0);
+}
+
 static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			       struct descriptor *d, int dl,
 			       int pressed)
@@ -441,6 +460,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			update_mods(kbd, -1, 0);
 		}
 
+		break;
+	case OP_CLEAR:
+		if(pressed)
+			clear(kbd);
 		break;
 	case OP_OVERLOAD:
 		idx = d->args[0].idx;
@@ -610,7 +633,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 	return timeout;
 }
-
 
 /*
  * `code` may be 0 in the event of a timeout.

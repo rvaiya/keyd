@@ -506,6 +506,9 @@ arguments.
 *overload(<layer>, <action>)*
 	Activates the given layer while held and executes <action> on tap.
 
+*clear()*
+	Clear any active layers (the active layout is preserved).
+
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the first
 	action, if the key is held for less than _<timeout> ms_ or another key is struck
