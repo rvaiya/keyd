@@ -240,12 +240,25 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 
 	d->op = 0;
 
-	long maxts = 0;
-
+	/* Scan for match on active layout (if any) */
 	for (i = 0; i < kbd->config.nr_layers; i++) {
 		struct layer *layer = &kbd->config.layers[i];
 
-		if (kbd->layer_state[i].active) {
+		if (kbd->layer_state[i].active
+			&& (layer->type == LT_LAYOUT)
+			&& layer->keymap[code].op) {
+				*d = layer->keymap[code];
+				*dl = i;
+                                break;
+		}
+	}
+
+	long maxts = 0;
+	/* Scan for matches on non-layout layers */
+	for (i = 0; i < kbd->config.nr_layers; i++) {
+		struct layer *layer = &kbd->config.layers[i];
+
+		if (kbd->layer_state[i].active && !(kbd->config.layers[i].type == LT_LAYOUT)) {
 			long activation_time = kbd->layer_state[i].activation_time;
 
 			if (layer->keymap[code].op && activation_time >= maxts) {
