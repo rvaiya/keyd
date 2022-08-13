@@ -205,7 +205,7 @@ signal.signal(signal.SIGALRM, on_timeout)
 signal.alarm(20)
 
 vkbd = VirtualKeyboard('test keyboard', vendor_id=0x2fac, product_id=0x2ade)
-stream = KeyStream(name="keyd test device")
+stream = KeyStream(name="keyd virtual keyboard")
 
 # Grab the virtual keyboard so we don't
 # cause pandemonium.

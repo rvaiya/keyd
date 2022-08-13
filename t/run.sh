@@ -8,6 +8,8 @@ if [ `whoami` != "root" ]; then
 	exit $?
 fi
 
+pgrep keyd && { echo "Stop keyd before running tests"; exit -1; }
+
 tmpdir=$(mktemp -d)
 
 cleanup() {
@@ -23,10 +25,7 @@ trap cleanup INT
 cd "$(dirname "$0")"
 cp test.conf "$tmpdir"
 
-KEYD_NAME="keyd test device" \
-KEYD_SOCKET=/tmp/keyd_test.socket \
-KEYD_DEBUG=1 \
-KEYD_CONFIG_DIR="$tmpdir" \
+(cd ..;make CONFIG_DIR="$tmpdir") || exit -1
 ../bin/keyd > test.log 2>&1 &
 
 pid=$!

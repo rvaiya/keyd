@@ -6,6 +6,9 @@ VERSION=2.4.2
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
 
+CONFIG_DIR=/etc/keyd
+SOCKET_PATH=/var/run/keyd.socket
+
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
 	-L/usr/local/lib \
@@ -13,6 +16,8 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-Wextra \
 	-Wno-unused \
 	-std=c11 \
+	-DSOCKET_PATH=\"$(SOCKET_PATH)\" \
+	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
 	-D_DEFAULT_SOURCE \
 	$(CFLAGS)
 
@@ -85,7 +90,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
 clean:
 	-rm -rf bin
-test: all
+test:
 	@cd t; \
 	for f in *.sh; do \
 		./$$f; \

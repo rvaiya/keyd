@@ -8,11 +8,8 @@
 
 #include "keyd.h"
 #include "config.h"
-#include "layer.h"
 
 #define MAX_ACTIVE_KEYS	32
-#define MAX_DEVICES	64
-
 #define CACHE_SIZE	16 //Effectively nkro
 
 struct cache_entry {
@@ -23,10 +20,8 @@ struct cache_entry {
 
 /* May correspond to more than one physical input device. */
 struct keyboard {
-	char config_path[PATH_MAX];
-
+	const struct config *original_config;
 	struct config config;
-	struct config original_config;
 
 	/*
 	 * Cache descriptors to preserve code->descriptor
@@ -67,10 +62,13 @@ struct keyboard {
 	} pending_timeout;
 
 	uint8_t keystate[256];
+	void (*output) (uint8_t code, uint8_t state);
 };
 
+struct keyboard *new_keyboard(struct config *config, void (*sink) (uint8_t, uint8_t));
+
 long kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
+int kbd_eval(struct keyboard *kbd, const char *exp);
 void kbd_reset(struct keyboard *kbd);
-int kbd_execute_expression(struct keyboard *kbd, const char *exp);
 
 #endif

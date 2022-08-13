@@ -7,8 +7,8 @@ control down
 control up
 1 down
 1 up
-linefeed down
-linefeed up
+cancel down
+cancel up
 3 down
 3 up
 2 down

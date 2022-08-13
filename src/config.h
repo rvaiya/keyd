@@ -6,29 +6,121 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define MAX_DEVICE_IDS		32
-#define MAX_CONFIG_NAME		256
+#include <limits.h>
 
-#define MAX_COMMANDS		64
-#define MAX_MACROS		256
-#define MAX_AUX_DESCRIPTORS	64
+#define MAX_LAYER_NAME_LEN	32
+#define MAX_DESCRIPTOR_ARGS	3
 
-#define MAX_ALIAS_LEN		32
+#define MAX_LAYERS		32
+#define MAX_EXP_LEN		512
 
-#include "layer.h"
-#include "descriptor.h"
-#include "macro.h"
-#include "command.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
+
+enum op {
+	OP_KEYSEQUENCE = 1,
+
+	OP_ONESHOT,
+	OP_SWAP,
+	OP_SWAP2,
+	OP_LAYER,
+	OP_LAYOUT,
+	OP_CLEAR,
+	OP_OVERLOAD,
+	OP_TOGGLE,
+	OP_TOGGLE2,
+
+	OP_MACRO,
+	OP_MACRO2,
+	OP_COMMAND,
+	OP_TIMEOUT
+};
+
+union descriptor_arg {
+	uint8_t code;
+	uint8_t mods;
+	int16_t idx;
+	uint16_t sz;
+	uint16_t timeout;
+};
+
+/* Describes the intended purpose of a key (corresponds to an 'action' in user parlance). */
+
+struct descriptor {
+	enum op op;
+	union descriptor_arg args[MAX_DESCRIPTOR_ARGS];
+};
+
+/*
+ * A layer is a map from keycodes to descriptors. It may optionally
+ * contain one or more modifiers which are applied to the base layout in
+ * the event that no matching descriptor is found in the keymap. For
+ * consistency, modifiers are internally mapped to eponymously named
+ * layers consisting of the corresponding modifier and an empty keymap.
+ */
+
+struct layer {
+	char name[MAX_LAYER_NAME_LEN+1];
+
+	enum {
+		LT_NORMAL,
+		LT_LAYOUT,
+		LT_COMPOSITE,
+	} type;
+
+	uint8_t mods;
+	struct descriptor keymap[256];
+
+	/* Used for composite layers. */
+	size_t nr_constituents;
+	int constituents[8];
+};
+
+struct command {
+	char cmd[256];
+};
+
+struct macro_entry {
+	enum {
+		MACRO_KEYSEQUENCE,
+		MACRO_HOLD,
+		MACRO_RELEASE,
+		MACRO_UNICODE,
+		MACRO_TIMEOUT
+	} type;
+
+	uint16_t data;
+};
+
+/*
+ * A series of key sequences optionally punctuated by
+ * timeouts
+ */
+struct macro {
+	struct macro_entry entries[64];
+
+	uint32_t sz;
+};
 
 struct config {
+	char path[PATH_MAX];
 	struct layer layers[MAX_LAYERS];
 
 	/* Auxiliary descriptors used by layer bindings. */
-	struct descriptor descriptors[MAX_AUX_DESCRIPTORS];
-	struct macro macros[MAX_MACROS];
-	struct command commands[MAX_COMMANDS];
-	char aliases[256][MAX_ALIAS_LEN+1];
+	struct descriptor descriptors[32];
+	struct macro macros[256];
+	struct command commands[64];
+	char aliases[256][32];
 
+	uint8_t wildcard;
+	uint32_t ids[64];
+	uint32_t excluded_ids[64];
+
+	size_t nr_ids;
+	size_t nr_excluded_ids;
 	size_t nr_layers;
 	size_t nr_macros;
 	size_t nr_descriptors;
@@ -46,6 +138,6 @@ int config_parse(struct config *config, const char *path);
 int config_add_entry(struct config *config, const char *exp);
 int config_get_layer_index(const struct config *config, const char *name);
 
-const char *find_config_path(const char *dir, uint16_t vendor, uint16_t product, uint8_t *is_exact_match);
+int config_check_match(struct config *config, uint32_t id);
 
 #endif

@@ -142,13 +142,6 @@ static int create_virtual_pointer(const char *name)
 	return fd;
 }
 
-static long get_time_ms()
-{
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return ts.tv_sec*1E3+ts.tv_nsec/1E6;
-}
-
 /*
  * Sleep for timeout miliseconds or until repeater_cond is signaled.
  * Returns 0 if sleep completed without interruption.
@@ -225,7 +218,6 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 static void *repeater(void *arg)
 {
 	struct vkbd *vkbd = arg;
-	long last_repeated = 0;
 
 	while(1) {
 		while (!repeat_key)

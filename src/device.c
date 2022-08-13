@@ -60,17 +60,17 @@ static uint8_t resolve_device_capabilities(int fd)
 	uint8_t capabilities = 0;
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
-		perror("ioctl");
+		perror("ioctl: ev_key");
 		return 0;
 	}
 
 	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), &has_rel) < 0) {
-		perror("ioctl");
+		perror("ioctl: ev_rel");
 		return 0;
 	}
 
 	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), &has_abs) < 0) {
-		perror("ioctl");
+		perror("ioctl: ev_abs");
 		return 0;
 	}
 
@@ -100,14 +100,14 @@ static int device_init(const char *path, struct device *dev)
 	capabilities = resolve_device_capabilities(fd);
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
-		perror("ioctl EVIOCGNAME");
+		fprintf(stderr, "ERROR: could not fetch device name of %s\n", dev->path);
 		return -1;
 	}
 
 	if (capabilities & CAP_MOUSE_ABS) {
 		if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) < 0) {
 			perror("ioctl");
-			return 0;
+			return -1;
 		}
 
 		dev->_minx = absinfo.minimum;
@@ -115,7 +115,7 @@ static int device_init(const char *path, struct device *dev)
 
 		if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0) {
 			perror("ioctl");
-			return 0;
+			return -1;
 		}
 
 		dev->_miny = absinfo.minimum;
@@ -139,6 +139,8 @@ static int device_init(const char *path, struct device *dev)
 		dev->capabilities = capabilities;
 		dev->vendor_id = info.vendor;
 		dev->product_id = info.product;
+		dev->data = NULL;
+		dev->grabbed = 0;
 
 		return 0;
 	} else {
@@ -228,13 +230,10 @@ int devmon_create()
 
 /*
  * A non blocking call which returns any devices available on the provided
- * monitor descriptor. The return value should not be freed or modified by the calling
- * code. Returns NULL if no devices are available.
+ * monitor descriptor. Returns 0 on success.
  */
-struct device *devmon_read_device(int fd)
+int devmon_read_device(int fd, struct device *dev)
 {
-	static struct device ret;
-
 	static char buf[4096];
 	static int buf_sz = 0;
 	static char *ptr = buf;
@@ -248,17 +247,20 @@ struct device *devmon_read_device(int fd)
 			buf_sz = read(fd, buf, sizeof(buf));
 			if (buf_sz == -1) {
 				buf_sz = 0;
-				return NULL;
+				return -1;
 			}
 		}
 
 		ev = (struct inotify_event*)ptr;
 		ptr += sizeof(struct inotify_event) + ev->len;
 
+		if (strncmp(ev->name, "event", 5))
+			continue;
+
 		snprintf(path, sizeof path, "/dev/input/%s", ev->name);
 
-		if (!device_init(path, &ret))
-			return &ret;
+		if (!device_init(path, dev))
+			return 0;
 	}
 }
 
@@ -268,6 +270,9 @@ int device_grab(struct device *dev)
 	struct input_event ev;
 	uint8_t state[KEY_MAX / 8 + 1];
 	int pending_release = 0;
+
+	if (dev->grabbed)
+		return 0;
 
 	/*
 	 * await neutral key state to ensure any residual
@@ -309,12 +314,21 @@ int device_grab(struct device *dev)
 	while (read(dev->fd, &ev, sizeof(ev)) > 0) {
 	}
 
+	dev->grabbed = 1;
 	return 0;
 }
 
 int device_ungrab(struct device *dev)
 {
-	return ioctl(dev->fd, EVIOCGRAB, (void *) 0);
+	if (!dev->grabbed)
+		return 0;
+
+	if (!ioctl(dev->fd, EVIOCGRAB, (void *) 0)) {
+		dev->grabbed = 0;
+		return 0;
+	} else {
+		return -1;
+	}
 }
 
 /*
@@ -327,10 +341,13 @@ struct device_event *device_read_event(struct device *dev)
 	struct input_event ev;
 	static struct device_event devev;
 
+	assert(dev->fd != -1);
+
 	if (read(dev->fd, &ev, sizeof(ev)) < 0) {
 		if (errno == EAGAIN) {
 			return NULL;
 		} else {
+			dev->fd = -1;
 			devev.type = DEV_REMOVED;
 			return &devev;
 		}
@@ -396,14 +413,15 @@ struct device_event *device_read_event(struct device *dev)
 
 		break;
 	case EV_KEY:
-		/* Ignore repeat events */
-		if (ev.value == 2)
-			return NULL;
-
 		/*
 		 * KEYD_* codes <256 correspond to their evdev
 		 * counterparts.
 		 */
+
+		/* Ignore repeat events. */
+		if (ev.value == 2)
+			return NULL;
+
 		if (ev.code >= 256) {
 			if (ev.code == BTN_LEFT)
 				ev.code = KEYD_LEFT_MOUSE;

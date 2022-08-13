@@ -8,17 +8,6 @@
 
 #include <stdint.h>
 
-#define DEV_MOUSE_MOVE		0
-#define DEV_MOUSE_SCROLL	1
-#define DEV_KEY			2
-#define DEV_REMOVED		3
-
-/* 
- * All absolute values are relative to a resolution
- * of 1024x1024
- */
-#define DEV_MOUSE_MOVE_ABS	4
-
 #define CAP_MOUSE	0x1
 #define CAP_MOUSE_ABS	0x2
 #define CAP_KEYBOARD	0x4
@@ -32,9 +21,11 @@ struct device {
 	 */
 	int fd;
 
+	uint8_t grabbed;
 	uint8_t capabilities;
 	uint16_t product_id;
 	uint16_t vendor_id;
+
 	char name[64];
 	char path[256];
 
@@ -49,7 +40,16 @@ struct device {
 };
 
 struct device_event {
-	uint8_t type;
+	enum {
+		DEV_KEY,
+
+		DEV_MOUSE_MOVE,
+		/* All absolute values are relative to a resolution of 1024x1024. */
+		DEV_MOUSE_MOVE_ABS,
+		DEV_MOUSE_SCROLL,
+
+		DEV_REMOVED,
+	} type;
 
 	uint8_t code;
 	uint8_t pressed;
@@ -65,7 +65,7 @@ int device_grab(struct device *dev);
 int device_ungrab(struct device *dev);
 
 int devmon_create();
-struct device *devmon_read_device(int fd);
+int devmon_read_device(int fd, struct device *dev);
 void device_set_led(const struct device *dev, int led, int state);
 
 #endif

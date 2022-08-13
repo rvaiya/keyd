@@ -8,11 +8,13 @@ result often being tethered to a specified environment (X11). keyd attempts to
 solve this problem by providing a flexible system wide daemon which remaps keys
 using kernel level input primitives (evdev, uinput).
 
-# UPDATE (v2.4.0 released)
+# Note on v2
 
 The config format has undergone several iterations since the first
-release, for those migrating their configs from v1, please see the
-[changelog](docs/CHANGELOG.md)*.
+release. For those migrating their configs from v1 it is best
+to reread the man page. 
+
+See also: [changelog](docs/CHANGELOG.md).
 
 # Goals
 

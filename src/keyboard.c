@@ -3,22 +3,8 @@
  *
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
-#include <stdint.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <assert.h>
 
-#include "vkbd.h"
-#include "keys.h"
-#include "error.h"
-#include "macro.h"
-#include "layer.h"
 #include "keyboard.h"
-#include "descriptor.h"
-#include "device.h"
-#include "keyd.h"
 
 /*
  * Here be tiny dragons.
@@ -83,7 +69,7 @@ static void reset_keystate(struct keyboard *kbd)
 
 	for (i = 0; i < 256; i++) {
 		if (kbd->keystate[i]) {
-			vkbd_send_key(vkbd, i, 0);
+			kbd->output(i, 0);
 			kbd->keystate[i] = 0;
 		}
 	}
@@ -100,7 +86,7 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 
 	kbd->keystate[code] = pressed;
 
-	vkbd_send_key(vkbd, code, pressed);
+	kbd->output(code, pressed);
 }
 
 static void set_mods(struct keyboard *kbd, uint8_t mods)
@@ -648,6 +634,45 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	return timeout;
 }
 
+struct keyboard *new_keyboard(struct config *config, void (*sink) (uint8_t, uint8_t))
+{
+	size_t i;
+	struct keyboard *kbd;
+
+	kbd = calloc(1, sizeof(struct keyboard));
+
+	kbd->original_config = config;
+	memcpy(&kbd->config, kbd->original_config, sizeof(struct config));
+
+	kbd->layer_state[0].active = 1;
+	kbd->layer_state[0].activation_time = 0;
+
+	if (kbd->config.default_layout[0]) {
+		int found = 0;
+		for (i = 0; i < kbd->config.nr_layers; i++) {
+			struct layer *layer = &kbd->config.layers[i];
+
+			if (layer->type == LT_LAYOUT &&
+			    !strcmp(layer->name,
+				    kbd->config.default_layout)) {
+				kbd->layer_state[i].active = 1;
+				kbd->layer_state[i].activation_time = 1;
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found)
+			fprintf(stderr,
+				"\tWARNING: could not find default layout %s.\n",
+				kbd->config.default_layout);
+	}
+
+	kbd->output = sink;
+
+	return kbd;
+}
+
 /*
  * `code` may be 0 in the event of a timeout.
  *
@@ -721,15 +746,10 @@ long kbd_process_key_event(struct keyboard *kbd,
 	return process_descriptor(kbd, code, &d, dl, pressed);
 }
 
-void kbd_reset(struct keyboard *kbd)
-{
-	memcpy(&kbd->config, &kbd->original_config, sizeof(kbd->config));
-}
-
-int kbd_execute_expression(struct keyboard *kbd, const char *exp)
+int kbd_eval(struct keyboard *kbd, const char *exp)
 {
 	if (!strcmp(exp, "reset")) {
-		kbd_reset(kbd);
+		memcpy(&kbd->config, kbd->original_config, sizeof(struct config));
 		return 0;
 	} else {
 		return config_add_entry(&kbd->config, exp);
