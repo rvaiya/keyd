@@ -19,7 +19,7 @@ for line in open('data/unicode.txt').readlines(): # Original source: https://www
 
 data = ''
 for n, code in enumerate(codes):
-        data += '<Linefeed> '
+        data += '<Cancel> '
         data += ' '.join(f'<{c}>' for c in ('%05d' % n))
         data += f' : "{chr(code)}"\n'
 

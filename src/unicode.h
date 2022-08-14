@@ -51,7 +51,7 @@
  * <35k of them).  Each codepoint is zero-left padded to 5 characters to avoid
  * the subset issue.
  *
- * Finally, we use linefeed as our compose prefix so the user doesn't have to
+ * Finally, we use cancel as our compose prefix so the user doesn't have to
  * faff about with XkbOptions. This technically introduces the possibility of a
  * conflict, but I haven't found any evidence which suggests that Linefeed is
  * anything other than a vestigial keypendage from a more glorious era.

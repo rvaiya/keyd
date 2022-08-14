@@ -208,8 +208,8 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 			n = ent->data;
 
 			set_mods(kbd, 0);
-			send_key(kbd, KEYD_LINEFEED, 1);
-			send_key(kbd, KEYD_LINEFEED, 0);
+			send_key(kbd, KEYD_CANCEL, 1);
+			send_key(kbd, KEYD_CANCEL, 0);
 
 			for (j = 10000; j; j /= 10) {
 				int digit = n / j;
