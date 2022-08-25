@@ -7,41 +7,6 @@
 
 #include "keyd.h"
 
-static void print_keys()
-{
-	size_t i;
-	for (i = 0; i < 256; i++) {
-		const char *altname = keycode_table[i].alt_name;
-		const char *shiftedname = keycode_table[i].shifted_name;
-		const char *name = keycode_table[i].name;
-
-		if (name)
-			printf("%s\n", name);
-		if (altname)
-			printf("%s\n", altname);
-		if (shiftedname)
-			printf("%s\n", shiftedname);
-	}
-}
-
-static void print_version()
-{
-	printf("keyd " VERSION "\n");
-}
-
-static void print_help()
-{
-	printf("usage: keyd [command] [option]\n\n"
-	       "Commands:\n"
-	       "    monitor                        Start in monitor mode.\n"
-	       "    reload                         Reload all config files.\n"
-	       "    bind <binding> [<binding>...]  Add the supplied bindings.\n"
-	       "Options:\n"
-	       "    -l, --list-keys    List key names.\n"
-	       "    -v, --version      Print the current version and exit.\n"
-	       "    -h, --help         Print help and exit.\n");
-}
-
 static int ipc_exec(int type, const char *data, size_t sz)
 {
 	struct ipc_message msg;
@@ -72,25 +37,91 @@ static int ipc_exec(int type, const char *data, size_t sz)
 	return type == IPC_FAIL;
 }
 
+static int version(int argc, char *argv[])
+{
+	printf("keyd " VERSION "\n");
 
-static int eval_expressions(char *exps[], size_t n)
+	return 0;
+}
+
+static int help(int argc, char *argv[])
+{
+	printf("usage: keyd [-v] [-h] [command] [<args>]\n\n"
+	       "Commands:\n"
+	       "    monitor                        Print key events in real time.\n"
+	       "    list-keys                      Print a list of valid key names.\n"
+	       "    reload                         Trigger a reload .\n"
+	       "    bind <binding> [<binding>...]  Add the supplied bindings to all loaded configs.\n"
+	       "Options:\n"
+	       "    -v, --version      Print the current version and exit.\n"
+	       "    -h, --help         Print help and exit.\n");
+
+	return 0;
+}
+
+static int list_keys(int argc, char *argv[])
 {
 	size_t i;
+
+	for (i = 0; i < 256; i++) {
+		const char *altname = keycode_table[i].alt_name;
+		const char *shiftedname = keycode_table[i].shifted_name;
+		const char *name = keycode_table[i].name;
+
+		if (name)
+			printf("%s\n", name);
+		if (altname)
+			printf("%s\n", altname);
+		if (shiftedname)
+			printf("%s\n", shiftedname);
+	}
+
+	return 0;
+}
+
+
+static int add_binding(int argc, char *argv[])
+{
+	int i;
 	int ret = 0;
 
-	for (i = 0; i < n; i++) {
-		if (ipc_exec(IPC_BIND, exps[i], strlen(exps[i])))
+	for (i = 0; i < argc; i++) {
+		if (ipc_exec(IPC_BIND, argv[i], strlen(argv[i])))
 			ret = -1;
 	}
 
 	return ret;
 }
 
+static int reload()
+{
+	ipc_exec(IPC_RELOAD, NULL, 0);
+
+	return 0;
+}
+
+struct {
+	const char *name;
+	const char *flag;
+	const char *long_flag;
+
+	int (*fn)(int argc, char **argv);
+} commands[] = {
+	{"help", "-h", "--help", help},
+	{"version", "-v", "--version", version},
+
+	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
+	{"monitor", "-m", "--monitor", monitor},
+	{"bind", "-e", "--expression", add_binding},
+
+	{"reload", "", "", reload},
+	{"list-keys", "", "", list_keys},
+};
+
 int main(int argc, char *argv[])
 {
 	int c;
-	int eval_flag = 0;
-	int monitor_flag = 0;
+	size_t i;
 
 	debug_level =
 	    atoi(getenv("KEYD_DEBUG") ? getenv("KEYD_DEBUG") : "");
@@ -101,54 +132,18 @@ int main(int argc, char *argv[])
 	signal(SIGINT, exit);
 	signal(SIGPIPE, SIG_IGN);
 
-	if (argc > 1 && !strcmp(argv[1], "reload")) {
-		ipc_exec(IPC_RELOAD, NULL, 0);
-		return 0;
+	if (argc > 1) {
+		for (i = 0; i < ARRAY_SIZE(commands); i++)
+			if (!strcmp(commands[i].name, argv[1]) ||
+				!strcmp(commands[i].flag, argv[1]) ||
+				!strcmp(commands[i].long_flag, argv[1])) {
+				return commands[i].fn(argc - 2, argv + 2);
+			}
+
+		return help(argc, argv);
 	}
 
-	if (argc > 1 && !strcmp(argv[1], "bind")) {
-		return eval_expressions(argv + 2, argc - 2);
-	}
-
-
-	struct option opts[] = {
-		{ "list-keys", no_argument, NULL, 'l' },
-		{ "version", no_argument, NULL, 'v' },
-		{ "monitor", no_argument, NULL, 'm' },
-		{ "expression", no_argument, NULL, 'e' },
-		{ "help", no_argument, NULL, 'h' },
-	};
-
-	while ((c = getopt_long(argc, argv, "hlvme", opts, NULL)) > 0) {
-		switch (c) {
-		case 'l':
-			print_keys();
-			return 0;
-		case 'v':
-			print_version();
-			return 0;
-		case 'm':
-			monitor_flag = 1;
-			break;
-		case 'e':
-			eval_flag = 1;
-			break;
-		default:
-			print_help();
-			return 0;
-		}
-	}
-
-	if (eval_flag) {
-		return eval_expressions(argv + optind, argc - optind);
-	}
-
-	if (monitor_flag)
-		monitor();
-	else
-		run_daemon();
-
-	return 0;
+	run_daemon(argc, argv);
 }
 
 /* TODO: find a better place for this. */

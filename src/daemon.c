@@ -297,7 +297,7 @@ static int event_handler(struct event *ev)
 	return 0;
 }
 
-void run_daemon()
+int run_daemon(int argc, char *argv[])
 {
 	ipcfd = ipc_create_server(SOCKET_PATH);
 	if (ipcfd < 0)
@@ -315,4 +315,6 @@ void run_daemon()
 	atexit(cleanup);
 
 	evloop(event_handler);
+
+	return 0;
 }

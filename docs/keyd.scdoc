@@ -6,20 +6,20 @@ keyd(1)
 
 # SYNOPSIS
 
-*keyd* [options]
+*keyd* [command] [options]
+
+# COMMANDS
+
+*monitor*
+	Print key events in real time. Useful for debugging.
+
+*bind <binding> [<binding>...]*
+	Add the supplied bindings to all active configs. See _Bindings_ for details.
+
+*list-keys*
+	List valid key names.
 
 # OPTIONS
-
-*-m, --monitor*
-	Start keyd in monitor mode.  Useful for discovering keycodes and device ids.
-
-*-e, --expression <expression> [<expression>...]*
-	Modify bindings of the currently active keyboard. See _Expressions_ for details.
-*--all*
-	When used with -e, apply the supplied expressions to all configs rather than just the active one.
-
-*-l, --list-keys*
-	List valid key names.
 
 *-v, --version*
 	Print the current version and exit.
@@ -48,13 +48,7 @@ terminate.
 # CONFIGURATION
 
 Configuration files are stored in _/etc/keyd/_ and are loaded upon initialization.
-Changes to these files can be realized by restarting the daemon, which is usually
-accomplished using your service manager.
-
-E.G
-
-	sudo systemctl restart keyd
-
+Changes to these files can be triggered using the reload command (sudo keyd reload).
 
 A valid config file has the extension _.conf_ and *must* begin with an _[ids]_
 section that has one of the following forms:
@@ -587,23 +581,23 @@ desired mappings to the core using _-e_.
 *NOTE:* Users with access to the keyd socket should be considered privileged
 (i.e assumed to have access to the entire system.).
 
-## Expressions
+## Bindings
 
-The _-e_ flag accepts one or more _expressions_, each of which must have the following form:
+The _bind_ command accepts one or more _bindings_, each of which must have the following form:
 
 	\[<layer>.\]<key> = <key>|<macro>|<action>
 
 Where _<layer>_ is the name of an (existing) layer in which the key is to be bound.
 
-As a special case, an expression may be the string *reset*, in which case the
-current keymap will revert to its original state (all dynamically applied
-bindings will be dropped).
+As a special case, the string "reset" may be used in place of a binding, in
+which case the current keymap will revert to its original state (all
+dynamically applied bindings will be dropped).
 
 Examples:
 
 ```
-	# keyd -e '- = C-c'
-	# keyd -e reset     # Reset the state of the keymap so it reflects /etc/keyd/.
+	$ keyd bind '- = C-c'
+	$ keyd bind reset '+ = C-c' # Reset the keyboard before applying the '+' binding (drops the previous '-' binding)
 ```
 
 By default expressions apply to the most recently active keyboard.

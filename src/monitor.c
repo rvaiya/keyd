@@ -60,7 +60,7 @@ int event_handler(struct event *ev)
 	return 0;
 }
 
-void monitor()
+int monitor(int argc, char *argv[])
 {
 	set_echo(0);
 
@@ -72,4 +72,6 @@ void monitor()
 	atexit(cleanup);
 
 	evloop(event_handler);
+
+	return 0;
 }

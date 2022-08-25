@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <getopt.h>
 #include <grp.h>
 #include <limits.h>
 #include <poll.h>
@@ -78,8 +77,8 @@ struct ipc_message {
 	size_t sz;
 };
 
-void monitor();
-void run_daemon();
+int monitor(int argc, char *argv[]);
+int run_daemon(int argc, char *argv[]);
 
 void evloop_add_fd(int fd);
 int evloop(int (*event_handler) (struct event *ev));
