@@ -79,7 +79,7 @@ between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), an
 
 # Quickstart
 
-1. Install keyd
+1. Install and start keyd (e.g `sudo systemctl enable keyd`)
 
 2. Put the following in `/etc/keyd/default.conf`:
 
@@ -97,11 +97,12 @@ capslock = overload(control, esc)
 esc = capslock
 ```
 
-3. Run `sudo systemctl restart keyd` to reload the config file.
+3. Run `sudo keyd reload` to reload the config set.
 
 4. See the man page (`man keyd`) for a more comprehensive description.
 
-5. In case the config is malformed, logs can be read with `sudo journalctl -e -u keyd`.
+Config errors will appear in the log output and can be accessed in the usual
+way using your system's service manager (e.g `sudo journalctl -eu keyd`).
 
 *Note*: It is possible to render your machine unusable with a bad config file.
 Should you find yourself in this position, the special key sequence

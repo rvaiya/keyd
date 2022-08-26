@@ -99,6 +99,9 @@ will exclusively match any devices which do.
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
 
+Config errors will appear in the log output and can be accessed in the usual
+way using your system's service manager (e.g `sudo journalctl -eu keyd`).
+
 Note: All keyboards defined within a given config file will share the
 same state. This is useful for linking separate input devices together
 (e.g foot pedals).
