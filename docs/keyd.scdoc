@@ -11,10 +11,13 @@ keyd(1)
 # COMMANDS
 
 *monitor*
-	Print key events in real time. Useful for debugging.
+	Print key events. Useful for discovering key names and debugging.
 
 *bind <binding> [<binding>...]*
 	Add the supplied bindings to all active configs. See _Bindings_ for details.
+
+*listen*
+	Print layer state changes of the running keyd daemon to stdout. Useful for scripting.
 
 *list-keys*
 	List valid key names.

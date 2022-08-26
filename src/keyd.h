@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
@@ -71,6 +72,7 @@ struct ipc_message {
 
 		IPC_BIND,
 		IPC_RELOAD,
+		IPC_LAYER_LISTEN,
 	} type;
 	
 	char data[MAX_IPC_MESSAGE_SIZE];

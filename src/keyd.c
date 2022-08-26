@@ -4,7 +4,6 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 
-
 #include "keyd.h"
 
 static int ipc_exec(int type, const char *data, size_t sz)
@@ -51,6 +50,7 @@ static int help(int argc, char *argv[])
 	       "    monitor                        Print key events in real time.\n"
 	       "    list-keys                      Print a list of valid key names.\n"
 	       "    reload                         Trigger a reload .\n"
+	       "    listen                         Print layer state changes of the running keyd daemon to stdout.\n"
 	       "    bind <binding> [<binding>...]  Add the supplied bindings to all loaded configs.\n"
 	       "Options:\n"
 	       "    -v, --version      Print the current version and exit.\n"
@@ -93,6 +93,31 @@ static int add_binding(int argc, char *argv[])
 	return ret;
 }
 
+static int layer_listen(int argc, char *argv[])
+{
+	struct ipc_message msg;
+
+	int con = ipc_connect();
+
+	if (con < 0) {
+		perror("connect");
+		exit(-1);
+	}
+
+	msg.type = IPC_LAYER_LISTEN;
+	xwrite(con, &msg, sizeof msg);
+
+	while (1) {
+		char buf[512];
+		ssize_t sz = read(con, buf, sizeof buf);
+
+		if (sz <= 0)
+			return -1;
+
+		write(1, buf, sz);
+	}
+}
+
 static int reload()
 {
 	ipc_exec(IPC_RELOAD, NULL, 0);
@@ -113,6 +138,8 @@ struct {
 	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
 	{"monitor", "-m", "--monitor", monitor},
 	{"bind", "-e", "--expression", add_binding},
+
+	{"listen", "", "", layer_listen},
 
 	{"reload", "", "", reload},
 	{"list-keys", "", "", list_keys},

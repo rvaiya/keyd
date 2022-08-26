@@ -309,6 +309,9 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 
 	assert(kbd->layer_state[idx].active > 0);
 	kbd->layer_state[idx].active--;
+
+	if (kbd->layer_observer)
+		kbd->layer_observer(kbd->config.layers[idx].name, 0);
 }
 
 /*
@@ -323,6 +326,9 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 	kbd->layer_state[idx].activation_time = get_time();
 	kbd->layer_state[idx].active++;
 	kbd->last_layer_code = code;
+
+	if (kbd->layer_observer)
+		kbd->layer_observer(kbd->config.layers[idx].name, 1);
 }
 
 static void execute_command(const char *cmd)
@@ -634,7 +640,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	return timeout;
 }
 
-struct keyboard *new_keyboard(struct config *config, void (*sink) (uint8_t, uint8_t))
+struct keyboard *new_keyboard(struct config *config,
+			      void (*sink) (uint8_t, uint8_t),
+			      void (*layer_observer)(const char *name, int state))
 {
 	size_t i;
 	struct keyboard *kbd;
@@ -669,6 +677,7 @@ struct keyboard *new_keyboard(struct config *config, void (*sink) (uint8_t, uint
 	}
 
 	kbd->output = sink;
+	kbd->layer_observer = layer_observer;
 
 	return kbd;
 }

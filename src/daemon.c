@@ -17,6 +17,9 @@ static size_t nr_devices;
 
 static uint8_t keystate[256];
 
+static int listeners[32];
+static size_t nr_listeners = 0;
+
 static void free_configs()
 {
 	struct config_ent *ent = configs;
@@ -53,6 +56,57 @@ static void send_key(uint8_t code, uint8_t state)
 	vkbd_send_key(vkbd, code, state);
 }
 
+static void add_listener(int con)
+{
+	struct timeval tv;
+
+	/*
+	 * In order to avoid blocking the main event loop, allow up to 50ms for
+	 * slow clients to relieve back pressure before dropping them.
+	 */
+	tv.tv_usec = 50000;
+	tv.tv_sec = 0;
+
+	if (nr_listeners == ARRAY_SIZE(listeners)) {
+		char s[] = "Max listeners exceeded\n";
+		xwrite(con, &s, sizeof s);
+
+		close(con);
+		return;
+	}
+
+	setsockopt(con, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
+
+	listeners[nr_listeners++] = con;
+}
+
+static void layer_observer(const char *name, int state)
+{
+	if (!nr_listeners)
+		return;
+
+	char buf[MAX_LAYER_NAME_LEN+2];
+	ssize_t bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', name);
+	size_t i;
+
+	int keep[ARRAY_SIZE(listeners)];
+	size_t n = 0;
+
+	for (i = 0; i < nr_listeners; i++) {
+		ssize_t nw = write(listeners[i], buf, bufsz);
+
+		if (nw == bufsz)
+			keep[n++] = listeners[i];
+		else
+			close(listeners[i]);
+	}
+
+	if (n != nr_listeners) {
+		nr_listeners = n;
+		memcpy(listeners, keep, n * sizeof(int));
+	}
+}
+
 static void load_configs()
 {
 	DIR *dh = opendir(CONFIG_DIR);
@@ -82,7 +136,7 @@ static void load_configs()
 			if (config_parse(&ent->config, path))
 				die("failed to parse %s", path);
 
-			ent->kbd = new_keyboard(&ent->config, send_key);
+			ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);
 			ent->next = configs;
 			configs = ent;
 		}
@@ -154,10 +208,36 @@ static void reload()
 	clear_vkbd();
 }
 
+static void send_success(int con)
+{
+	struct ipc_message msg;
+
+	msg.type = IPC_SUCCESS;;
+	msg.sz = sprintf(msg.data, "Success");
+
+	xwrite(con, &msg, sizeof msg);
+	close(con);
+}
+
+static void send_fail(int con, const char *fmt, ...)
+{
+	struct ipc_message msg;
+	va_list args;
+
+	va_start(args, fmt);
+
+	msg.type = IPC_FAIL;
+	msg.sz = vsnprintf(msg.data, sizeof(msg.data), fmt, args);
+
+	xwrite(con, &msg, sizeof msg);
+	close(con);
+
+	va_end(args);
+}
+
 static void handle_client(int con)
 {
 	struct ipc_message msg;
-	size_t sz;
 
 	xread(con, &msg, sizeof msg);
 
@@ -166,36 +246,31 @@ static void handle_client(int con)
 		int success;
 
 	case IPC_RELOAD:
-		msg.type = IPC_SUCCESS;;
-		strcpy(msg.data, "Success");
-		msg.sz = strlen(msg.data);
-
 		reload();
-		xwrite(con, &msg, sizeof msg);
+		send_success(con);
+		break;
+	case IPC_LAYER_LISTEN:
+		add_listener(con);
 		break;
 	case IPC_BIND:
 		success = 0;
-		msg.data[msg.sz] = 0;
+
 		for (ent = configs; ent; ent = ent->next) {
 			if (!kbd_eval(ent->kbd, msg.data))
 				success = 1;
 		}
 
-		if (success) {
-			msg.type = IPC_SUCCESS;
-			msg.sz = 0;
-		} else {
-			msg.type = IPC_FAIL;
-			msg.sz = snprintf(msg.data, sizeof msg.data, "ERROR: %s", errstr);
-		}
+		if (success)
+			send_success(con);
+		else
+			send_fail(con, "%s", errstr);
 
-		xwrite(con, &msg, sizeof msg);
+
 		break;
 	default:
+		send_fail(con, "Unknown command");
 		break;
 	}
-
-	close(con);
 }
 
 static void remove_device(struct device *dev)
@@ -307,6 +382,7 @@ int run_daemon(int argc, char *argv[])
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
+	nice(-20);
 
 	evloop_add_fd(ipcfd);
 

@@ -63,9 +63,12 @@ struct keyboard {
 
 	uint8_t keystate[256];
 	void (*output) (uint8_t code, uint8_t state);
+	void (*layer_observer) (const char *layer, int state);
 };
 
-struct keyboard *new_keyboard(struct config *config, void (*sink) (uint8_t, uint8_t));
+struct keyboard *new_keyboard(struct config *config,
+			      void (*sink) (uint8_t, uint8_t),
+			      void (*layer_observer)(const char *name, int state));
 
 long kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
 int kbd_eval(struct keyboard *kbd, const char *exp);
