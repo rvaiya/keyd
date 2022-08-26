@@ -187,7 +187,7 @@ By default, each key is bound to itself within the main layer. The exception to 
 are the modifier keys, which are instead bound to eponymously named layers with the
 corresponding modifiers.
 
-For example, _meta_ is acutally bound to _layer(meta)_, where _meta_ is
+For example, _meta_ is actually bound to _layer(meta)_, where _meta_ is
 internally defined as _meta:M_.
 
 A consequence of this is that overriding modifier keys is a simple matter of
@@ -584,7 +584,7 @@ is a good example of this. It is a small python script which performs event
 detection for the various display servers (e.g X/sway/gnome, etc) and feeds the
 desired mappings to the core using _-e_.
 
-*NOTE:* Users with access to the keyd socket should be considered privilleged
+*NOTE:* Users with access to the keyd socket should be considered privileged
 (i.e assumed to have access to the entire system.).
 
 ## Expressions
