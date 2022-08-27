@@ -80,7 +80,7 @@ static int list_keys(int argc, char *argv[])
 }
 
 
-static int add_binding(int argc, char *argv[])
+static int add_bindings(int argc, char *argv[])
 {
 	int i;
 	int ret = 0;
@@ -89,6 +89,9 @@ static int add_binding(int argc, char *argv[])
 		if (ipc_exec(IPC_BIND, argv[i], strlen(argv[i])))
 			ret = -1;
 	}
+
+	if (!ret)
+		printf("Success\n");
 
 	return ret;
 }
@@ -137,7 +140,7 @@ struct {
 
 	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
 	{"monitor", "-m", "--monitor", monitor},
-	{"bind", "-e", "--expression", add_binding},
+	{"bind", "-e", "--expression", add_bindings},
 
 	{"listen", "", "", layer_listen},
 

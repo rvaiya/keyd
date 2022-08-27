@@ -213,7 +213,7 @@ static void send_success(int con)
 	struct ipc_message msg;
 
 	msg.type = IPC_SUCCESS;;
-	msg.sz = sprintf(msg.data, "Success");
+	msg.sz = 0;
 
 	xwrite(con, &msg, sizeof msg);
 	close(con);
@@ -254,6 +254,13 @@ static void handle_client(int con)
 		break;
 	case IPC_BIND:
 		success = 0;
+
+		if (msg.sz == sizeof(msg.data)) {
+			send_fail(con, "bind expression size exceeded");
+			return;
+		}
+
+		msg.data[msg.sz] = 0;
 
 		for (ent = configs; ent; ent = ent->next) {
 			if (!kbd_eval(ent->kbd, msg.data))
