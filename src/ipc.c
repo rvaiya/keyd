@@ -81,6 +81,8 @@ int ipc_create_server()
 	int lfd;
 	struct sockaddr_un addr = {0};
 
+	chgid();
+
 	if (sd < 0) {
 		perror("socket");
 		exit(-1);
@@ -111,6 +113,5 @@ int ipc_create_server()
 
 	chmod(SOCKET_PATH, 0660);
 
-	chgid();
 	return sd;
 }
