@@ -302,22 +302,6 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 	}
 }
 
-static void update_leds(struct keyboard *kbd)
-{
-	size_t i;
-	int active = 0;
-
-	if (!kbd->config.layer_indicator)
-		return;
-
-	for (i = 0; i < kbd->config.nr_layers; i++) {
-		if (kbd->layer_state[i].active && kbd->config.layers[i].mods)
-			active = 1;
-	}
-
-	set_led(1, active);
-}
-
 static void deactivate_layer(struct keyboard *kbd, int idx)
 {
 	dbg("Deactivating layer %s", kbd->config.layers[idx].name);
@@ -326,7 +310,7 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 	kbd->layer_state[idx].active--;
 
 	if (kbd->layer_observer)
-		kbd->layer_observer(kbd->config.layers[idx].name, 0);
+		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 0);
 }
 
 /*
@@ -343,7 +327,7 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 	kbd->last_layer_code = code;
 
 	if (kbd->layer_observer)
-		kbd->layer_observer(kbd->config.layers[idx].name, 1);
+		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 1);
 }
 
 static void execute_command(const char *cmd)
@@ -394,8 +378,12 @@ static void clear(struct keyboard *kbd)
 	for (i = 1; i < kbd->config.nr_layers; i++) {
 		struct layer *layer = &kbd->config.layers[i];
 
-		if (layer->type != LT_LAYOUT)
+		if (layer->type != LT_LAYOUT) {
+			if (kbd->layer_state[i].active && kbd->layer_observer)
+				kbd->layer_observer(kbd, kbd->config.layers[i].name, 0);
+
 			memset(&kbd->layer_state[i], 0, sizeof kbd->layer_state[0]);
+		}
 	}
 
 	/* Neutralize upstroke for active keys. */
@@ -647,8 +635,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		break;
 	}
 
-	update_leds(kbd);
-
 	if (pressed)
 		kbd->last_pressed_code = code;
 
@@ -656,8 +642,8 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 }
 
 struct keyboard *new_keyboard(struct config *config,
-			      void (*sink) (uint8_t, uint8_t),
-			      void (*layer_observer)(const char *name, int state))
+			      void (*sink) (uint8_t code, uint8_t pressed),
+			      void (*layer_observer)(struct keyboard *kbd, const char *name, int state))
 {
 	size_t i;
 	struct keyboard *kbd;

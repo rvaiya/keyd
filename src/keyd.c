@@ -175,13 +175,3 @@ int main(int argc, char *argv[])
 
 	run_daemon(argc, argv);
 }
-
-/* TODO: find a better place for this. */
-void set_led(int led, int state)
-{
-//TODO: fixme
-//      size_t i;
-//
-//      for (i = 0; i < nr_devices; i++)
-//              device_set_led(&devices[i], led, state);
-}

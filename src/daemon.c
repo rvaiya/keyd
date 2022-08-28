@@ -80,18 +80,25 @@ static void add_listener(int con)
 	listeners[nr_listeners++] = con;
 }
 
-static void layer_observer(const char *name, int state)
+static void layer_observer(struct keyboard *kbd, const char *name, int state)
 {
-	if (!nr_listeners)
-		return;
-
-	char buf[MAX_LAYER_NAME_LEN+2];
-	ssize_t bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', name);
 	size_t i;
+	char buf[MAX_LAYER_NAME_LEN+2];
+	ssize_t bufsz;
 
 	int keep[ARRAY_SIZE(listeners)];
 	size_t n = 0;
 
+	if (kbd->config.layer_indicator) {
+		for (i = 0; i < nr_devices; i++)
+			if (devices[i]->data == kbd)
+				device_set_led(devices[i], 1, state);
+	}
+
+	if (!nr_listeners)
+		return;
+
+	bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', name);
 	for (i = 0; i < nr_listeners; i++) {
 		ssize_t nw = write(listeners[i], buf, bufsz);
 

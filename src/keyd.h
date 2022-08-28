@@ -47,8 +47,6 @@
 
 #define warn(fmt, ...) fprintf(stderr, "\033[31;1mERROR:\033[0m "fmt"\n", ##__VA_ARGS__)
 
-void set_led(int led, int state);
-
 enum event_type {
 	EV_DEV_ADD,
 	EV_DEV_REMOVE,
