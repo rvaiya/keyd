@@ -210,7 +210,7 @@ static void reload()
 
 static void send_success(int con)
 {
-	struct ipc_message msg;
+	struct ipc_message msg = {0};
 
 	msg.type = IPC_SUCCESS;;
 	msg.sz = 0;
@@ -221,7 +221,7 @@ static void send_success(int con)
 
 static void send_fail(int con, const char *fmt, ...)
 {
-	struct ipc_message msg;
+	struct ipc_message msg = {0};
 	va_list args;
 
 	va_start(args, fmt);

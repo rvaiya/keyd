@@ -47,8 +47,8 @@
  * In order to satisfy the above constraints, we create an XCompose file
  * mapping each codepoint's index in a lookup table to the desired utf8
  * sequence. The use of a table index instead of the codepoint value ensures
- * all codepoints consist of a maximum of 5 decimal digits (since there are
- * <35k of them).  Each codepoint is zero-left padded to 5 characters to avoid
+ * all codepoints consist of a maximum of 3 base36 encoded digits (since there are
+ * <35k of them).  Each codepoint is zero-left padded to 3 characters to avoid
  * the subset issue.
  *
  * Finally, we use cancel as our compose prefix so the user doesn't have to
@@ -60,6 +60,6 @@
  */
 
 
-int lookup_xcompose_code(uint32_t codepoint);
+int lookup_xcompose_index(uint32_t codepoint);
 
 #endif

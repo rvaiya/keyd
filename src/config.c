@@ -498,7 +498,7 @@ int parse_macro_expression(const char *s, struct macro *macro)
 							break;
 						}
 					}
-				} else if ((xcode = lookup_xcompose_code(codepoint)) > 0)
+				} else if ((xcode = lookup_xcompose_index(codepoint)) > 0)
 					ADD_ENTRY(MACRO_UNICODE, xcode);
 
 				tok += chrsz;

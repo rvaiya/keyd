@@ -156,6 +156,21 @@ static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mo
 	set_mods(kbd, mods);
 }
 
+static void generate_unicode_sequence(int idx, uint8_t codes[3])
+{
+	uint8_t chars[] = {
+		KEYD_0, KEYD_1, KEYD_2, KEYD_3, KEYD_4, KEYD_5, KEYD_6, KEYD_7,
+		KEYD_8, KEYD_9, KEYD_A, KEYD_B, KEYD_C, KEYD_D, KEYD_E, KEYD_F,
+		KEYD_G, KEYD_H, KEYD_I, KEYD_J, KEYD_K, KEYD_L, KEYD_M, KEYD_N,
+		KEYD_O, KEYD_P, KEYD_Q, KEYD_R, KEYD_S, KEYD_T, KEYD_U, KEYD_V,
+		KEYD_W, KEYD_X, KEYD_Y, KEYD_Z
+	};
+
+	codes[0] = chars[idx / (36 * 36) % 36];
+	codes[1] = chars[idx / 36 % 36];
+	codes[2] = chars[idx % 36];
+}
+
 static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
 {
 	size_t i;
@@ -166,7 +181,8 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 
 		switch (ent->type) {
 		size_t j;
-		uint16_t n;
+		uint16_t idx;
+		uint8_t codes[3];
 		uint8_t code, mods;
 
 		case MACRO_HOLD:
@@ -191,20 +207,19 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 			}
 			break;
 		case MACRO_UNICODE:
-			n = ent->data;
+			idx = ent->data;
 
 			set_mods(kbd, 0);
 			send_key(kbd, KEYD_CANCEL, 1);
 			send_key(kbd, KEYD_CANCEL, 0);
 
-			for (j = 10000; j; j /= 10) {
-				int digit = n / j;
-				code = digit == 0 ? KEYD_0 : digit - 1 + KEYD_1;
+			generate_unicode_sequence(idx, codes);
 
-				send_key(kbd, code, 1);
-				send_key(kbd, code, 0);
-				n %= j;
+			for (i = 0; i < 3; i++) {
+				send_key(kbd, codes[i], 1);
+				send_key(kbd, codes[i], 0);
 			}
+
 			break;
 		case MACRO_KEYSEQUENCE:
 			code = ent->data;

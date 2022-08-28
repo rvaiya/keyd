@@ -310,7 +310,11 @@ E.G
 
 	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
-*Note:* You may have to restart your applications for this to take effect.
+**Additionally you will need to be using the default US layout on your
+display server.** Users of non-english layouts are advised to set their layout
+within keyd (see **Layouts**).
+
+**Note:** You may have to restart your applications for this to take effect.
 
 ## Aliases
 
