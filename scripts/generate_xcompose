@@ -49,10 +49,12 @@ open('src/unicode.c', 'w').write(f'''
 
 	#include <stdint.h>
 	#include <stdlib.h>
+	#include "keys.h"
 
 	uint32_t unicode_table[] = {{ {','.join(map(str, codes))} }};
 
-	int lookup_xcompose_index(uint32_t codepoint) {{
+	int unicode_lookup_index(uint32_t codepoint)
+	{{
 		size_t i = 0;
 
 		for(i = 0; i < sizeof(unicode_table)/sizeof(unicode_table[0]); i++) {{
@@ -62,6 +64,23 @@ open('src/unicode.c', 'w').write(f'''
 
 		return -1;
 	}}
+
+	void unicode_get_sequence(int idx, uint8_t codes[4])
+	{{
+		uint8_t chars[] = {{
+			KEYD_0, KEYD_1, KEYD_2, KEYD_3, KEYD_4, KEYD_5, KEYD_6, KEYD_7,
+			KEYD_8, KEYD_9, KEYD_A, KEYD_B, KEYD_C, KEYD_D, KEYD_E, KEYD_F,
+			KEYD_G, KEYD_H, KEYD_I, KEYD_J, KEYD_K, KEYD_L, KEYD_M, KEYD_N,
+			KEYD_O, KEYD_P, KEYD_Q, KEYD_R, KEYD_S, KEYD_T, KEYD_U, KEYD_V,
+			KEYD_W, KEYD_X, KEYD_Y, KEYD_Z
+		}};
+
+		codes[0] = KEYD_CANCEL;
+		codes[1] = chars[idx / (36 * 36) % 36];
+		codes[2] = chars[idx / 36 % 36];
+		codes[3] = chars[idx % 36];
+	}}
+
 '''
 .replace('\n\t', '\n')
 .lstrip()

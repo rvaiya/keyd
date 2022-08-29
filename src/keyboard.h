@@ -7,6 +7,7 @@
 #define KEYBOARD_H
 
 #include "keyd.h"
+#include "unicode.h"
 #include "config.h"
 #include "device.h"
 

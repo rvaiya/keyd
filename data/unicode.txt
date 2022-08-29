@@ -34620,6 +34620,7 @@ E01EC;VARIATION SELECTOR-253;Mn;0;NSM;;;;;N;;;;;
 E01ED;VARIATION SELECTOR-254;Mn;0;NSM;;;;;N;;;;;
 E01EE;VARIATION SELECTOR-255;Mn;0;NSM;;;;;N;;;;;
 E01EF;VARIATION SELECTOR-256;Mn;0;NSM;;;;;N;;;;;
+079C1;VARIATION SELECTOR-256;Mn;0;NSM;;;;;N;;;;;
 F0000;<Plane 15 Private Use, First>;Co;0;L;;;;;N;;;;;
 FFFFD;<Plane 15 Private Use, Last>;Co;0;L;;;;;N;;;;;
 100000;<Plane 16 Private Use, First>;Co;0;L;;;;;N;;;;;

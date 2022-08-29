@@ -3,13 +3,9 @@
 
 cancel down
 cancel up
-3 down
-3 up
-2 down
-2 up
-3 down
-3 up
-3 down
-3 up
-4 down
-4 up
+o down
+o up
+y down
+y up
+6 down
+6 up

@@ -96,6 +96,25 @@ static int add_bindings(int argc, char *argv[])
 	return ret;
 }
 
+static int input(int argc, char *argv[])
+{
+	size_t sz = 0;
+	char buf[MAX_IPC_MESSAGE_SIZE];
+
+	while (1) {
+		size_t n;
+
+		if ((n = read(0, buf+sz, sizeof(buf)-sz)) <= 0)
+			break;
+		sz += n;
+
+		if (sizeof(buf) == sz)
+			die("maxiumum input length exceeded");
+	}
+
+	return ipc_exec(IPC_INPUT, buf, sz);
+}
+
 static int layer_listen(int argc, char *argv[])
 {
 	struct ipc_message msg;
@@ -141,6 +160,7 @@ struct {
 	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
 	{"monitor", "-m", "--monitor", monitor},
 	{"bind", "-e", "--expression", add_bindings},
+	{"input", "", "", input},
 
 	{"listen", "", "", layer_listen},
 

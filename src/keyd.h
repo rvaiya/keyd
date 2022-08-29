@@ -34,6 +34,7 @@
 #include "keyboard.h"
 #include "keys.h"
 #include "vkbd.h"
+#include "string.h"
 
 #define MAX_IPC_MESSAGE_SIZE 4096
 
@@ -70,6 +71,7 @@ struct ipc_message {
 		IPC_FAIL,
 
 		IPC_BIND,
+		IPC_INPUT,
 		IPC_RELOAD,
 		IPC_LAYER_LISTEN,
 	} type;

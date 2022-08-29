@@ -242,6 +242,69 @@ static void send_fail(int con, const char *fmt, ...)
 	va_end(args);
 }
 
+static int input(char *buf, size_t sz)
+{
+	size_t i;
+	uint32_t codepoint;
+	uint8_t code;
+	uint8_t codes[4];
+
+	int csz;
+
+	while ((csz = utf8_read_char(buf, &codepoint))) {
+		int found = 0;
+		char s[2];
+
+		if (csz == 1) {
+			uint8_t code, mods;
+			s[0] = (char)codepoint;
+			s[1] = 0;
+
+			found = 1;
+			if (!parse_key_sequence(s, &code, &mods)) {
+				if (mods & MOD_SHIFT) {
+					vkbd_send_key(vkbd, KEYD_LEFTSHIFT, 1);
+					vkbd_send_key(vkbd, code, 1);
+					vkbd_send_key(vkbd, code, 0);
+					vkbd_send_key(vkbd, KEYD_LEFTSHIFT, 0);
+				} else {
+					vkbd_send_key(vkbd, code, 1);
+					vkbd_send_key(vkbd, code, 0);
+				}
+			} else if ((char)codepoint == ' ') {
+				vkbd_send_key(vkbd, KEYD_SPACE, 1);
+				vkbd_send_key(vkbd, KEYD_SPACE, 0);
+			} else if ((char)codepoint == '\n') {
+				vkbd_send_key(vkbd, KEYD_ENTER, 1);
+				vkbd_send_key(vkbd, KEYD_ENTER, 0);
+			} else if ((char)codepoint == '\t') {
+				vkbd_send_key(vkbd, KEYD_TAB, 1);
+				vkbd_send_key(vkbd, KEYD_TAB, 0);
+			} else {
+				found = 0;
+			}
+		}
+
+		if (!found) {
+			int idx = unicode_lookup_index(codepoint);
+			if (idx < 0) {
+				err("ERROR: could not find code for \"%.*s\"", csz, buf);
+				return -1;
+			}
+
+			unicode_get_sequence(idx, codes);
+
+			for (i = 0; i < 4; i++) {
+				vkbd_send_key(vkbd, codes[i], 1);
+				vkbd_send_key(vkbd, codes[i], 0);
+			}
+		}
+		buf+=csz;
+	}
+
+	return 0;
+}
+
 static void handle_client(int con)
 {
 	struct ipc_message msg;
@@ -252,6 +315,12 @@ static void handle_client(int con)
 		struct config_ent *ent;
 		int success;
 
+	case IPC_INPUT:
+		if (input(msg.data, msg.sz))
+			send_fail(con, "%s", errstr);
+		else
+			send_success(con);
+		break;
 	case IPC_RELOAD:
 		reload();
 		send_success(con);

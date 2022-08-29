@@ -60,6 +60,7 @@
  */
 
 
-int lookup_xcompose_index(uint32_t codepoint);
+int unicode_lookup_index(uint32_t codepoint);
+void unicode_get_sequence(int idx, uint8_t codes[4]);
 
 #endif
