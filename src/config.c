@@ -188,7 +188,7 @@ static int set_layer_entry(const struct config *config, struct layer *layer,
 		uint8_t code;
 
 		if (!(code = lookup_keycode(key))) {
-			err("%s is not a valid keycode or alias", key);
+			err("%s is not a valid key or alias", key);
 			return -1;
 		}
 
@@ -442,73 +442,13 @@ int parse_macro_expression(const char *s, struct macro *macro)
 	if (!strncmp(ptr, "macro(", 6) && ptr[len-1] == ')') {
 		ptr[len-1] = 0;
 		ptr += 6;
+		str_escape(ptr);
 	} else if (parse_key_sequence(ptr, &code, &mods) && utf8_strlen(ptr) != 1) {
 		err("Invalid macro");
 		return -1;
 	}
 
-	str_escape(ptr);
-
-	macro->sz = 0;
-	for (tok = strtok(ptr, " "); tok; tok = strtok(NULL, " ")) {
-		size_t len = strlen(tok);
-
-		if (!parse_key_sequence(tok, &code, &mods)) {
-			ADD_ENTRY(MACRO_KEYSEQUENCE, (mods << 8) | code);
-		} else if (strchr(tok, '+')) {
-			char *saveptr;
-			char *key;
-
-			for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
-				size_t len = strlen(key);
-
-				if (len > 1 && key[len-2] == 'm' && key[len-1] == 's')
-					ADD_ENTRY(MACRO_TIMEOUT, atoi(key));
-				else if (!parse_key_sequence(key, &code, &mods))
-					ADD_ENTRY(MACRO_HOLD, code);
-				else {
-					err("%s is not a valid key", key);
-					return -1;
-				}
-			}
-
-			ADD_ENTRY(MACRO_RELEASE, 0);
-		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
-			ADD_ENTRY(MACRO_TIMEOUT, atoi(tok));
-		} else {
-			uint32_t codepoint;
-			int chrsz;
-
-			while ((chrsz=utf8_read_char(tok, &codepoint))) {
-				int i;
-				int xcode;
-
-				if (chrsz == 1 && codepoint < 128) {
-					for (i = 0; i < 256; i++) {
-						const char *name = keycode_table[i].name;
-						const char *shiftname = keycode_table[i].shifted_name;
-
-						if (name && name[0] == tok[0] && name[1] == 0) {
-							ADD_ENTRY(MACRO_KEYSEQUENCE, i);
-							break;
-						}
-
-						if (shiftname && shiftname[0] == tok[0] && shiftname[1] == 0) {
-							ADD_ENTRY(MACRO_KEYSEQUENCE, (MOD_SHIFT << 8) | i);
-							break;
-						}
-					}
-				} else if ((xcode = unicode_lookup_index(codepoint)) > 0)
-					ADD_ENTRY(MACRO_UNICODE, xcode);
-
-				tok += chrsz;
-			}
-		}
-	}
-
-	return 0;
-
-	#undef ADD_ENTRY
+	return macro_parse(ptr, macro) == 0 ? 0 : 1;
 }
 
 static int parse_command(const char *s, struct command *command)

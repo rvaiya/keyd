@@ -7,6 +7,7 @@
 #define CONFIG_H
 
 #include <limits.h>
+#include "macro.h"
 
 #define MAX_LAYER_NAME_LEN	32
 #define MAX_DESCRIPTOR_ARGS	3
@@ -81,28 +82,6 @@ struct layer {
 
 struct command {
 	char cmd[256];
-};
-
-struct macro_entry {
-	enum {
-		MACRO_KEYSEQUENCE,
-		MACRO_HOLD,
-		MACRO_RELEASE,
-		MACRO_UNICODE,
-		MACRO_TIMEOUT
-	} type;
-
-	uint16_t data;
-};
-
-/*
- * A series of key sequences optionally punctuated by
- * timeouts
- */
-struct macro {
-	struct macro_entry entries[64];
-
-	uint32_t sz;
 };
 
 struct config {

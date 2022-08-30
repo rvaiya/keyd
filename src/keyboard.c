@@ -93,7 +93,7 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 {
 	size_t i;
 
-	for (i = 0; i < sizeof modifier_table / sizeof(modifier_table[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(modifier_table); i++) {
 		uint8_t code = modifier_table[i].code1;
 		uint8_t mask = modifier_table[i].mask;
 
@@ -158,74 +158,8 @@ static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mo
 
 static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
 {
-	size_t i;
-	int hold_start = -1;
-
-	for (i = 0; i < macro->sz; i++) {
-		const struct macro_entry *ent = &macro->entries[i];
-
-		switch (ent->type) {
-		size_t j;
-		uint16_t idx;
-		uint8_t codes[4];
-		uint8_t code, mods;
-
-		case MACRO_HOLD:
-			if (hold_start == -1) {
-				update_mods(kbd, dl, 0);
-				hold_start = i;
-			}
-
-			send_key(kbd, ent->data, 1);
-
-			break;
-		case MACRO_RELEASE:
-			if (hold_start != -1) {
-				size_t j;
-
-				for (j = hold_start; j < i; j++) {
-					const struct macro_entry *ent = &macro->entries[j];
-					send_key(kbd, ent->data, 0);
-				}
-
-				hold_start = -1;
-			}
-			break;
-		case MACRO_UNICODE:
-			idx = ent->data;
-
-			set_mods(kbd, 0);
-
-			unicode_get_sequence(idx, codes);
-
-			for (i = 0; i < 4; i++) {
-				send_key(kbd, codes[i], 1);
-				send_key(kbd, codes[i], 0);
-			}
-
-			break;
-		case MACRO_KEYSEQUENCE:
-			code = ent->data;
-			mods = ent->data >> 8;
-
-			if (kbd->keystate[code])
-				send_key(kbd, code, 0);
-
-			update_mods(kbd, dl, mods);
-			send_key(kbd, code, 1);
-			send_key(kbd, code, 0);
-
-			break;
-		case MACRO_TIMEOUT:
-			usleep(ent->data*1E3);
-			break;
-		}
-
-		if (kbd->config.macro_sequence_timeout)
-			usleep(kbd->config.macro_sequence_timeout);
-	}
-
-	update_mods(kbd, -1, 0);
+	update_mods(kbd, dl, 0);
+	macro_execute(kbd->output, macro, kbd->config.macro_sequence_timeout);
 }
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
@@ -520,7 +454,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			execute_macro(kbd, dl, macro);
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
-
 		}
 
 		break;
@@ -598,7 +531,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 						update_mods(kbd, idx, mods);
 						send_key(kbd, code, 1);
 					} else {
-						execute_macro(kbd, idx, macro);
+						execute_macro(kbd, dl, macro);
 					}
 				} else {
 					update_mods(kbd, -1, 0);

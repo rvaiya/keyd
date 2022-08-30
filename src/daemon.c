@@ -246,7 +246,6 @@ static int input(char *buf, size_t sz)
 {
 	size_t i;
 	uint32_t codepoint;
-	uint8_t code;
 	uint8_t codes[4];
 
 	int csz;
@@ -314,7 +313,28 @@ static void handle_client(int con)
 	switch (msg.type) {
 		struct config_ent *ent;
 		int success;
+		struct macro macro;
 
+	case IPC_MACRO:
+		if (msg.sz == sizeof(msg.data)) {
+			send_fail(con, "maximum macro size exceeded");
+			return;
+		}
+
+		msg.data[msg.sz] = 0;
+
+		while (msg.sz && msg.data[msg.sz-1] == '\n')
+			msg.data[--msg.sz] = 0;
+
+		if (macro_parse(msg.data, &macro)) {
+			send_fail(con, "%s", errstr);
+			return;
+		}
+
+		macro_execute(send_key, &macro, 0);
+		send_success(con);
+
+		break;
 	case IPC_INPUT:
 		if (input(msg.data, msg.sz))
 			send_fail(con, "%s", errstr);

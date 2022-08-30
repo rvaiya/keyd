@@ -29,6 +29,7 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "macro.h"
 #include "device.h"
 #include "error.h"
 #include "keyboard.h"
@@ -72,6 +73,7 @@ struct ipc_message {
 
 		IPC_BIND,
 		IPC_INPUT,
+		IPC_MACRO,
 		IPC_RELOAD,
 		IPC_LAYER_LISTEN,
 	} type;

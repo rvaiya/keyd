@@ -96,25 +96,52 @@ static int add_bindings(int argc, char *argv[])
 	return ret;
 }
 
+char *read_input(int argc, char *argv[], size_t *psz)
+{
+	static char buf[MAX_IPC_MESSAGE_SIZE];
+	size_t sz = 0;
+
+	if (argc != 0) {
+		int i;
+		for (i = 0; i < argc; i++) {
+			sz += snprintf(buf+sz, sizeof(buf)-sz, "%s%s", argv[i], i == argc-1 ? "" : " ");
+
+			if (sz >= sizeof(buf))
+				die("maxiumum input length exceeded");
+		}
+	} else {
+		while (1) {
+			size_t n;
+
+			if ((n = read(0, buf+sz, sizeof(buf)-sz)) <= 0)
+				break;
+			sz += n;
+
+			if (sizeof(buf) == sz)
+				die("maxiumum input length exceeded");
+		}
+	}
+
+	*psz = sz;
+	return buf;
+}
+
+static int cmd_do(int argc, char *argv[])
+{
+	size_t sz;
+	char *buf = read_input(argc, argv, &sz);
+
+	return ipc_exec(IPC_MACRO, buf, sz);
+}
+
+
 static int input(int argc, char *argv[])
 {
-	size_t sz = 0;
-	char buf[MAX_IPC_MESSAGE_SIZE];
-
-	while (1) {
-		size_t n;
-
-		if ((n = read(0, buf+sz, sizeof(buf)-sz)) <= 0)
-			break;
-		sz += n;
-
-		if (sizeof(buf) == sz)
-			die("maxiumum input length exceeded");
-	}
+	size_t sz;
+	char *buf = read_input(argc, argv, &sz);
 
 	return ipc_exec(IPC_INPUT, buf, sz);
 }
-
 static int layer_listen(int argc, char *argv[])
 {
 	struct ipc_message msg;
@@ -161,6 +188,7 @@ struct {
 	{"monitor", "-m", "--monitor", monitor},
 	{"bind", "-e", "--expression", add_bindings},
 	{"input", "", "", input},
+	{"do", "", "", cmd_do},
 
 	{"listen", "", "", layer_listen},
 
@@ -170,7 +198,6 @@ struct {
 
 int main(int argc, char *argv[])
 {
-	int c;
 	size_t i;
 
 	debug_level =
