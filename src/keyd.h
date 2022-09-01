@@ -52,6 +52,7 @@ enum event_type {
 	EV_DEV_REMOVE,
 	EV_DEV_EVENT,
 	EV_FD_ACTIVITY,
+	EV_FD_ERR,
 	EV_TIMEOUT,
 };
 

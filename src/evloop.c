@@ -115,8 +115,10 @@ int evloop(int (*event_handler) (struct event *ev))
 		}
 
 		for (i = 0; i < nr_aux_fds; i++) {
-			if (pfds[i+ndevs+1].revents) {
-				ev.type = EV_FD_ACTIVITY;
+			short events = pfds[i+ndevs+1].revents;
+
+			if (events) {
+				ev.type = events & POLLERR ? EV_FD_ERR : EV_FD_ACTIVITY;
 				ev.fd = aux_fds[i];
 
 				timeout = event_handler(&ev);

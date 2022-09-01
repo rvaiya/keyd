@@ -1,25 +1,31 @@
 #include "keyd.h"
 
-static void set_echo(int set)
+static void set_tflags(tcflag_t flags, int val)
 {
-	if (!isatty(1))
+	if (!isatty(0))
 		return;
 
 	struct termios tinfo;
 
-	tcgetattr(1, &tinfo);
+	tcgetattr(0, &tinfo);
 
-	if (set)
-		tinfo.c_lflag |= ECHO;
+	if (val)
+		tinfo.c_lflag |= flags;
 	else
-		tinfo.c_lflag &= ~ECHO;
+		tinfo.c_lflag &= ~flags;
 
-	tcsetattr(1, TCSANOW, &tinfo);
+	tcsetattr(0, TCSANOW, &tinfo);
 }
 
 static void cleanup()
 {
-	set_echo(1);
+	/* Drain STDIN (useful for scripting). */
+	set_tflags(ICANON, 0);
+	char buf[4096];
+	fcntl(0, F_SETFL, O_NONBLOCK);
+	while(read(0, buf, sizeof buf) > 0) {}
+
+	set_tflags(ICANON|ECHO, 1);
 }
 
 int event_handler(struct event *ev)
@@ -47,7 +53,7 @@ int event_handler(struct event *ev)
 			       ev->dev->product_id, name, ev->devev->pressed ? "down" : "up");
 	       }
 		break;
-	case EV_FD_ACTIVITY:
+	case EV_FD_ERR:
 		exit(0);
 		break;
 	default:
@@ -62,9 +68,12 @@ int event_handler(struct event *ev)
 
 int monitor(int argc, char *argv[])
 {
-	set_echo(0);
+	if (isatty(1))
+		set_tflags(ECHO, 0);
 
-	evloop_add_fd(1);
+	/* Eagerly terminate on pipe closures. */
+	if (!isatty(1))
+		evloop_add_fd(1);
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
