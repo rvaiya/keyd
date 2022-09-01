@@ -426,7 +426,6 @@ int parse_macro_expression(const char *s, struct macro *macro)
 		macro->sz++; \
 	} while(0)
 
-	char *tok;
 	size_t len = strlen(s);
 
 	char buf[1024];

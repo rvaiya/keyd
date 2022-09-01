@@ -606,11 +606,13 @@ struct keyboard *new_keyboard(struct config *config,
  * of kbd_process_key_event must take place. A return value of 0 permits the
  * main loop to call at liberty.
  */
-long kbd_process_key_event(struct keyboard *kbd,
-			   uint8_t code, int pressed)
+static long process_event(struct keyboard *kbd, uint8_t code, int pressed, int timestamp)
 {
 	int dl = -1;
 	struct descriptor d;
+
+	int timeleft = kbd->timeout - (timestamp - kbd->last_event_ts);
+	kbd->last_event_ts = timestamp;
 
 	/* timeout */
 	if (!code) {
@@ -669,7 +671,31 @@ long kbd_process_key_event(struct keyboard *kbd,
 		cache_set(kbd, code, NULL, -1);
 	}
 
-	return process_descriptor(kbd, code, &d, dl, pressed);
+	kbd->timeout = process_descriptor(kbd, code, &d, dl, pressed);
+	return kbd->timeout;
+}
+
+
+long kbd_process_events(struct keyboard *kbd, const struct key_event *events, size_t n)
+{
+	size_t i = 0;
+	int timeout = 0;
+	int timeout_ts = 0;
+
+	while (i != n) {
+		const struct key_event *ev = &events[i];
+
+		if (timeout && timeout_ts < ev->timestamp) {
+			timeout = process_event(kbd, 0, 0, timeout_ts);
+		} else {
+			timeout = process_event(kbd, ev->code, ev->pressed, ev->timestamp);
+			i++;
+		}
+
+		timeout_ts = ev->timestamp + timeout;
+	}
+
+	return timeout;
 }
 
 int kbd_eval(struct keyboard *kbd, const char *exp)

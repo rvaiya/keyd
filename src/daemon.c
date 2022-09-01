@@ -403,25 +403,36 @@ static void add_device(struct device *dev)
 
 static int event_handler(struct event *ev)
 {
-	int timeout;
-	static struct keyboard *last_kbd = NULL;
+	static int last_time = 0;
+	static int timeout = 0;
+	static struct keyboard *timeout_kbd = NULL;
+	struct key_event kev;
+
+	timeout -= ev->timestamp - last_time;
+	last_time = ev->timestamp;
+
+	timeout = timeout < 0 ? 0 : timeout;
 
 	switch (ev->type) {
 	case EV_TIMEOUT:
-		if (!last_kbd)
+		if (!timeout_kbd)
 			return 0;
 
-		return kbd_process_key_event(last_kbd, 0, 0);
+		kev.code = 0;
+		kev.timestamp = ev->timestamp;
+
+		timeout = kbd_process_events(timeout_kbd, &kev, 1);
+		break;
 	case EV_DEV_EVENT:
-		timeout = ev->timeleft;
-
 		if (ev->dev->data) {
-			last_kbd = ev->dev->data;
-
+			timeout_kbd = ev->dev->data;
 			switch (ev->devev->type) {
 			case DEV_KEY:
-				timeout = kbd_process_key_event(ev->dev->data, ev->devev->code,
-							     ev->devev->pressed);
+				kev.code = ev->devev->code;
+				kev.pressed = ev->devev->pressed;
+				kev.timestamp = ev->timestamp;
+
+				timeout = kbd_process_events(ev->dev->data, &kev, 1);
 				break;
 			case DEV_MOUSE_MOVE:
 				vkbd_mouse_move(vkbd, ev->devev->x, ev->devev->y);
@@ -436,11 +447,15 @@ static int event_handler(struct event *ev)
 				 * Treat scroll events as mouse buttons so oneshot and the like get
 				 * cleared.
 				 */
-				if (last_kbd) {
-					kbd_process_key_event(last_kbd,
-							      KEYD_EXTERNAL_MOUSE_BUTTON, 1);
-					kbd_process_key_event(last_kbd,
-							      KEYD_EXTERNAL_MOUSE_BUTTON, 0);
+				if (timeout_kbd) {
+					kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
+					kev.pressed = 1;
+					kev.timestamp = ev->timestamp;
+
+					kbd_process_events(ev->dev->data, &kev, 1);
+
+					kev.pressed = 0;
+					timeout = kbd_process_events(ev->dev->data, &kev, 1);
 				}
 
 				vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
@@ -448,7 +463,6 @@ static int event_handler(struct event *ev)
 			}
 		}
 
-		return timeout;
 		break;
 	case EV_DEV_ADD:
 		if (strcmp(ev->dev->name, VKBD_NAME))
@@ -472,7 +486,7 @@ static int event_handler(struct event *ev)
 		break;
 	}
 
-	return 0;
+	return timeout;
 }
 
 int run_daemon(int argc, char *argv[])

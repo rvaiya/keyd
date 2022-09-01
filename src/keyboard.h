@@ -20,6 +20,12 @@ struct cache_entry {
 	int dl;
 };
 
+struct key_event {
+	uint8_t code;
+	uint8_t pressed;
+	int timestamp;
+};
+
 /* May correspond to more than one physical input device. */
 struct keyboard {
 	const struct config *original_config;
@@ -43,6 +49,8 @@ struct keyboard {
 	int active_macro_layer;
 
 	long macro_repeat_timeout;
+	int timeout;
+	int last_event_ts;
 
 	struct {
 		long activation_time;
@@ -72,7 +80,7 @@ struct keyboard *new_keyboard(struct config *config,
 			      void (*sink) (uint8_t code, uint8_t pressed),
 			      void (*layer_observer)(struct keyboard *kbd, const char *name, int state));
 
-long kbd_process_key_event(struct keyboard *kbd, uint8_t code, int pressed);
+long kbd_process_events(struct keyboard *kbd, const struct key_event *events, size_t n);
 int kbd_eval(struct keyboard *kbd, const char *exp);
 void kbd_reset(struct keyboard *kbd);
 

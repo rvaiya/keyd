@@ -30,17 +30,9 @@ static void cleanup()
 	set_tflags(ICANON|ECHO, 1);
 }
 
-static long get_time_ms()
-{
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return ts.tv_sec * 1E3 + ts.tv_nsec / 1E6;
-}
-
 int event_handler(struct event *ev)
 {
 	static long last_time;
-	long ctime = get_time_ms();
 
 	switch (ev->type) {
 	const char *name;
@@ -56,17 +48,23 @@ int event_handler(struct event *ev)
 		       ev->dev->name, ev->dev->path);
 		break;
 	case EV_DEV_EVENT:
-		if (ev->devev->type == DEV_KEY) {
+		switch (ev->devev->type) {
+		case DEV_KEY:
 			name = keycode_table[ev->devev->code].name;
 
 			if (time_flag)
-				printf("+%ld ms\t", ctime - last_time);
+				printf("+%ld ms\t", ev->timestamp - last_time);
 
 			printf("%s\t%04x:%04x\t%s %s\n",
 			       ev->dev->name,
 			       ev->dev->vendor_id,
-			       ev->dev->product_id, name, ev->devev->pressed ? "down" : "up");
-	       }
+			       ev->dev->product_id, name,
+			       ev->devev->pressed ? "down" : "up");
+
+			break;
+		default:
+			break;
+		}
 		break;
 	case EV_FD_ERR:
 		exit(0);
@@ -78,7 +76,7 @@ int event_handler(struct event *ev)
 	fflush(stdout);
 	fflush(stderr);
 
-	last_time = ctime;
+	last_time = ev->timestamp;
 	return 0;
 }
 

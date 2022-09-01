@@ -62,7 +62,7 @@ struct event {
 	enum event_type type;
 	struct device *dev;
 	struct device_event *devev;
-	int timeleft;
+	int timestamp;
 	int fd;
 };
 

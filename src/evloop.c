@@ -74,16 +74,14 @@ int evloop(int (*event_handler) (struct event *ev))
 
 		start_time = get_time_ms();
 		poll(pfds, ndevs+nr_aux_fds+1, timeout > 0 ? timeout : -1);
-		elapsed = get_time_ms() - start_time;
+		ev.timestamp = get_time_ms();
+		elapsed = ev.timestamp - start_time;
 
-		ev.timeleft = timeout;
 		if (timeout > 0 && elapsed >= timeout) {
 			ev.type = EV_TIMEOUT;
-			ev.timeleft = 0;
 			timeout = event_handler(&ev);
 		} else {
 			timeout -= elapsed;
-			ev.timeleft = timeout;
 		}
 
 		for (i = 0; i < ndevs; i++) {
