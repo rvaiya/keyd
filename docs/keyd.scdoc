@@ -56,8 +56,13 @@ terminate.
 
 # CONFIGURATION
 
-Configuration files are stored in _/etc/keyd/_ and are loaded upon initialization.
-Changes to these files can be triggered using the reload command (sudo keyd reload).
+Configuration files loosely follow an INI style file format and consist of sections
+of the form _[section_name]_ followed by key-value pairs delimited
+by an equal sign (one per line). Lines which are empty or begin with a hash sign
+are ignored.
+
+The files are stored in _/etc/keyd/_ and loaded upon initialization.
+Changes can be triggered using the reload command (sudo keyd reload).
 
 A valid config file has the extension _.conf_ and *must* begin with an _[ids]_
 section that has one of the following forms:
@@ -224,7 +229,35 @@ the full config actually looks something like this:
 	j = down
 ```
 
+A key may be bound multiple times on a given layer, in which
+case every binding encountered overrides an earlier one. Furthermore, it is
+allowed (but discouraged) to scatter layer bindings over multiple identically
+named sections, again with later definitions taking precedence over earlier
+ones. However, modifier sets of a repeated layer section are ignored. For
+example
 
+```
+	[mylayer:A]
+	a = b
+
+	[control:C]
+	j = down
+
+	[mylayer:M]
+	a = c
+	b = d
+```
+
+is equivalent to
+
+```
+	[mylayer:A]
+	a = c
+	b = d
+
+	[control:C]
+	j = down
+```
 
 ## Composite Layers
 
@@ -497,6 +530,29 @@ arguments.
 	If tapped, activate the supplied layer for the duration of the next keypress.
 	If _<layer>_ is a modifier layer then it will cause the key to behave as the
 	corresponding modifiers while held.
+	If the next pressed keys are bound to actions which resolve to further
+	layer activations  (`layer`, `overload`, `oneshot` or a `timeout`
+	resolving to one of the aforementioned three actions), the original
+	oneshot layer _<layer>_ is kept active. This makes it possible to stack
+	modifiers. Consider for example
+
+```
+	[main]
+	shift = overload(shift, S-9)
+	control = oneshot(control)
+	alt = oneshot(alt)
+	tab = timeout(oneshot(meta), 200, tab)
+```
+
+Here,
+	- tapping control, tapping alt and then tapping a would result in C-A-a
+	- tapping control, holding shift and then tapping a would result in
+        C-S-a
+	- tapping control, tapping tab within 200 ms and then tapping a would result in C-M-a,
+        and so would tapping control, holding meta (by default bound to
+        `layer(meta)`) and then tapping a.
+        - tapping control, tapping tab within 200 ms, tapping alt and then
+        tapping a would result in C-A-M-a
 
 *layer(<layer>)*
 	Activate the given layer for the duration of the keypress.
@@ -505,7 +561,8 @@ arguments.
 	Set the current layout.
 
 *toggle(<layer>)*
-	Permanently toggle the state of the given layer.
+	Permanently toggle the state of the given layer. Toggling the main layer
+	is not allowed.
 
 *toggle2(<layer>, <macro>)*
 	Equivalent to *toggle*, but additionally executes the supplied macro before
@@ -573,6 +630,9 @@ use this feature judiciously.
 
 *noop*
 	Do nothing.
+
+Whenever an action accepts another action as an argument, a valid macro
+expression may be supplied as well (as in `shift = overload(shift, S-9)`).
 
 # IPC
 
