@@ -45,6 +45,7 @@ x = χ
 y = υ
 z = ζ
 shift = layer(gr_shift)
+altgr = layer(gr_altgr)
 
 [gr_shift:S]
 ' = "
@@ -91,3 +92,59 @@ w = Σ
 x = Χ
 y = Υ
 z = Ζ
+
+[gr_altgr:G]
+, = «
+- = ±
+. = »
+2 = ½
+3 = £
+4 = ¼
+5 = €
+6 = ϰ
+7 = ϗ
+8 = ₯
+b = ϐ
+c = ©
+d = ↓
+e = €
+f = ϕ
+g = ϝ
+i = ͻ
+j = ͼ
+k = ϟ
+l = ϲ
+m = ϻ
+n = ʹ
+p = ϡ
+q = ·
+r = ®
+u = ϑ
+v = ϖ
+w = ϛ
+x = →
+y = ϒ
+z = ͽ
+
+[gr_altgr+gr_shift]
+. = ·
+1 = ¹
+2 = ²
+3 = ³
+4 = ¾
+7 = Ϗ
+d = ↑
+g = Ϝ
+i = Ͻ
+j = Ͼ
+k = Ϟ
+l = Ϲ
+m = Ϻ
+n = ͵
+p = Ϡ
+r = ϱ
+u = ϴ
+w = Ϛ
+x = ←
+y = ϒ
+z = Ͽ

@@ -46,6 +46,7 @@ x = ხ
 y = ყ
 z = ზ
 shift = layer(ge_shift)
+altgr = layer(ge_altgr)
 
 [ge_shift:S]
 ' = "
@@ -93,3 +94,32 @@ w = ჭ
 x = X
 y = Y
 z = ძ
+
+[ge_altgr:G]
+, = «
+- = —
+. = »
+/ = ჻
+1 = '
+2 = „
+3 = “
+4 = №
+5 = €
+7 = §
+8 = °
+= = –
+\ = ~
+a = ჺ
+e = ჱ
+f = ჶ
+g = ჹ
+h = ჵ
+i = ჲ
+j = ჷ
+n = ჼ
+v = ჳ
+x = ჴ
+y = ჸ
+
+[ge_altgr+ge_shift]
+\ = ~

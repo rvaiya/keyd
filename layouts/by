@@ -46,6 +46,7 @@ x = ч
 y = н
 z = я
 shift = layer(by_shift)
+altgr = layer(by_altgr)
 
 [by_shift:S]
 ' = Э
@@ -93,3 +94,8 @@ w = Ц
 x = Ч
 y = Н
 z = Я
+
+[by_altgr:G]
+8 = ₽
+
+[by_altgr+by_shift]

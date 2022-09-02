@@ -46,6 +46,7 @@ x = ،
 y = ߦ
 z = ߥ
 shift = layer(gn_shift)
+altgr = layer(gn_altgr)
 
 [gn_shift:S]
 ' = ߸
@@ -74,3 +75,20 @@ r = ߚ
 u = ߶
 w = <
 y = ߧ
+
+[gn_altgr:G]
+' = %
+3 = #
+4 = ⸜
+5 = ⸝
+6 = |
+7 = `
+8 = \
+9 = ^
+= = }
+] = ¤
+
+[gn_altgr+gn_shift]
+3 = £
+4 = $
+9 = ±

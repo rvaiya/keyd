@@ -46,6 +46,7 @@ x = ü
 y = y
 z = z
 shift = layer(tm_shift)
+altgr = layer(tm_altgr)
 
 [tm_shift:S]
 ' = "
@@ -93,3 +94,21 @@ w = W
 x = 
 y = Y
 z = Z
+
+[tm_altgr:G]
+[ = [
+\ = \
+] = ]
+c = c
+q = q
+v = v
+x = x
+
+[tm_altgr+tm_shift]
+[ = {
+\ = |
+] = }
+c = C
+q = Q
+v = V
+x = X

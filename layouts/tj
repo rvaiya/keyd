@@ -46,6 +46,7 @@ x = ч
 y = н
 z = я
 shift = layer(tj_shift)
+altgr = layer(tj_altgr)
 
 [tj_shift:S]
 ' = Э
@@ -93,3 +94,13 @@ w = Қ
 x = Ч
 y = Н
 z = Я
+
+[tj_altgr:G]
+- = -
+6 = –
+7 = &
+= = =
+
+[tj_altgr+tj_shift]
+- = _
+= = +

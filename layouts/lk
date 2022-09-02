@@ -46,6 +46,7 @@ x = ඳ
 y = ය
 z = ඤ
 shift = layer(lk_shift)
+altgr = layer(lk_altgr)
 
 [lk_shift:S]
 ' = "
@@ -92,3 +93,42 @@ w = ඈ
 x = ඬ
 y = ්
 z = ඥ
+
+[lk_altgr:G]
+, = ්
+. = ෴
+/ = ‍
+a = ්
+d = ඩ
+e = ෙ
+f = ෛ
+g = ඟ
+h = ෞ
+i = ි
+j = ඦ
+k = ඏ
+l = ෟ
+n = ං
+o = ො
+q = ෘ
+r = ර
+s = ෂ
+t = ට
+u = ු
+w = ැ
+
+[lk_altgr+lk_shift]
+a = ා
+d = ඪ
+e = ේ
+f = ඓ
+h = ඖ
+i = ී
+k = ඐ
+l = ෳ
+n = ඞ
+o = ෝ
+q = ෲ
+t = ඨ
+u = ූ
+w = ෑ

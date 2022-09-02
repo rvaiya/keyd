@@ -45,6 +45,7 @@ x = x
 y = y
 z = w
 shift = layer(tg_shift)
+altgr = layer(tg_altgr)
 
 [tg_shift:S]
 ' = %
@@ -91,3 +92,53 @@ w = Z
 x = X
 y = Y
 z = W
+
+[tg_altgr:G]
+- = ]
+2 = ~
+3 = #
+4 = {
+5 = [
+6 = |
+7 = `
+8 = \
+9 = ^
+; = ɲ
+= = }
+] = ¤
+a = ǝ
+b = ɓ
+d = ɖ
+e = €
+f = ƒ
+g = ɣ
+h = ɦ
+i = ɩ
+j = ɨ
+n = ŋ
+o = ɔ
+r = ɛ
+t = ɗ
+u = ʊ
+v = ʋ
+w = ʒ
+y = ƴ
+
+[tg_altgr+tg_shift]
+; = Ɲ
+a = Ǝ
+b = Ɓ
+d = Ɖ
+f = Ƒ
+g = Ɣ
+h = Ĥ
+i = Ɩ
+j = Ɨ
+n = Ŋ
+o = Ɔ
+r = Ɛ
+t = Ɗ
+u = Ʊ
+v = Ʋ
+w = Ʒ
+y = Ƴ

@@ -30,6 +30,7 @@ x = ش
 y = ے
 z = ز
 shift = layer(pk_shift)
+altgr = layer(pk_altgr)
 
 [pk_shift:S]
 / = ؟
@@ -58,3 +59,16 @@ w = ؤ
 x = ژ
 y = َ
 z = ذ
+
+[pk_altgr:G]
+b = ‮
+c = ‭
+m = ‏
+n = ‫
+q = ‍
+v = ‬
+w = ‌
+x = ‪
+z = ‎
+
+[pk_altgr+pk_shift]

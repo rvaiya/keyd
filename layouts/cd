@@ -46,6 +46,7 @@ x = x
 y = y
 z = w
 shift = layer(cd_shift)
+altgr = layer(cd_altgr)
 
 [cd_shift:S]
 ' = Ɔ
@@ -93,3 +94,37 @@ w = Z
 x = X
 y = Y
 z = W
+
+[cd_altgr:G]
+- = %
+/ = ’
+1 = #
+2 = @
+3 = «
+4 = [
+5 = <
+6 = >
+7 = ]
+8 = »
+9 = ̍
+= = ×
+[ = ^
+\ = |
+] = $
+e = œ
+i = ɨ
+m = ̧
+n = ŋ
+o = ø
+q = æ
+u = ʉ
+
+[cd_altgr+cd_shift]
+- = °
+= = ÷
+e = Œ
+i = Ɨ
+n = Ŋ
+o = Ø
+q = Æ
+u = Ʉ

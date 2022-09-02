@@ -46,6 +46,7 @@ x = x
 y = y
 z = z
 shift = layer(ke_shift)
+altgr = layer(ke_altgr)
 
 [ke_shift:S]
 ' = "
@@ -93,3 +94,17 @@ w = W
 x = X
 y = Y
 z = Z
+
+[ke_altgr:G]
+' = ́
+- = ̄
+6 = ̂
+8 = ̇
+9 = ̆
+; = ̤
+
+[ke_altgr+ke_shift]
+' = ̈
+- = ̱
+8 = ̣
+; = ̤

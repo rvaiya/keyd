@@ -46,6 +46,7 @@ x = ĉ
 y = ŭ
 z = z
 shift = layer(epo_shift)
+altgr = layer(epo_altgr)
 
 [epo_shift:S]
 ' = "
@@ -93,3 +94,33 @@ w = Ĝ
 x = Ĉ
 y = 
 z = Z
+
+[epo_altgr:G]
+5 = €
+[ = [
+] = ]
+a = ‘
+d = “
+f = ”
+m = —
+n = –
+o = {
+p = }
+q = q
+s = ’
+w = w
+x = x
+y = y
+
+[epo_altgr+epo_shift]
+5 = €
+[ = {
+] = }
+m = —
+n = –
+o = {
+p = }
+q = Q
+w = W
+x = X
+y = Y

@@ -46,6 +46,7 @@ x = ط
 y = غ
 z = ظ
 shift = layer(af_shift)
+altgr = layer(af_altgr)
 
 [af_shift:S]
 ' = ؛
@@ -90,3 +91,37 @@ w = ٌ
 x = ٓ
 y = ِ
 z = ك
+
+[af_altgr:G]
+' = ګ
+. = ۇ
+/ = ۉ
+3 = #
+8 = •
+9 = ‎
+[ = ځ
+] = څ
+a = ښ
+b = ڈ
+c = ږ
+d = ى
+e = €
+f = ې
+g = ڷ
+h = ٱ
+i = ٕ
+j = ټ
+k = ڼ
+l = ں
+m = ٹ
+n = ډ
+r = ﴾
+s = ۍ
+t = ﴿
+u = 
+v = ړ
+x = ڑ
+y = 
+z = ے
+
+[af_altgr+af_shift]

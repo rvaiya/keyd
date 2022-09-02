@@ -65,6 +65,7 @@ while (<FH>) {
 
 sub sym_to_char {
 	$sym = $_[0];
+	return "" if (!$sym);
 
 	if ($sym =~ /U([0-9A-Fa-f]+)/) {
 		 return chr(hex($1));
@@ -77,10 +78,14 @@ sub sym_to_char {
 }
 
 for (`xmodmap -pke`) {
-	if (/keycode\s*([0-9]+)\s*=\s*(\S+)\s*(\S+)/ && $codemap{$1}) {
+	if (/keycode\s*([0-9]+)\s*=\s*(.*)/ && $codemap{$1}) {
 		$key = $codemap{$1};
-		$keymap{$key} = $sym if ($sym = sym_to_char $2);
-		$shifted_keymap{$key} = $sym if ($sym = sym_to_char $3);
+		@syms=split " ", $2;
+
+		$keymap{$key} = $sym if ($sym = sym_to_char $syms[0]);
+		$shifted_keymap{$key} = $sym if ($sym = sym_to_char $syms[1]);
+		$altgr_keymap{$key} = $sym if ($sym = sym_to_char $syms[4]);
+		$shifted_altgr_keymap{$key} = $sym if ($sym = sym_to_char $syms[5]);
 	}
 }
 
@@ -89,8 +94,19 @@ $shift_layer = "$1_shift";
 
 print "[$1:layout]\n\n";
 print "$_ = $keymap{$_}\n" foreach (sort keys %keymap);
-print "shift = layer($shift_layer)\n";
+print "shift = layer(${1}_shift)\n";
+print "altgr = layer(${1}_altgr)\n" if (%altgr_keymap);
 print "\n";
 
-print "[$shift_layer:S]\n";
+print "[${1}_shift:S]\n";
 print "$_ = $shifted_keymap{$_}\n" foreach (sort keys %shifted_keymap);
+
+if (%altgr_keymap) {
+	print "\n";
+	print "[${1}_altgr:G]\n";
+	print "$_ = $altgr_keymap{$_}\n" foreach (sort keys %altgr_keymap);
+	print "\n";
+
+	print "[${1}_altgr+${1}_shift]\n";
+	print "$_ = $shifted_altgr_keymap{$_}\n" foreach (sort keys %shifted_altgr_keymap);
+}

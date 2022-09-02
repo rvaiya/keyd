@@ -46,6 +46,7 @@ x = x
 y = y
 z = z
 shift = layer(md_shift)
+altgr = layer(md_altgr)
 
 [md_shift:S]
 ' = "
@@ -93,3 +94,32 @@ w = W
 x = X
 y = Y
 z = Z
+
+[md_altgr:G]
+, = «
+. = »
+[ = „
+] = ”
+a = ă
+c = ©
+d = đ
+e = €
+i = î
+l = ł
+p = §
+q = â
+s = ș
+t = ț
+w = ß
+
+[md_altgr+md_shift]
+- = –
+= = ±
+a = Ă
+d = Đ
+i = Î
+l = Ł
+q = Â
+s = Ș
+t = Ț
+w = ẞ

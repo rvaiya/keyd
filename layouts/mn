@@ -46,6 +46,7 @@ x = ч
 y = н
 z = я
 shift = layer(mn_shift)
+altgr = layer(mn_altgr)
 
 [mn_shift:S]
 ' = П
@@ -93,3 +94,48 @@ w = Ц
 x = Ч
 y = Н
 z = Я
+
+[mn_altgr:G]
+' = …
+, = «
+- = X
+. = »
+/ = \
+1 = ×
+2 = ÷
+3 = ±
+4 = ¬
+6 = ≠
+7 = &
+8 = *
+9 = [
+; = §
+= = L
+[ = {
+\ = |
+] = }
+a = µ
+c = ©
+d = $
+e = €
+f = ”
+g = ы
+h = Ы
+i = “
+j = э
+k = Э
+l = №
+m = >
+n = <
+o = ”
+q = '
+r = ®
+s = £
+t = ™
+u = „
+w = `
+x = –
+y = ¥
+z = —
+
+[mn_altgr+mn_shift]

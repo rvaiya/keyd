@@ -46,6 +46,7 @@ x = џ
 y = з
 z = ж
 shift = layer(rs_shift)
+altgr = layer(rs_altgr)
 
 [rs_shift:S]
 ' = Ћ
@@ -93,3 +94,41 @@ w = Њ
 x = Џ
 y = З
 z = Ж
+
+[rs_altgr:G]
+, = <
+. = >
+/ = —
+[ = ÷
+\ = ¤
+] = ×
+b = {
+c = ¢
+d = “
+e = €
+f = [
+g = ]
+i = →
+m = ^
+n = }
+o = §
+q = \
+r = ¶
+s = „
+t = …
+u = ↓
+v = @
+w = |
+x = ’
+y = ←
+z = ‘
+
+[rs_altgr+rs_shift]
+/ = –
+c = ©
+d = «
+e = £
+r = ®
+s = »
+u = ↑
+y = ¥

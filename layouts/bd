@@ -46,6 +46,7 @@ x = ো
 y = চ
 z = ঁ
 shift = layer(bd_shift)
+altgr = layer(bd_altgr)
 
 [bd_shift:S]
 ' = "
@@ -93,3 +94,42 @@ w = য়
 x = ৌ
 y = ছ
 z = ঃ
+
+[bd_altgr:G]
+- = ‌
+. = ়
+1 = ৴
+2 = ৵
+3 = ৶
+4 = ৳
+5 = ৷
+6 = ৸
+7 = ं
+= = ‍
+a = ঋ
+c = এ
+d = ই
+e = ৄ
+f = ৰ
+g = ॥
+h = আ
+i = ঽ
+j = ঻
+k = ৎ
+l = ঌ
+q = ৢ
+s = উ
+x = ও
+z = ৺
+
+[bd_altgr+bd_shift]
+4 = ৲
+6 = ঳
+a = ৠ
+c = ঐ
+d = ঈ
+f = ৱ
+l = ৡ
+q = ৣ
+s = ঊ
+x = ঔ

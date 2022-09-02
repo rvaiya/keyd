@@ -46,6 +46,7 @@ x = x
 y = y
 z = z
 shift = layer(gh_shift)
+altgr = layer(gh_altgr)
 
 [gh_shift:S]
 ' = "
@@ -93,3 +94,9 @@ w = W
 x = X
 y = Y
 z = Z
+
+[gh_altgr:G]
+4 = $
+
+[gh_altgr+gh_shift]
+4 = ¢

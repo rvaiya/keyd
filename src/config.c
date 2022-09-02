@@ -698,7 +698,7 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 				strcpy(config->aliases[code], name);
 			}
 		} else {
-			warn("failed to define alias %s, %s is not a valid keycode", ent->key, name);
+			warn("failed to define alias %s, %s is not a valid keycode", name, ent->key);
 		}
 	}
 }

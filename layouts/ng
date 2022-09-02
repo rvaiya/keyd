@@ -46,6 +46,7 @@ x = x
 y = y
 z = z
 shift = layer(ng_shift)
+altgr = layer(ng_altgr)
 
 [ng_shift:S]
 ' = "
@@ -93,3 +94,9 @@ w = W
 x = X
 y = Y
 z = Z
+
+[ng_altgr:G]
+4 = $
+
+[ng_altgr+ng_shift]
+4 = ¢

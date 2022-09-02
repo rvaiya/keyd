@@ -46,6 +46,7 @@ x = й
 y = щ
 z = ю
 shift = layer(bg_shift)
+altgr = layer(bg_altgr)
 
 [bg_shift:S]
 ' = Ч
@@ -93,3 +94,43 @@ w = У
 x = Й
 y = Щ
 z = Ю
+
+[bg_altgr:G]
+, = ®
+- = ‑
+3 = †
+5 = 〈
+6 = —
+7 = …
+8 = ̀
+\ = «
+a = ы
+c = ѫ
+e = э
+i = ©
+j = ™
+q = ’
+r = ѝ
+s = ѣ
+u = ©
+x = ѭ
+
+[bg_altgr+bg_shift]
+, = ®
+- = €
+3 = †
+5 = 〉
+6 = —
+7 = …
+8 = ́
+\ = »
+a = Ы
+c = Ѫ
+e = Э
+i = ©
+j = ™
+q = ‘
+r = Ѝ
+s = Ѣ
+u = ©
+x = Ѭ

@@ -46,6 +46,7 @@ x = x
 y = y
 z = z
 shift = layer(tw_shift)
+altgr = layer(tw_altgr)
 
 [tw_shift:S]
 ' = "
@@ -93,3 +94,57 @@ w = W
 x = X
 y = Y
 z = Z
+
+[tw_altgr:G]
+' = ʼ
+/ = ¿
+1 = ̍
+2 = ͘
+3 = §
+4 = ¥
+5 = €
+; = ː
+= = ×
+\ = ¬
+c = ç
+d = ḏ
+e = é
+g = ŋ
+i = ɨ
+l = ḻ
+m = µ
+n = ⁿ
+o = ø
+q = ¶
+r = ṟ
+s = ß
+t = ṯ
+u = ʉ
+y = ṳ
+
+[tw_altgr+tw_shift]
+, = «
+- = ±
+. = »
+1 = ¡
+2 = ²
+3 = ³
+4 = £
+5 = ¢
+= = ÷
+\ = ¦
+c = Ç
+d = Ḏ
+e = É
+g = Ŋ
+i = Ɨ
+l = Ḻ
+m = µ
+n = ᴺ
+o = Ø
+q = °
+r = Ṟ
+s = ẞ
+t = Ṯ
+u = Ʉ
+y = Ṳ

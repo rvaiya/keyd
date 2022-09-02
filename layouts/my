@@ -46,6 +46,7 @@ x = ء
 y = غ
 z = ئ
 shift = layer(my_shift)
+altgr = layer(my_altgr)
 
 [my_shift:S]
 ' = "
@@ -93,3 +94,23 @@ w = ڠ
 x = ڽ
 y = إ
 z = ~
+
+[my_altgr:G]
+, = ,
+1 = 1
+2 = 2
+3 = 3
+4 = 4
+5 = 5
+6 = 6
+7 = 7
+8 = 8
+9 = 9
+; = گ
+[ = چ
+f = پ
+t = ڤ
+x = «
+z = »
+
+[my_altgr+my_shift]
