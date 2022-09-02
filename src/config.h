@@ -89,7 +89,7 @@ struct config {
 	struct layer layers[MAX_LAYERS];
 
 	/* Auxiliary descriptors used by layer bindings. */
-	struct descriptor descriptors[32];
+	struct descriptor descriptors[64];
 	struct macro macros[256];
 	struct command commands[64];
 	char aliases[256][32];
