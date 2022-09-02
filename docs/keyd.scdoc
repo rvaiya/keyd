@@ -10,7 +10,7 @@ keyd(1)
 
 # COMMANDS
 
-*monitor*
+*monitor [-t] [-h]*
 	Print key events. Useful for discovering key names and debugging.
 
 *bind <binding> [<binding>...]*

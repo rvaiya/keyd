@@ -47,7 +47,7 @@ static int help(int argc, char *argv[])
 {
 	printf("usage: keyd [-v] [-h] [command] [<args>]\n\n"
 	       "Commands:\n"
-	       "    monitor                        Print key events in real time.\n"
+	       "    monitor [-t]                   Print key events in real time.\n"
 	       "    list-keys                      Print a list of valid key names.\n"
 	       "    reload                         Trigger a reload .\n"
 	       "    listen                         Print layer state changes of the running keyd daemon to stdout.\n"

@@ -1,5 +1,7 @@
 #include "keyd.h"
 
+static int time_flag = 0;
+
 static void set_tflags(tcflag_t flags, int val)
 {
 	if (!isatty(0))
@@ -28,8 +30,18 @@ static void cleanup()
 	set_tflags(ICANON|ECHO, 1);
 }
 
+static long get_time_ms()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1E3 + ts.tv_nsec / 1E6;
+}
+
 int event_handler(struct event *ev)
 {
+	static long last_time;
+	long ctime = get_time_ms();
+
 	switch (ev->type) {
 	const char *name;
 
@@ -47,6 +59,9 @@ int event_handler(struct event *ev)
 		if (ev->devev->type == DEV_KEY) {
 			name = keycode_table[ev->devev->code].name;
 
+			if (time_flag)
+				printf("+%ld ms\t", ctime - last_time);
+
 			printf("%s\t%04x:%04x\t%s %s\n",
 			       ev->dev->name,
 			       ev->dev->vendor_id,
@@ -63,11 +78,20 @@ int event_handler(struct event *ev)
 	fflush(stdout);
 	fflush(stderr);
 
+	last_time = ctime;
 	return 0;
 }
 
 int monitor(int argc, char *argv[])
 {
+	if (argc == 1 && !strcmp(argv[0], "-h")) {
+		printf("Usage: keyd monitor [-t]\n\n\t-t: Print the time in milliseconds between events.\n");
+		return 0;
+	}
+
+	if (argc == 1 && !strcmp(argv[0], "-t"))
+		time_flag = 1;
+
 	if (isatty(1))
 		set_tflags(ECHO, 0);
 
