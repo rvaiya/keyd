@@ -107,7 +107,7 @@ char *read_input(int argc, char *argv[], size_t *psz)
 			sz += snprintf(buf+sz, sizeof(buf)-sz, "%s%s", argv[i], i == argc-1 ? "" : " ");
 
 			if (sz >= sizeof(buf))
-				die("maxiumum input length exceeded");
+				die("maximum input length exceeded");
 		}
 	} else {
 		while (1) {
@@ -118,7 +118,7 @@ char *read_input(int argc, char *argv[], size_t *psz)
 			sz += n;
 
 			if (sizeof(buf) == sz)
-				die("maxiumum input length exceeded");
+				die("maximum input length exceeded");
 		}
 	}
 

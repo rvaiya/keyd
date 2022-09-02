@@ -418,7 +418,7 @@ int parse_macro_expression(const char *s, struct macro *macro)
 
 	#define ADD_ENTRY(t, d) do { \
 		if (macro->sz >= ARRAY_SIZE(macro->entries)) { \
-			err("maxium macro size (%d) exceeded", ARRAY_SIZE(macro->entries)); \
+			err("maximum macro size (%d) exceeded", ARRAY_SIZE(macro->entries)); \
 			return 1; \
 		} \
 		macro->entries[macro->sz].type = t; \
