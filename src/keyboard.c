@@ -84,9 +84,10 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	if (pressed)
 		kbd->last_pressed_output_code = code;
 
-	kbd->keystate[code] = pressed;
-
-	kbd->output(code, pressed);
+	if (kbd->keystate[code] != pressed) {
+		kbd->keystate[code] = pressed;
+		kbd->output(code, pressed);
+	}
 }
 
 static void set_mods(struct keyboard *kbd, uint8_t mods)
@@ -364,6 +365,25 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_OVERLOAD2:
+		if (pressed) {
+			uint8_t layer = d->args[0].idx;
+			struct descriptor *action = &kbd->config.descriptors[d->args[1].idx];
+			timeout = d->args[2].idx;
+
+			kbd->overload2.active = 1;
+			kbd->overload2.code = code;
+			kbd->overload2.layer = layer;
+			kbd->overload2.action = action;
+			kbd->overload2.dl = dl;
+			kbd->overload2.n = 0;
+		} else {
+			deactivate_layer(kbd, d->args[0].idx);
+			update_mods(kbd, -1, 0);
+		}
+
+
+		break;
 	case OP_LAYOUT:
 		if (pressed)
 			setlayout(kbd, d->args[0].idx);
@@ -599,6 +619,49 @@ struct keyboard *new_keyboard(struct config *config,
 	return kbd;
 }
 
+static int resolve_overload2(struct keyboard *kbd, int time, int hold)
+{
+	int timeout = 0;
+	int timeout_ts;
+
+	struct key_event queue[ARRAY_SIZE(kbd->overload2.queued)];
+	int n = kbd->overload2.n;
+
+	kbd->overload2.active = 0;
+
+	memcpy(queue, kbd->overload2.queued, sizeof(struct key_event)*n);
+
+	if (hold) {
+		activate_layer(kbd, kbd->overload2.code, kbd->overload2.layer);
+		update_mods(kbd, -1, 0);
+	} else {
+		process_descriptor(kbd,
+				   kbd->overload2.code,
+				   kbd->overload2.action,
+				   kbd->overload2.dl, 1);
+
+		process_descriptor(kbd,
+				   kbd->overload2.code,
+				   kbd->overload2.action,
+				   kbd->overload2.dl, 0);
+
+		cache_set(kbd, kbd->overload2.code, NULL, -1);
+	}
+
+	if (!n)
+		return 0;
+
+	timeout = kbd_process_events(kbd, queue, n);
+	timeout_ts = queue[n-1].timestamp + timeout;
+
+	if (timeout_ts <= time) {
+		struct key_event ev = {.code = 0, .timestamp = timeout_ts};
+		return kbd_process_events(kbd, &ev, 1);
+	}
+
+	return timeout_ts - time;
+}
+
 /*
  * `code` may be 0 in the event of a timeout.
  *
@@ -606,16 +669,19 @@ struct keyboard *new_keyboard(struct config *config,
  * of kbd_process_key_event must take place. A return value of 0 permits the
  * main loop to call at liberty.
  */
-static long process_event(struct keyboard *kbd, uint8_t code, int pressed, int timestamp)
+static long process_event(struct keyboard *kbd, uint8_t code, int pressed, int time)
 {
 	int dl = -1;
 	struct descriptor d;
 
-	int timeleft = kbd->timeout - (timestamp - kbd->last_event_ts);
-	kbd->last_event_ts = timestamp;
+	int timeleft = kbd->timeout - (time - kbd->last_event_ts);
+	kbd->last_event_ts = time;
 
 	/* timeout */
 	if (!code) {
+		if (kbd->overload2.active)
+			return resolve_overload2(kbd, time, 1);
+
 		if (kbd->active_macro) {
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
 			return kbd->macro_repeat_timeout;
@@ -632,6 +698,32 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, int t
 			return process_descriptor(kbd, code, d, dl, 1);
 		}
 	} else {
+		if (kbd->overload2.active) {
+			if (kbd->overload2.code == code) {
+				return resolve_overload2(kbd, time, 0);
+			} else {
+				assert(kbd->overload2.n < ARRAY_SIZE(kbd->overload2.queued));
+				struct key_event *ev = &kbd->overload2.queued[kbd->overload2.n++];
+
+				ev->code = code;
+				ev->pressed = pressed;
+				ev->timestamp = time;
+
+				//TODO: make this optional (overload3)
+				if (!pressed) {
+					size_t i;
+					for (i = 0; i < kbd->overload2.n; i++)
+						if (kbd->overload2.queued[i].code == code &&
+						    kbd->overload2.queued[i].pressed) {
+							return resolve_overload2(kbd, time, 1);
+						}
+				}
+
+				return timeleft;
+			}
+
+		}
+
 		if (kbd->pending_timeout.active) {
 			int dl = kbd->pending_timeout.dl;
 			uint8_t code = kbd->pending_timeout.code;
@@ -685,7 +777,7 @@ long kbd_process_events(struct keyboard *kbd, const struct key_event *events, si
 	while (i != n) {
 		const struct key_event *ev = &events[i];
 
-		if (timeout && timeout_ts < ev->timestamp) {
+		if (timeout > 0 && timeout_ts < ev->timestamp) {
 			timeout = process_event(kbd, 0, 0, timeout_ts);
 		} else {
 			timeout = process_event(kbd, ev->code, ev->pressed, ev->timestamp);

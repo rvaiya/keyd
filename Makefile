@@ -1,4 +1,4 @@
-.PHONY: all clean install uninstall debug man compose
+.PHONY: all clean install uninstall debug man compose test-harness
 DESTDIR=
 PREFIX=/usr
 

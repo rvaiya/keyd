@@ -53,6 +53,18 @@ struct keyboard {
 	int last_event_ts;
 
 	struct {
+		uint8_t active;
+		uint8_t code;
+
+		uint8_t layer;
+		struct descriptor *action;
+		uint8_t dl;
+
+		struct key_event queued[32];
+		uint8_t n;
+	} overload2;
+
+	struct {
 		long activation_time;
 
 		uint8_t active;
