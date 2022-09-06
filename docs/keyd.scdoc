@@ -571,6 +571,19 @@ Here,
 *overload(<layer>, <action>)*
 	Activates the given layer while held and executes <action> on tap.
 
+*overload2(<layer>, <action>, <timeout>)*
+	Identical to overload, but only activates the layer if the bound key is
+	held for \<timeout\> milliseconds. This is mainly useful for overloading keys
+	which are commonly struck in sequence (e.g letter keys). 
+
+	Note that this will add a visual delay when typing, since overlapping
+	keys will be queued until the timeout expires or the bound key is
+	released.
+
+*overload3(<layer>, <action>, <timeout>)*
+	Identical to overload2, but additionally resolves as a hold in the
+	event of an intervening key tap.
+
 *clear()*
 	Clear any active layers (the active layout is preserved).
 
