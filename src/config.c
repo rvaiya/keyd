@@ -52,6 +52,7 @@ static struct {
 	{ "layer",	OP_LAYER,	{ ARG_LAYER } },
 	{ "overload",	OP_OVERLOAD,	{ ARG_LAYER, ARG_DESCRIPTOR } },
 	{ "overload2",	OP_OVERLOAD2,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
+	{ "overload3",	OP_OVERLOAD3,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
 	{ "timeout",	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },
 	{ "macro2",	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout",	OP_LAYOUT,	{ ARG_LAYOUT } },

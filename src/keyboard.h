@@ -62,6 +62,7 @@ struct keyboard {
 
 		struct key_event queued[32];
 		uint8_t n;
+		uint8_t resolve_on_tap;
 	} overload2;
 
 	struct {

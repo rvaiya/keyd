@@ -365,6 +365,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_OVERLOAD3:
 	case OP_OVERLOAD2:
 		if (pressed) {
 			uint8_t layer = d->args[0].idx;
@@ -372,6 +373,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			timeout = d->args[2].idx;
 
 			kbd->overload2.active = 1;
+			kbd->overload2.resolve_on_tap = d->op == OP_OVERLOAD2 ? 0 : 1;
 			kbd->overload2.code = code;
 			kbd->overload2.layer = layer;
 			kbd->overload2.action = action;
@@ -710,7 +712,7 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, int t
 				ev->timestamp = time;
 
 				//TODO: make this optional (overload3)
-				if (!pressed) {
+				if (kbd->overload2.resolve_on_tap && !pressed) {
 					size_t i;
 					for (i = 0; i < kbd->overload2.n; i++)
 						if (kbd->overload2.queued[i].code == code &&
