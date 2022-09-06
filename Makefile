@@ -95,3 +95,16 @@ test:
 	for f in *.sh; do \
 		./$$f; \
 	done
+test-io:
+	-mkdir bin
+	$(CC) -o bin/test-io \
+		t/test-io.c \
+		src/keyboard.c \
+		src/string.c \
+		src/macro.c \
+		src/config.c \
+		src/error.c \
+		src/ini.c \
+		src/keys.c  \
+		src/unicode.c && \
+	./bin/test-io t/test.conf t/*.t
