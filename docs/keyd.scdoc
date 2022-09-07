@@ -491,6 +491,12 @@ and can contain any of the following options:
 	*layer_indicator:* If set, this will turn the capslock light on whenever a layer is active.
 	(default: 0)
 
+	*macro_sequence_timeout:* If set, this will add a timeout (*in
+	microseconds*) between each emitted key in a macro sequence. This is
+	useful to avoid overflowing the input buffer on some systems.
+
+	(default: 0)
+
 *Note:* Unicode characters and key sequences are treated as macros, and
 are consequently affected by the corresponding timeout options.
 
