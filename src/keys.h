@@ -285,6 +285,8 @@ struct modifier_table_ent {
 #define  KEYD_MOUSE_2          		253
 #define  KEYD_FN               		254
 
+#define KEY_NAME(code) (keycode_table[code].name ? keycode_table[code].name : "UNKNOWN")
+
 uint8_t keycode_to_mod(uint8_t code);
 int parse_modset(const char *s, uint8_t *mods);
 int parse_key_sequence(const char *s, uint8_t *code, uint8_t *mods);

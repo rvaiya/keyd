@@ -25,6 +25,7 @@
 
 #include "../vkbd.h"
 #include "../keys.h"
+#include "../error.h"
 
 struct vkbd {
 	int fd;
@@ -343,6 +344,8 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 {
+	dbg("output %s %s", KEY_NAME(code), state == 1 ? "down" : "up");
+
 	if (state) {
 		pthread_mutex_lock(&repeater_mtx);
 		repeat_key = code;
