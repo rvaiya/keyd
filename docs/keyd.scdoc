@@ -194,6 +194,11 @@ Finally, each layer heading is followed by a set of bindings which take the form
 
 for a description of <action> and <macro> see _ACTIONS_ and _MACROS_.
 
+As hinted at above, when a binding is activated through a key press, it inherits
+the modifiers attached to all other currently active layers (irrespective of
+their position in the layer stack) but ignores the modifier sets of the layer it
+is defined on.
+
 By default, each key is bound to itself within the main layer. The exception to this
 are the modifier keys, which are instead bound to eponymously named layers with the
 corresponding modifiers.
@@ -202,7 +207,7 @@ For example, _meta_ is actually bound to _layer(meta)_, where _meta_ is
 internally defined as _meta:M_.
 
 A consequence of this is that overriding modifier keys is a simple matter of
-adding the desired bindings to appropriate pre-defined layer.
+adding the desired bindings to an appropriate pre-defined layer.
 
 Thus
 
@@ -264,23 +269,21 @@ is equivalent to
 A special kind of layer called a *composite layer* can be defined by creating a
 layer with a name consisting of existing layers delimited by _+_. The resultant
 layer will be activated and given precedence when all of its constituents are
-activated. Composite layers always inherit the modifiers of their constituent
-layers and cannot be explicitly assigned.
+activated. Composite layers are not allowed to have modifiers attached and
+cannot be explicitly assigned. In the same way that an explicit binding on a
+regular layer ignores the modifier set of that layer, an explicit binding on a
+composite layer ignores the modifier sets of all constituents.
 
-E.G
+E.g.
 
 ```
-[main]
-capslock = layer(capslock)
-
-[capslock:C]
-[capslock+shift]
-
-h = left
+[control+alt] h = left
 ```
 
-Will cause the sequence _control+shift+h_ to produce _left_, while preserving
-the expected functionality of _capslock_ and _shift_ in isolation.
+will cause the sequence _control+alt+h_ to produce _left_ (ignoring the control
+and alt modifiers attached to the active control and alt layers), while pressing
+_control+alt+f1_ preserves those modifiers, emitting exactly what was pressed,
+as there is no explicit binding for _f1_ on the composite layer.
 
 *Note:* composite layers *must* always be defined _after_ the layers of which they
 are comprised.
@@ -537,7 +540,7 @@ arguments.
 	If _<layer>_ is a modifier layer then it will cause the key to behave as the
 	corresponding modifiers while held.
 	If the next pressed keys are bound to actions which resolve to further
-	layer activations  (`layer`, `overload`, `oneshot` or a `timeout`
+	layer activations  (such as `layer`, `overload`, `oneshot` or a `timeout`
 	resolving to one of the aforementioned three actions), the original
 	oneshot layer _<layer>_ is kept active. This makes it possible to stack
 	modifiers. Consider for example
