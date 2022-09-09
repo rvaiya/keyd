@@ -121,9 +121,9 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 
 			unicode_get_sequence(idx, codes);
 
-			for (i = 0; i < 4; i++) {
-				output(codes[i], 1);
-				output(codes[i], 0);
+			for (j = 0; j < 4; j++) {
+				output(codes[j], 1);
+				output(codes[j], 0);
 			}
 
 			break;
