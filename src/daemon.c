@@ -431,6 +431,8 @@ static int event_handler(struct event *ev)
 			timeout_kbd = ev->dev->data;
 			switch (ev->devev->type) {
 			case DEV_KEY:
+				dbg("input %s %s", KEY_NAME(ev->devev->code), ev->devev->pressed ? "down" : "up");
+
 				kev.code = ev->devev->code;
 				kev.pressed = ev->devev->pressed;
 				kev.timestamp = ev->timestamp;

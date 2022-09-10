@@ -449,7 +449,7 @@ struct device_event *device_read_event(struct device *dev)
 		devev.code = ev.code;
 		devev.pressed = ev.value;
 
-		dbg("key %s %s", KEY_NAME(devev.code), devev.pressed ? "down" : "up");
+		dbg2("key %s %s", KEY_NAME(devev.code), devev.pressed ? "down" : "up");
 
 		break;
 	default:
