@@ -47,7 +47,7 @@
 		exit(-1); \
 	} while (0)
 
-#define warn(fmt, ...) fprintf(stderr, "\033[31;1mERROR:\033[0m "fmt"\n", ##__VA_ARGS__)
+#define warn(fmt, ...) fprintf(stderr, "\033[31;1mWARNING:\033[0m "fmt"\n", ##__VA_ARGS__)
 
 enum event_type {
 	EV_DEV_ADD,

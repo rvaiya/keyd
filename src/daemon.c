@@ -140,12 +140,15 @@ static void load_configs()
 
 			printf("CONFIG: parsing %s\n", path);
 
-			if (config_parse(&ent->config, path))
-				die("failed to parse %s", path);
+			if (!config_parse(&ent->config, path)) {
+				ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);
+				ent->next = configs;
+				configs = ent;
+			} else {
+				free(ent);
+				warn("failed to parse %s", path);
+			}
 
-			ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);
-			ent->next = configs;
-			configs = ent;
 		}
 	}
 
