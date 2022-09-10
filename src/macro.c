@@ -1,5 +1,16 @@
 #include "keyd.h"
 
+static int is_timeval(const char *s)
+{
+	if (s[0] < '0' || s[0] > '9')
+		return 0;
+
+	while(*s && *s >= '0' && *s <= '9')
+		s++;
+
+	return s[0] == 'm' && s[1] == 's' && s[2] == 0;
+}
+
 /*
  * Parses expressions of the form: C-t hello enter.
  * Returns 0 on success. Mangles the input string.
@@ -33,7 +44,7 @@ int macro_parse(char *s, struct macro *macro)
 			for (key = strtok_r(tok, "+", &saveptr); key; key = strtok_r(NULL, "+", &saveptr)) {
 				size_t len = strlen(key);
 
-				if (len > 1 && key[len-2] == 'm' && key[len-1] == 's')
+				if (is_timeval(key))
 					ADD_ENTRY(MACRO_TIMEOUT, atoi(key));
 				else if (!parse_key_sequence(key, &code, &mods))
 					ADD_ENTRY(MACRO_HOLD, code);
@@ -44,7 +55,7 @@ int macro_parse(char *s, struct macro *macro)
 			}
 
 			ADD_ENTRY(MACRO_RELEASE, 0);
-		} else if (len > 1 && tok[len-2] == 'm' && tok[len-1] == 's') {
+		} else if (is_timeval(tok)) {
 			ADD_ENTRY(MACRO_TIMEOUT, atoi(tok));
 		} else {
 			uint32_t codepoint;
