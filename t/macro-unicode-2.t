@@ -15,5 +15,7 @@ y down
 y up
 6 down
 6 up
+2 down
+2 up
 control down
 control up
