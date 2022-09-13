@@ -277,7 +277,8 @@ composite layer ignores the modifier sets of all constituents.
 E.g.
 
 ```
-[control+alt] h = left
+[control+alt]
+h = left
 ```
 
 will cause the sequence _control+alt+h_ to produce _left_ (ignoring the control
@@ -317,7 +318,7 @@ Non-english layouts include a dedicated shift layer (making order of inclusion
 important) and *require the use of keyd's compose definitions* (see *Unicode
 Support*)
 
-E.G
+E.g.
 
 ```
 # Include the shipped colemak layout.
@@ -348,7 +349,7 @@ globally by copying the file to the appropriate location in
 _/usr/share/X11/locale_, or on a per-user basis by symlinking it to
 ~/.XCompose.
 
-E.G
+E.g.
 
 	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
@@ -358,15 +359,22 @@ within keyd (see **Layouts**).
 
 **Note:** You may have to restart your applications for this to take effect.
 
+**Caveat:** Modifiers (in particular shift) are applied to this compose sequence
+as usual, which might not be what you want. For example, pressing a key bound to
+an accented letter while a shift modifier is active does not result in the
+corresponding capital letter. In such cases, an explicit mapping on the shift
+layer has to be added.
+
 ## Aliases
 
 Each key may optionally be assigned to an *alias*. This alias may be used in place
 of the key as a valid left hand value. Multiple keys may be bound to the same alias,
 but only one alias may be assigned to a key at a given time.
 
-For example, the keys 'leftmeta' and
-'rightmeta' are bound to the alias *meta* by default. Thus the binding 'meta =
-a' is equivalent to the bindings 'leftmeta = a' and 'rightmeta = a'.
+For example, the keys 'leftmeta' and 'rightmeta' are bound to the alias *meta*
+by default. Thus the binding 'meta = a' is equivalent to the bindings 'leftmeta
+= a' and 'rightmeta = a'. Further default aliases are *alt*, *shift*, *control*
+(with bindings analogous to *meta*) and *altgr* (an alias for the key 'rightalt').
 
 Aliases are defined in a special section called 'aliases' where each line takes
 the form:
@@ -433,7 +441,7 @@ directories:
 	- /etc/keyd/
 	- /usr/share/keyd/
 
-E.G
+E.g.
 
 ```
 /etc/keyd/default.conf:
@@ -511,36 +519,52 @@ A valid macro expression has one of the following forms:
 
 	. macro(<exp>)
 	. [<modifier 1>[-<modifier 2>...]-<key>
+	. <utf8_character>
 
 Where _<exp>_ has the form _<token1> [<token2>...]_ and each token is one of:
 
-	- a valid key code.
-	- a type 2. macro.
-	- a contiguous group of characters, each of which is a valid key code.
+	- a valid key code (_keyd list-keys_ prints a list).
+	- a type 2 macro.
+	- a contiguous group of UTF-8 characters.
 	- a group of key codes delimited by + to be depressed as a unit.
-	- a timeout of the form _<time>ms_ (where _<time>_ < 1024).
+	- a timeout of the form _<time>ms_ (where _<time>_ < n1024).
 
 The following are all valid macro expressions:
 
 	- C-a
-	- macro(C-a)
-	- macro(control+a)
+	- macro(C-a) (equivalent to the above)
+	- macro(control+a) (yet another form of the above)
+	- macro(a+control) (not equivalent to the above, as a is pressed earlier than control)
 	- A-M-x
 	- macro(Hello space World)
 	- macro(h e l l o space w o r ld)    (identical to the above)
 	- macro(C-t 100ms google.com enter)
+
+Splitting into smaller tokens serves as an escaping mechanism: _macro(space)_
+inserts a space but _macro(s pace)_ writes "space". Likewise, _macro(3+5)_
+depresses the 3 and 5 keys as a unit while _macro(3 + 5)_ writes "3+5".
+
+Some prerequisites are needed for non-ASCII characters to work, see _Unicode Support_.
 
 # ACTIONS
 
 A key may optionally be bound to an _action_ which accepts zero or more
 arguments.
 
-*oneshot(<layer>)*
-	If tapped, activate the supplied layer for the duration of the next keypress.
-	If _<layer>_ is a modifier layer then it will cause the key to behave as the
-	corresponding modifiers while held.
-	If the next pressed keys are bound to actions which resolve to further
-	layer activations  (such as `layer`, `overload`, `oneshot` or a `timeout`
+Whenever an argument is another action, a valid macro expressions may be supplied instead.
+
+Whenever an argument is a layer, neither _main_, nor a composite layer are accepted.
+
+## Manipulation of the layer stack
+
+*layer(<layer>)*
+	Activate the given layer for the duration of the keypress.
+
+*oneshot(<layer>)* If tapped, activate the supplied layer for the duration of
+	the next keypress. If _<layer>_ is a modifier layer then it will cause
+	the key to behave as the corresponding modifiers while held. If the next
+	pressed keys are bound to actions which resolve to further layer
+	activations (such as _layer_, _overload_, _oneshot_ or a _timeout_
 	resolving to one of the aforementioned three actions), the original
 	oneshot layer _<layer>_ is kept active. This makes it possible to stack
 	modifiers. Consider for example
@@ -554,20 +578,32 @@ arguments.
 ```
 
 Here,
-	- tapping control, tapping alt and then tapping a would result in C-A-a
-	- tapping control, holding shift and then tapping a would result in
-        C-S-a
-	- tapping control, tapping tab within 200 ms and then tapping a would result in C-M-a,
-        and so would tapping control, holding meta (by default bound to
-        `layer(meta)`) and then tapping a.
-        - tapping control, tapping tab within 200 ms, tapping alt and then
-        tapping a would result in C-A-M-a
+	- tapping control, tapping alt and then tapping a would result in C-A-a.
+	- tapping control, holding shift and then tapping a would result in C-S-a.
+	- tapping control, tapping tab within 200 ms and then tapping a would result in C-M-a, and so would tapping control, holding meta (by default bound to _layer(meta)_) and then tapping a.
+	- tapping control, tapping tab within 200 ms, tapping alt and then tapping a would result in C-A-M-a.
 
-*layer(<layer>)*
-	Activate the given layer for the duration of the keypress.
+*swap(<layer>)*
+	Swap the currently active layer with the supplied one. The
+	supplied layer is active for the duration of the depression of the
+	current layer's activation key. This only works if a _layer_ action is
+	currently active (i.e. another key is held down) and results in a noop
+	otherwise.
 
-*setlayout(<layout>)*
-	Set the current layout.
+```
+	[control]
+
+	x = swap(xlayer)
+
+	[xlayer]
+
+	s = C-s
+	b = S-insert
+```
+
+*swap2(<layer>, <macro>)*
+
+	Identical to *swap*, but accepts a macro to be executed immediately after the layer change.
 
 *toggle(<layer>)*
 	Permanently toggle the state of the given layer. Toggling the main layer
@@ -576,6 +612,14 @@ Here,
 *toggle2(<layer>, <macro>)*
 	Equivalent to *toggle*, but additionally executes the supplied macro before
 	toggling the layer.
+
+*setlayout(<layout>)*
+	Set the current layout.
+
+*clear()*
+	Clear any active layers (the active layout is preserved).
+
+## Key overloading
 
 *overload(<layer>, <action>)*
 	Activates the given layer while held and executes <action> on tap.
@@ -593,40 +637,19 @@ Here,
 	Identical to overload2, but additionally resolves as a hold in the
 	event of an intervening key tap.
 
-*clear()*
-	Clear any active layers (the active layout is preserved).
-
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the first
 	action, if the key is held for less than _<timeout> ms_ or another key is struck
 	before <timeout> ms expires, execute the first action.
 
-	E.G
+	E.g.
 
 	timeout(a, 500, layer(control))
 
 	Will cause the assigned key to behave as _control_ if it is held for more than
 	500 ms.
 
-*swap(<layer>)*
-	Swap the currently active layer with the supplied one. The supplied layer is
-	active for the duration of the depression of the current layer's activation
-	key.
-
-```
-	[control]
-
-	x = swap(xlayer)
-
-	[xlayer]
-
-	s = C-s
-	b = S-insert
-```
-
-*swap2(<layer>, <macro>)*
-
-	Identical to *swap*, but accepts a macro to be executed immediately after the layer change.
+## Miscellaneous
 
 *macro2(<timeout>, <repeat timeout>, <macro>)*
 	Creates a macro with the given timeout and repeat timeout. If a timeout value of 0 is used,
@@ -634,16 +657,15 @@ Here,
 
 	Note that <macro> must be a valid macro expression.
 
-	E.G
+	E.g.
 ```
 	macro2(400, 50, macro(Hello space World))
 	macro2(120, 80, left)
 ```
-
 *command(<shell command>)*
 	Execute the given shell command.
 
-	E.G
+	E.g.
 
 	command(brightness down)
 
@@ -652,9 +674,6 @@ use this feature judiciously.
 
 *noop*
 	Do nothing.
-
-Whenever an action accepts another action as an argument, a valid macro
-expression may be supplied as well (as in `shift = overload(shift, S-9)`).
 
 # IPC
 
