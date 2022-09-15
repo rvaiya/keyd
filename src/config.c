@@ -79,8 +79,10 @@ static const char *resolve_include_path(const char *path, const char *include_pa
 	char tmp[PATH_MAX];
 	const char *dir;
 
-	if (strstr(include_path, "."))
+	if (strstr(include_path, ".")) {
+		warn("%s: included files may not have a file extension", include_path);
 		return NULL;
+	}
 
 	strcpy(tmp, path);
 	dir = dirname(tmp);
@@ -130,6 +132,9 @@ static char *read_file(const char *path)
 			char *include_path = line+sizeof(include_prefix)-1;
 
 			line[len-1] = 0;
+
+			while (include_path[0] == ' ')
+				include_path++;
 
 			resolved_path = resolve_include_path(path, include_path);
 
