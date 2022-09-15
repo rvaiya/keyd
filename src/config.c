@@ -32,6 +32,7 @@
 
 static struct {
 	const char *name;
+	const char *preferred_name;
 	uint8_t op;
 	enum {
 		ARG_EMPTY,
@@ -43,19 +44,32 @@ static struct {
 		ARG_DESCRIPTOR,
 	} args[MAX_DESCRIPTOR_ARGS];
 } actions[] =  {
-	{ "swap",	OP_SWAP,	{ ARG_LAYER } },
-	{ "swap2",	OP_SWAP2,	{ ARG_LAYER, ARG_MACRO } },
-	{ "clear",	OP_CLEAR,	{} },
-	{ "oneshot",	OP_ONESHOT,	{ ARG_LAYER } },
-	{ "toggle",	OP_TOGGLE,	{ ARG_LAYER } },
-	{ "toggle2",	OP_TOGGLE2,	{ ARG_LAYER, ARG_MACRO } },
-	{ "layer",	OP_LAYER,	{ ARG_LAYER } },
-	{ "overload",	OP_OVERLOAD,	{ ARG_LAYER, ARG_DESCRIPTOR } },
-	{ "overload2",	OP_OVERLOAD2,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
-	{ "overload3",	OP_OVERLOAD3,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
-	{ "timeout",	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },
-	{ "macro2",	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
-	{ "setlayout",	OP_LAYOUT,	{ ARG_LAYOUT } },
+	{ "swap", 	NULL,	OP_SWAP,	{ ARG_LAYER } },
+	{ "clear", 	NULL,	OP_CLEAR,	{} },
+	{ "oneshot", 	NULL,	OP_ONESHOT,	{ ARG_LAYER } },
+	{ "toggle", 	NULL,	OP_TOGGLE,	{ ARG_LAYER } },
+
+	{ "swapm", 	NULL,	OP_SWAPM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "togglem", 	NULL,	OP_TOGGLEM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "layerm", 	NULL,	OP_LAYERM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "oneshotm", 	NULL,	OP_ONESHOTM,	{ ARG_LAYER, ARG_MACRO } },
+
+	{ "layer", 	NULL,	OP_LAYER,	{ ARG_LAYER } },
+
+	{ "overload", 	NULL,	OP_OVERLOAD,			{ ARG_LAYER, ARG_DESCRIPTOR } },
+	{ "overloadt", 	NULL,	OP_OVERLOAD_TIMEOUT,		{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
+	{ "overloadt2", NULL,	OP_OVERLOAD_TIMEOUT_TAP,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
+
+	{ "timeout", 	NULL,	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },
+
+	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
+	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
+
+	//TODO: deprecate
+	{ "overload2", 	"overloadt",	OP_OVERLOAD_TIMEOUT,		{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
+	{ "overload3", 	"overloadt2",	OP_OVERLOAD_TIMEOUT_TAP,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
+	{ "toggle2", 	"togglem",	OP_TOGGLEM,			{ ARG_LAYER, ARG_MACRO } },
+	{ "swap2", 	"swapm",	OP_SWAPM,			{ ARG_LAYER, ARG_MACRO } },
 };
 
 
@@ -537,6 +551,9 @@ static int parse_descriptor(char *s,
 		for (i = 0; i < ARRAY_SIZE(actions); i++) {
 			if (!strcmp(actions[i].name, fn)) {
 				int j;
+
+				if (actions[i].preferred_name)
+					warn("%s is deprecated (renamed to %s).", actions[i].name, actions[i].preferred_name);
 
 				d->op = actions[i].op;
 

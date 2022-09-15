@@ -56,13 +56,13 @@ terminate.
 
 # CONFIGURATION
 
-Configuration files loosely follow an INI style file format and consist of sections
-of the form _[section_name]_ followed by key-value pairs delimited
-by an equal sign (one per line). Lines which are empty or begin with a hash sign
-are ignored.
+Configuration files loosely follow an INI style format consisting of headers of
+the form _[section_name]_ followed by a set of _bindings_.  Lines beginning
+with a hash are ignored.
 
-The files are stored in _/etc/keyd/_ and loaded upon initialization.
-Changes can be triggered using the reload command (sudo keyd reload).
+Config files are stored in _/etc/keyd/_ and loaded upon initialization.
+The reload command can be used to update the working set of config 
+files (e.g sudo keyd reload).
 
 A valid config file has the extension _.conf_ and *must* begin with an _[ids]_
 section that has one of the following forms:
@@ -111,7 +111,7 @@ Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
 
 Config errors will appear in the log output and can be accessed in the usual
-way using your system's service manager (e.g `sudo journalctl -eu keyd`).
+way using your system's service manager (e.g sudo journalctl -eu keyd).
 
 Note: All keyboards defined within a given config file will share the
 same state. This is useful for linking separate input devices together
@@ -170,6 +170,11 @@ will cause _capslock_ to behave as _control_, except in the case of _control+j_,
 emit _down_. This makes it trivial to define custom modifiers which don't interfere with
 one another.
 
+Note that bindings are not affected by the modifiers of the layer in which they
+are defined. Thus *capslock+j* will produce an unmodified *down* keypress, while
+*shift+control+j* will produce *shift+down* as expected.
+
+
 Formally, each layer heading has the following form:
 
 ```
@@ -193,11 +198,6 @@ Finally, each layer heading is followed by a set of bindings which take the form
 	<key> | <alias> = <key>|<macro>|<action>
 
 for a description of <action> and <macro> see _ACTIONS_ and _MACROS_.
-
-As hinted at above, when a binding is activated through a key press, it inherits
-the modifiers attached to all other currently active layers (irrespective of
-their position in the layer stack) but ignores the modifier sets of the layer it
-is defined on.
 
 By default, each key is bound to itself within the main layer. The exception to this
 are the modifier keys, which are instead bound to eponymously named layers with the
@@ -234,34 +234,30 @@ the full config actually looks something like this:
 	j = down
 ```
 
-A key may be bound multiple times on a given layer, in which
-case every binding encountered overrides an earlier one. Furthermore, it is
-allowed (but discouraged) to scatter layer bindings over multiple identically
-named sections, again with later definitions taking precedence over earlier
-ones. However, modifier sets of a repeated layer section are ignored. For
-example
+If multiple bindings for the same key are present, the most recent one takes precedence. 
+
+A layer heading may also appear multiple times, in which case the layer will
+contain the sum of all bindings. Note that the layer type may not be reassigned.
+
+That is:
 
 ```
-	[mylayer:A]
-	a = b
+[mylayer:A]
+a = b
+c = d
 
-	[control:C]
-	j = down
-
-	[mylayer:M]
-	a = c
-	b = d
+[mylayer:C]
+a = x
+b = c
 ```
 
-is equivalent to
+is equivalent to:
 
 ```
-	[mylayer:A]
-	a = c
-	b = d
-
-	[control:C]
-	j = down
+[mylayer:A]
+a = x
+b = c
+c = d
 ```
 
 ## Composite Layers
@@ -270,21 +266,32 @@ A special kind of layer called a *composite layer* can be defined by creating a
 layer with a name consisting of existing layers delimited by _+_. The resultant
 layer will be activated and given precedence when all of its constituents are
 activated. Composite layers are not allowed to have modifiers attached and
-cannot be explicitly assigned. In the same way that an explicit binding on a
-regular layer ignores the modifier set of that layer, an explicit binding on a
-composite layer ignores the modifier sets of all constituents.
+cannot be explicitly assigned.
 
 E.g.
 
 ```
-[control+alt]
-h = left
+	[control+alt]
+	h = left
 ```
 
 will cause the sequence _control+alt+h_ to produce _left_ (ignoring the control
 and alt modifiers attached to the active control and alt layers), while pressing
 _control+alt+f1_ preserves those modifiers, emitting exactly what was pressed,
 as there is no explicit binding for _f1_ on the composite layer.
+
+
+```
+	[main]
+	capslock = layer(capslock)
+
+	[capslock:C]
+
+	[capslock+shift]
+	h = left
+```
+
+Will cause the sequence _capslock+shift+h_ to produce _left_, while preserving the expected functionality of _capslock_ and _shift_ in isolation.
 
 *Note:* composite layers *must* always be defined _after_ the layers of which they
 are comprised.
@@ -355,26 +362,24 @@ E.g.
 
 **Additionally you will need to be using the default US layout on your
 display server.** Users of non-english layouts are advised to set their layout
-within keyd (see **Layouts**).
+within keyd (see **Layouts**) to avoid conflicts between the display server
+layout and keyd's unicode functionality.
 
 **Note:** You may have to restart your applications for this to take effect.
 
-**Caveat:** Modifiers (in particular shift) are applied to this compose sequence
-as usual, which might not be what you want. For example, pressing a key bound to
-an accented letter while a shift modifier is active does not result in the
-corresponding capital letter. In such cases, an explicit mapping on the shift
-layer has to be added.
+**Note 2:** The generated compose sequences are affected by modifiers in the
+normal way. If you want shift to produce a different symbol, you will need to
+define a custom shift layer (see the included layout files for an example).
 
 ## Aliases
 
-Each key may optionally be assigned to an *alias*. This alias may be used in place
+Each key may optionally be assigned an *alias*. This alias may be used in place
 of the key as a valid left hand value. Multiple keys may be bound to the same alias,
 but only one alias may be assigned to a key at a given time.
 
 For example, the keys 'leftmeta' and 'rightmeta' are bound to the alias *meta*
 by default. Thus the binding 'meta = a' is equivalent to the bindings 'leftmeta
-= a' and 'rightmeta = a'. Further default aliases are *alt*, *shift*, *control*
-(with bindings analogous to *meta*) and *altgr* (an alias for the key 'rightalt').
+= a' and 'rightmeta = a'.
 
 Aliases are defined in a special section called 'aliases' where each line takes
 the form:
@@ -489,8 +494,8 @@ Limitations:
 
 # GLOBALS
 
-A special section called _[global]_ may be defined in the file
-and can contain any of the following options:
+A special section called _[global]_ may be defined in the file and can contain
+any of the following options:
 
 	*macro_timeout:* The time (in milliseconds) separating the initial execution of a macro
 	sequence and the first repetition.
@@ -515,29 +520,28 @@ are consequently affected by the corresponding timeout options.
 
 Various keyd actions accept macro expressions.
 
-A valid macro expression has one of the following forms:
+A macro expression has one of the following forms:
 
 	. macro(<exp>)
 	. [<modifier 1>[-<modifier 2>...]-<key>
-	. <utf8_character>
+	. <char>
 
-Where _<exp>_ has the form _<token1> [<token2>...]_ and each token is one of:
+Where _<char>_ is a valid unicode character and _<exp>_ has the form _<token1> [<token2>...]_ and each token is one of:
 
-	- a valid key code (_keyd list-keys_ prints a list).
-	- a type 2 macro.
-	- a contiguous group of UTF-8 characters.
-	- a group of key codes delimited by + to be depressed as a unit.
-	- a timeout of the form _<time>ms_ (where _<time>_ < n1024).
+	- A valid key code.
+	- A type 2 macro.
+	- A contiguous group of unicode characters.
+	- A group of key codes delimited by + to be depressed as a unit.
+	- A timeout of the form _<time>ms_ (where _<time>_ < 1024).
 
 The following are all valid macro expressions:
 
 	- C-a
-	- macro(C-a) (equivalent to the above)
-	- macro(control+a) (yet another form of the above)
-	- macro(a+control) (not equivalent to the above, as a is pressed earlier than control)
+	- macro(C-a)
+	- macro(leftcontrol+leftmeta) # simultaneously taps the left meta and left control keys
 	- A-M-x
 	- macro(Hello space World)
-	- macro(h e l l o space w o r ld)    (identical to the above)
+	- macro(h e l l o space w o r ld) (identical to the above)
 	- macro(C-t 100ms google.com enter)
 
 Splitting into smaller tokens serves as an escaping mechanism: _macro(space)_
@@ -548,47 +552,19 @@ Some prerequisites are needed for non-ASCII characters to work, see _Unicode Sup
 
 # ACTIONS
 
-A key may optionally be bound to an _action_ which accepts zero or more
-arguments.
-
-Whenever an argument is another action, a valid macro expressions may be supplied instead.
-
-Whenever an argument is a layer, neither _main_, nor a composite layer are accepted.
-
-## Manipulation of the layer stack
+A key may optionally be bound to an _action_ which accepts zero or more arguments.
 
 *layer(<layer>)*
 	Activate the given layer for the duration of the keypress.
 
-*oneshot(<layer>)* If tapped, activate the supplied layer for the duration of
-	the next keypress. If _<layer>_ is a modifier layer then it will cause
-	the key to behave as the corresponding modifiers while held. If the next
-	pressed keys are bound to actions which resolve to further layer
-	activations (such as _layer_, _overload_, _oneshot_ or a _timeout_
-	resolving to one of the aforementioned three actions), the original
-	oneshot layer _<layer>_ is kept active. This makes it possible to stack
-	modifiers. Consider for example
+*oneshot(<layer>)* 
 
-```
-	[main]
-	shift = overload(shift, S-9)
-	control = oneshot(control)
-	alt = oneshot(alt)
-	tab = timeout(oneshot(meta), 200, tab)
-```
-
-Here,
-	- tapping control, tapping alt and then tapping a would result in C-A-a.
-	- tapping control, holding shift and then tapping a would result in C-S-a.
-	- tapping control, tapping tab within 200 ms and then tapping a would result in C-M-a, and so would tapping control, holding meta (by default bound to _layer(meta)_) and then tapping a.
-	- tapping control, tapping tab within 200 ms, tapping alt and then tapping a would result in C-A-M-a.
+	If tapped, activate the supplied layer for the duration of the next keypress. 
 
 *swap(<layer>)*
 	Swap the currently active layer with the supplied one. The
 	supplied layer is active for the duration of the depression of the
-	current layer's activation key. This only works if a _layer_ action is
-	currently active (i.e. another key is held down) and results in a noop
-	otherwise.
+	current layer's activation key.
 
 ```
 	[control]
@@ -601,30 +577,35 @@ Here,
 	b = S-insert
 ```
 
-*swap2(<layer>, <macro>)*
-
-	Identical to *swap*, but accepts a macro to be executed immediately after the layer change.
-
-*toggle(<layer>)*
-	Permanently toggle the state of the given layer. Toggling the main layer
-	is not allowed.
-
-*toggle2(<layer>, <macro>)*
-	Equivalent to *toggle*, but additionally executes the supplied macro before
-	toggling the layer.
-
 *setlayout(<layout>)*
 	Set the current layout.
 
 *clear()*
 	Clear any active layers (the active layout is preserved).
 
+*toggle(<layer>)*
+	Permanently toggle the state of the given layer.
+
+*layerm(<layer>, <macro>)*
+	Identical to *layer*, but executes the supplies macro before the layer change.
+
+*oneshotm(<layer>, <macro>)*
+	Identical to *oneshot*, but executes the supplies macro before the layer change.
+
+*swapm(<layer>, <macro>)*
+	Identical to *swap*, but accepts a macro to be executed immediately
+	after the layer change.
+
+*togglem(<layer>, <macro>)*
+	Equivalent to *toggle*, but additionally executes the supplied macro before
+	toggling the layer.
+
 ## Key overloading
 
 *overload(<layer>, <action>)*
 	Activates the given layer while held and executes <action> on tap.
 
-*overload2(<layer>, <action>, <timeout>)*
+*overloadt(<layer>, <action>, <timeout>)*
 	Identical to overload, but only activates the layer if the bound key is
 	held for \<timeout\> milliseconds. This is mainly useful for overloading keys
 	which are commonly struck in sequence (e.g letter keys). 
@@ -633,8 +614,8 @@ Here,
 	keys will be queued until the timeout expires or the bound key is
 	released.
 
-*overload3(<layer>, <action>, <timeout>)*
-	Identical to overload2, but additionally resolves as a hold in the
+*overloadt2(<layer>, <action>, <timeout>)*
+	Identical to overloadt, but additionally resolves as a hold in the
 	event of an intervening key tap.
 
 *timeout(<action 1>, <timeout>, <action 2>)*
@@ -648,8 +629,6 @@ Here,
 
 	Will cause the assigned key to behave as _control_ if it is held for more than
 	500 ms.
-
-## Miscellaneous
 
 *macro2(<timeout>, <repeat timeout>, <macro>)*
 	Creates a macro with the given timeout and repeat timeout. If a timeout value of 0 is used,

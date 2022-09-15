@@ -159,8 +159,18 @@ static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mo
 
 static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
 {
-	update_mods(kbd, dl, 0);
-	macro_execute(kbd->output, macro, kbd->config.macro_sequence_timeout);
+	/* Minimize redundant modifier strokes for simple key sequences. */
+	if (macro->sz == 1 && macro->entries[0].type == MACRO_KEYSEQUENCE) {
+		uint8_t code = macro->entries[0].data;
+		uint8_t mods = macro->entries[0].data >> 8;
+
+		update_mods(kbd, dl, mods);
+		send_key(kbd, code, 1);
+		send_key(kbd, code, 0);
+	} else {
+		update_mods(kbd, dl, 0);
+		macro_execute(kbd->output, macro, kbd->config.macro_sequence_timeout);
+	}
 }
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
@@ -336,6 +346,21 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 {
 	int timeout = 0;
 
+	if (pressed) {
+		struct macro *macro;
+
+		switch (d->op) {
+		case OP_LAYERM:
+		case OP_ONESHOTM:
+		case OP_TOGGLEM:
+			macro = &kbd->config.macros[d->args[1].idx];
+			execute_macro(kbd, dl, macro);
+			break;
+		default:
+			break;
+		}
+	}
+
 	switch (d->op) {
 		int idx;
 		struct macro *macro;
@@ -365,15 +390,15 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
-	case OP_OVERLOAD3:
-	case OP_OVERLOAD2:
+	case OP_OVERLOAD_TIMEOUT_TAP:
+	case OP_OVERLOAD_TIMEOUT:
 		if (pressed) {
 			uint8_t layer = d->args[0].idx;
 			struct descriptor *action = &kbd->config.descriptors[d->args[1].idx];
 			timeout = d->args[2].idx;
 
 			kbd->overload2.active = 1;
-			kbd->overload2.resolve_on_tap = d->op == OP_OVERLOAD2 ? 0 : 1;
+			kbd->overload2.resolve_on_tap = d->op == OP_OVERLOAD_TIMEOUT_TAP ? 1 : 0;
 			kbd->overload2.code = code;
 			kbd->overload2.layer = layer;
 			kbd->overload2.action = action;
@@ -391,6 +416,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			setlayout(kbd, d->args[0].idx);
 
 		break;
+	case OP_LAYERM:
 	case OP_LAYER:
 		idx = d->args[0].idx;
 
@@ -434,6 +460,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_ONESHOTM:
 	case OP_ONESHOT:
 		idx = d->args[0].idx;
 
@@ -479,7 +506,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
-	case OP_TOGGLE2:
+	case OP_TOGGLEM:
 	case OP_TOGGLE:
 		idx = d->args[0].idx;
 
@@ -494,12 +521,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			update_mods(kbd, -1, 0);
 		} else {
 			clear_oneshot(kbd);
-
-			if (d->op == OP_TOGGLE2) {
-				macro = &kbd->config.macros[d->args[1].idx];
-				execute_macro(kbd, dl, macro);
-			}
-
 		}
 
 		break;
@@ -521,15 +542,16 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			execute_command(kbd->config.commands[d->args[0].idx].cmd);
 		break;
 	case OP_SWAP:
-	case OP_SWAP2:
+	case OP_SWAPM:
 		idx = d->args[0].idx;
-		macro = d->op == OP_SWAP2 ?  &kbd->config.macros[d->args[1].idx] : NULL;
+		macro = d->op == OP_SWAPM ?  &kbd->config.macros[d->args[1].idx] : NULL;
 
 		if (pressed) {
 			struct descriptor od;
 			int odl;
 
-			if (!cache_get(kbd, kbd->last_layer_code, &od, &odl)) {
+			if (kbd->last_layer_code &&
+				!cache_get(kbd, kbd->last_layer_code, &od, &odl)) {
 				int oldlayer = od.args[0].idx;
 				od.args[0].idx = d->args[0].idx;
 
@@ -537,28 +559,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 				deactivate_layer(kbd, oldlayer);
 				activate_layer(kbd, kbd->last_layer_code, idx);
+				update_mods(kbd, -1, 0);
 
-				if (macro) {
-					/*
-					 * If we are dealing with a simple macro of the form <mod>-<key>
-					 * keep the corresponding key sequence depressed for the duration
-					 * of the swapping key stroke. This is necessary to account for
-					 * pathological input systems (e.g Gnome) which expect a human-scale
-					 * interval between key down/up events.
-					 */
-					if (macro->sz == 1 &&
-					    macro->entries[0].type == MACRO_KEYSEQUENCE) {
-						uint8_t code = macro->entries[0].data;
-						uint8_t mods = macro->entries[0].data >> 8;
-
-						update_mods(kbd, idx, mods);
-						send_key(kbd, code, 1);
-					} else {
-						execute_macro(kbd, dl, macro);
-					}
-				} else {
-					update_mods(kbd, -1, 0);
-				}
+				if (macro)
+					execute_macro(kbd, dl, macro);
 			}
 		} else {
 			if (macro &&

@@ -12,9 +12,9 @@ alt down
 control down
 alt up
 control up
+control down
 tab down
 tab up
-control down
 x down
 x up
 control up
