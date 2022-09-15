@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <termios.h>
+#include <getopt.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -78,6 +79,7 @@ struct ipc_message {
 		IPC_LAYER_LISTEN,
 	} type;
 	
+	uint32_t timeout;
 	char data[MAX_IPC_MESSAGE_SIZE];
 	size_t sz;
 };

@@ -82,12 +82,12 @@ int event_handler(struct event *ev)
 
 int monitor(int argc, char *argv[])
 {
-	if (argc == 1 && !strcmp(argv[0], "-h")) {
+	if (argc == 2 && !strcmp(argv[1], "-h")) {
 		printf("Usage: keyd monitor [-t]\n\n\t-t: Print the time in milliseconds between events.\n");
 		return 0;
 	}
 
-	if (argc == 1 && !strcmp(argv[0], "-t"))
+	if (argc == 2 && !strcmp(argv[1], "-t"))
 		time_flag = 1;
 
 	if (isatty(1))

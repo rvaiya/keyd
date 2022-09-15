@@ -6,7 +6,7 @@
 
 #include "keyd.h"
 
-static int ipc_exec(int type, const char *data, size_t sz)
+static int ipc_exec(int type, const char *data, size_t sz, uint32_t timeout)
 {
 	struct ipc_message msg;
 
@@ -14,6 +14,7 @@ static int ipc_exec(int type, const char *data, size_t sz)
 
 	msg.type = type;
 	msg.sz = sz;
+	msg.timeout = timeout;
 	memcpy(msg.data, data, sz);
 
 	int con = ipc_connect();
@@ -86,7 +87,7 @@ static int add_bindings(int argc, char *argv[])
 	int ret = 0;
 
 	for (i = 0; i < argc; i++) {
-		if (ipc_exec(IPC_BIND, argv[i], strlen(argv[i])))
+		if (ipc_exec(IPC_BIND, argv[i], strlen(argv[i]), 0))
 			ret = -1;
 	}
 
@@ -96,52 +97,70 @@ static int add_bindings(int argc, char *argv[])
 	return ret;
 }
 
-char *read_input(int argc, char *argv[], size_t *psz)
+static void read_input(int argc, char *argv[], char *buf, size_t *psz)
 {
-	static char buf[MAX_IPC_MESSAGE_SIZE];
 	size_t sz = 0;
+	size_t bufsz = *psz;
 
 	if (argc != 0) {
 		int i;
 		for (i = 0; i < argc; i++) {
-			sz += snprintf(buf+sz, sizeof(buf)-sz, "%s%s", argv[i], i == argc-1 ? "" : " ");
+			sz += snprintf(buf+sz, bufsz-sz, "%s%s", argv[i], i == argc-1 ? "" : " ");
 
-			if (sz >= sizeof(buf))
+			if (sz >= bufsz)
 				die("maximum input length exceeded");
 		}
 	} else {
 		while (1) {
 			size_t n;
 
-			if ((n = read(0, buf+sz, sizeof(buf)-sz)) <= 0)
+			if ((n = read(0, buf+sz, bufsz-sz)) <= 0)
 				break;
 			sz += n;
 
-			if (sizeof(buf) == sz)
+			if (bufsz == sz)
 				die("maximum input length exceeded");
 		}
 	}
 
 	*psz = sz;
-	return buf;
 }
 
 static int cmd_do(int argc, char *argv[])
 {
-	size_t sz;
-	char *buf = read_input(argc, argv, &sz);
+	char buf[MAX_IPC_MESSAGE_SIZE];
+	size_t sz = sizeof buf;
+	uint32_t timeout = 0;
 
-	return ipc_exec(IPC_MACRO, buf, sz);
+	if (argc > 2 && !strcmp(argv[1], "-t")) {
+		timeout = atoi(argv[2]);
+		argc -= 2;
+		argv += 2;
+	}
+
+	read_input(argc-1, argv+1, buf, &sz);
+
+	return ipc_exec(IPC_MACRO, buf, sz, timeout);
 }
 
 
 static int input(int argc, char *argv[])
 {
-	size_t sz;
-	char *buf = read_input(argc, argv, &sz);
+	char buf[MAX_IPC_MESSAGE_SIZE];
+	size_t sz = sizeof buf;
+	uint32_t timeout = 0;
 
-	return ipc_exec(IPC_INPUT, buf, sz);
+	if (argc > 2 && !strcmp(argv[1], "-t")) {
+		timeout = atoi(argv[2]);
+		argc -= 2;
+		argv += 2;
+	}
+
+	read_input(argc-1, argv+1, buf, &sz);
+
+	return ipc_exec(IPC_INPUT, buf, sz, timeout);
 }
+
 static int layer_listen(int argc, char *argv[])
 {
 	struct ipc_message msg;
@@ -169,7 +188,7 @@ static int layer_listen(int argc, char *argv[])
 
 static int reload()
 {
-	ipc_exec(IPC_RELOAD, NULL, 0);
+	ipc_exec(IPC_RELOAD, NULL, 0, 0);
 
 	return 0;
 }
@@ -214,7 +233,7 @@ int main(int argc, char *argv[])
 			if (!strcmp(commands[i].name, argv[1]) ||
 				!strcmp(commands[i].flag, argv[1]) ||
 				!strcmp(commands[i].long_flag, argv[1])) {
-				return commands[i].fn(argc - 2, argv + 2);
+				return commands[i].fn(argc - 1, argv + 1);
 			}
 
 		return help(argc, argv);

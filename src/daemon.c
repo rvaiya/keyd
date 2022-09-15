@@ -245,7 +245,7 @@ static void send_fail(int con, const char *fmt, ...)
 	va_end(args);
 }
 
-static int input(char *buf, size_t sz)
+static int input(char *buf, size_t sz, uint32_t timeout)
 {
 	size_t i;
 	uint32_t codepoint;
@@ -302,6 +302,9 @@ static int input(char *buf, size_t sz)
 			}
 		}
 		buf+=csz;
+
+		if (timeout)
+			usleep(timeout);
 	}
 
 	return 0;
@@ -313,19 +316,23 @@ static void handle_client(int con)
 
 	xread(con, &msg, sizeof msg);
 
+	if (msg.sz == sizeof(msg.data)) {
+		send_fail(con, "maximum message size exceeded");
+		return;
+	}
+	msg.data[msg.sz] = 0;
+
+	if (msg.timeout > 1000000) {
+		send_fail(con, "timeout cannot exceed 1000 ms");
+		return;
+	}
+
 	switch (msg.type) {
 		struct config_ent *ent;
 		int success;
 		struct macro macro;
 
 	case IPC_MACRO:
-		if (msg.sz == sizeof(msg.data)) {
-			send_fail(con, "maximum macro size exceeded");
-			return;
-		}
-
-		msg.data[msg.sz] = 0;
-
 		while (msg.sz && msg.data[msg.sz-1] == '\n')
 			msg.data[--msg.sz] = 0;
 
@@ -334,12 +341,12 @@ static void handle_client(int con)
 			return;
 		}
 
-		macro_execute(send_key, &macro, 0);
+		macro_execute(send_key, &macro, msg.timeout);
 		send_success(con);
 
 		break;
 	case IPC_INPUT:
-		if (input(msg.data, msg.sz))
+		if (input(msg.data, msg.sz, msg.timeout))
 			send_fail(con, "%s", errstr);
 		else
 			send_success(con);

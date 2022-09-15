@@ -49,6 +49,17 @@ int utf8_strlen(const char *s)
 	return n;
 }
 
+int is_timeval(const char *s)
+{
+	if (s[0] < '0' || s[0] > '9')
+		return 0;
+
+	while(*s && *s >= '0' && *s <= '9')
+		s++;
+
+	return s[0] == 'm' && s[1] == 's' && (s[2] == 0 || s[2] == '\n');
+}
+
 /*
  * Returns the character size in bytes, or 0 in the case of the empty string.
  */

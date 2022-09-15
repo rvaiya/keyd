@@ -22,11 +22,13 @@ keyd(1)
 *list-keys*
 	List valid key names.
 
-*input [<text> [<text>...]]*
+*input [-t <timeout>] [<text> [<text>...]]*
 	Input the supplied text. If no arguments are given, read the input from STDIN.
+	A timeout in microseconds may optionally be supplied corresponding to the time
+	between emitted events.
 
-*do [<exp>]*
-	Execute the supplied expression. See MACROS for the format of <exp>. If no arguments are given, the expression is read from STDIN.
+*do [-t <timeout>] [<exp>]*
+	Execute the supplied expression. See MACROS for the format of <exp>. If no arguments are given, the expression is read from STDIN. If supplied, <timeout> corresponds to the macro_sequence_timeout.
 
 # OPTIONS
 
