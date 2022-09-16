@@ -161,6 +161,8 @@ static char *read_file(const char *path)
 	}
 
 	fclose(fh);
+
+	buf[sz] = 0;
 	return buf;
 
 fail:
