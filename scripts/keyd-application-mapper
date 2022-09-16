@@ -174,13 +174,31 @@ class XMonitor():
         last_active_class = ""
         last_active_title = ""
 
+        _NET_WM_STATE = self.dpy.intern_atom('_NET_WM_STATE', False)
+        _NET_WM_STATE_ABOVE = self.dpy.intern_atom('_NET_WM_STATE_ABOVE', False)
+
+        def get_floating_window():
+            for w in self.dpy.screen().root.query_tree().children:
+                v = w.get_full_property(_NET_WM_STATE, Xlib.Xatom.ATOM)
+                if v != None and v.value[0] == _NET_WM_STATE_ABOVE:
+                    return w
+
+            return None
+
+        def get_active_window():
+            win = get_floating_window()
+            if win != None:
+                return win
+
+            return self.dpy.get_input_focus().focus
+
         while True:
-            self.dpy.next_event()
+            ev = self.dpy.next_event()
 
             try:
-                win = self.dpy.get_input_focus().focus
+                win = get_active_window()
 
-                if isinstance(win, int):
+                if isinstance(win, int) or win == None:
                     continue
 
                 win.change_attributes(event_mask = Xlib.X.SubstructureNotifyMask|Xlib.X.PropertyChangeMask)
