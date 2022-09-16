@@ -86,7 +86,7 @@ static int add_bindings(int argc, char *argv[])
 	int i;
 	int ret = 0;
 
-	for (i = 0; i < argc; i++) {
+	for (i = 1; i < argc; i++) {
 		if (ipc_exec(IPC_BIND, argv[i], strlen(argv[i]), 0))
 			ret = -1;
 	}
