@@ -59,7 +59,8 @@ Will remap _A-1_ to the the string 'Inside st' when a window with a class
 that begins with 'st-' (e.g st-256color) is active. 
 
 Window class and title names can be obtained by inspecting the log output while the
-daemon is running (e.g _tail\ -f\ ~/.config/keyd/app.log_).
+daemon is running (e.g _tail\ -f\ ~/.config/keyd/app.log_). A reload may be triggered
+by sending the script a USR1 signal.
 
 At the moment X, Sway and Gnome are supported.
 

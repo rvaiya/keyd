@@ -7,6 +7,7 @@ import shutil
 import re
 import sys
 import fcntl
+import signal
 from fnmatch import fnmatch
 
 # Good enough for now :/.
@@ -22,6 +23,7 @@ CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
+force_reload = False
 
 debug_flag = os.getenv('KEYD_DEBUG')
 def dbg(s):
@@ -88,6 +90,8 @@ class SwayMonitor():
     def run(self):
         import json
         import subprocess
+        global force_reload
+
         last_cls = ''
         last_title = ''
 
@@ -101,6 +105,10 @@ class SwayMonitor():
 
         for ev in swayproc.stdout:
             data = json.loads(ev)
+
+            if force_reload:
+                force_reload = False
+                self.on_window_change(last_cls, last_title)
 
             title = ''
             cls = ''
@@ -170,6 +178,7 @@ class XMonitor():
 
     def run(self):
         import Xlib
+        global force_reload
 
         last_active_class = ""
         last_active_title = ""
@@ -194,6 +203,10 @@ class XMonitor():
 
         while True:
             ev = self.dpy.next_event()
+
+            if force_reload:
+                force_reload = False
+                self.on_window_change(last_active_class, last_active_title)
 
             try:
                 win = get_active_window()
@@ -398,10 +411,15 @@ def on_window_change(cls, title):
     subprocess.run(['keyd', 'bind', 'reset', *bindings])
 
 
+def handle_usr1(sig, _):
+    global force_reload
+    force_reload = True
+
 mon = get_monitor(on_window_change)
 mon.init()
 
 if args.daemonize:
     daemonize()
 
+signal.signal(signal.SIGUSR1, handle_usr1)
 mon.run()
