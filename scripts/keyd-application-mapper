@@ -24,8 +24,6 @@ CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
-force_reload = False
-
 debug_flag = os.getenv('KEYD_DEBUG')
 
 def dbg(s):
@@ -109,7 +107,6 @@ class SwayMonitor():
     def run(self):
         import json
         import subprocess
-        global force_reload
 
         last_cls = ''
         last_title = ''
@@ -197,7 +194,6 @@ class XMonitor():
 
     def run(self):
         import Xlib
-        global force_reload
 
         last_active_class = ""
         last_active_title = ""
@@ -208,15 +204,21 @@ class XMonitor():
         _NET_WM_WINDOW_TYPE = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE', False)
 
         def get_floating_window():
-            for w in self.dpy.screen().root.query_tree().children:
+            q = [self.dpy.screen().root]
+            while q:
+                w = q.pop()
+                q.extend(w.query_tree().children)
+
                 v = w.get_full_property(_NET_WM_STATE, Xlib.Xatom.ATOM)
-                if v != None and v.value[0] == _NET_WM_STATE_ABOVE:
-                    return w
+
+                if v and v.value and v.value[0] == _NET_WM_STATE_ABOVE:
                     types = w.get_full_property(_NET_WM_WINDOW_TYPE, Xlib.Xatom.ATOM)
 
                     # Ignore persistent notification windows like dunst
                     if not types or _NET_WM_WINDOW_TYPE_NOTIFICATION not in types.value:
                         return w
+
+            return None
 
         def get_active_window():
             win = get_floating_window()
