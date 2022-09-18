@@ -2,6 +2,7 @@
 
 import subprocess
 import argparse
+import select
 import os
 import shutil
 import re
@@ -26,6 +27,7 @@ LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 force_reload = False
 
 debug_flag = os.getenv('KEYD_DEBUG')
+
 def dbg(s):
     if debug_flag:
         print(s)
@@ -78,6 +80,23 @@ def parse_config(path):
 
     return config
 
+def new_interruptible_generator(monfd, genfn):
+    intr, intw = os.pipe()
+
+    def handler(s, _):
+        os.write(intw, b'i')
+
+    signal.signal(signal.SIGUSR1, handler)
+
+    while True:
+        r,_,_ = select.select([monfd, intr], [], [])
+
+        if intr in r:
+            os.read(intr, 1)
+            yield None
+        if monfd in r:
+            yield genfn()
+
 class SwayMonitor():
     def __init__(self, on_window_change):
         assert_env('SWAYSOCK')
@@ -103,12 +122,12 @@ class SwayMonitor():
                 '--raw',
                 '["window"]'], stdout=subprocess.PIPE)
 
-        for ev in swayproc.stdout:
-            data = json.loads(ev)
-
-            if force_reload:
-                force_reload = False
+        for line in new_interruptible_generator(swayproc.stdout.fileno(), swayproc.stdout.readline):
+            if line == None:
                 self.on_window_change(last_cls, last_title)
+                continue
+
+            data = json.loads(line)
 
             title = ''
             cls = ''
@@ -185,14 +204,19 @@ class XMonitor():
 
         _NET_WM_STATE = self.dpy.intern_atom('_NET_WM_STATE', False)
         _NET_WM_STATE_ABOVE = self.dpy.intern_atom('_NET_WM_STATE_ABOVE', False)
+        _NET_WM_WINDOW_TYPE_NOTIFICATION = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE_NOTIFICATION', False)
+        _NET_WM_WINDOW_TYPE = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE', False)
 
         def get_floating_window():
             for w in self.dpy.screen().root.query_tree().children:
                 v = w.get_full_property(_NET_WM_STATE, Xlib.Xatom.ATOM)
                 if v != None and v.value[0] == _NET_WM_STATE_ABOVE:
                     return w
+                    types = w.get_full_property(_NET_WM_WINDOW_TYPE, Xlib.Xatom.ATOM)
 
-            return None
+                    # Ignore persistent notification windows like dunst
+                    if not types or _NET_WM_WINDOW_TYPE_NOTIFICATION not in types.value:
+                        return w
 
         def get_active_window():
             win = get_floating_window()
@@ -201,30 +225,28 @@ class XMonitor():
 
             return self.dpy.get_input_focus().focus
 
-        while True:
-            ev = self.dpy.next_event()
-
-            if force_reload:
-                force_reload = False
+        for ev in new_interruptible_generator(self.dpy.fileno(), self.dpy.next_event):
+            if ev == None:
                 self.on_window_change(last_active_class, last_active_title)
+            else:
+                try:
+                    win = get_active_window()
 
-            try:
-                win = get_active_window()
+                    if isinstance(win, int) or win == None:
+                        continue
 
-                if isinstance(win, int) or win == None:
-                    continue
+                    win.change_attributes(event_mask = Xlib.X.SubstructureNotifyMask|Xlib.X.PropertyChangeMask)
 
-                win.change_attributes(event_mask = Xlib.X.SubstructureNotifyMask|Xlib.X.PropertyChangeMask)
+                    cls, title = self.get_window_info(win)
 
-                cls, title = self.get_window_info(win)
+                    if cls != last_active_class or title != last_active_title:
+                        last_active_class = cls
+                        last_active_title = title
 
-                if cls != last_active_class or title != last_active_title:
-                    last_active_class = cls
-                    last_active_title = title
+                        self.on_window_change(cls, title)
+                except:
+                    pass
 
-                    self.on_window_change(cls, title)
-            except:
-                pass
 
 # :(
 class GnomeMonitor():
@@ -319,8 +341,18 @@ class GnomeMonitor():
             exit(0)
 
     def run(self):
-        for line in open(self.fifo_path):
+        fh = open(self.fifo_path)
+        last_cls = ''
+        last_title = ''
+
+        for line in new_interruptible_generator(fh.fileno(), fh.readline):
+            if line == None:
+                self.on_window_change(last_cls, last_title)
+                continue
+
             (cls, title) = line.strip('\n').split('\t')
+            last_cls = cls
+            last_title = title
 
             self.on_window_change(cls, title)
 
@@ -408,12 +440,8 @@ def on_window_change(cls, title):
         print(f'Active window: {cls}|{title}')
 
     bindings = lookup_bindings(cls, title)
-    subprocess.run(['keyd', 'bind', 'reset', *bindings])
+    subprocess.run(['keyd', 'bind', 'reset', *bindings], stdout=subprocess.DEVNULL)
 
-
-def handle_usr1(sig, _):
-    global force_reload
-    force_reload = True
 
 mon = get_monitor(on_window_change)
 mon.init()
@@ -421,5 +449,4 @@ mon.init()
 if args.daemonize:
     daemonize()
 
-signal.signal(signal.SIGUSR1, handle_usr1)
 mon.run()
