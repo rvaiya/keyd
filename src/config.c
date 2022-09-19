@@ -49,6 +49,7 @@ static struct {
 	{ "oneshot", 	NULL,	OP_ONESHOT,	{ ARG_LAYER } },
 	{ "toggle", 	NULL,	OP_TOGGLE,	{ ARG_LAYER } },
 
+	{ "clearm", 	NULL,	OP_CLEARM,	{ ARG_MACRO } },
 	{ "swapm", 	NULL,	OP_SWAPM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "togglem", 	NULL,	OP_TOGGLEM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "layerm", 	NULL,	OP_LAYERM,	{ ARG_LAYER, ARG_MACRO } },

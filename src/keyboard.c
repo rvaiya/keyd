@@ -435,6 +435,13 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_CLEARM:
+		if(pressed) {
+			clear(kbd);
+			macro = &kbd->config.macros[d->args[0].idx];
+			execute_macro(kbd, dl, macro);
+		}
+		break;
 	case OP_CLEAR:
 		if(pressed)
 			clear(kbd);
