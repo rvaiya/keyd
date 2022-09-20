@@ -19,6 +19,9 @@ keyd(1)
 *bind <binding> [<binding>...]*
 	Apply the supplied bindings. See _Bindings_ for details.
 
+*reload*
+	Reload config files.
+
 *list-keys*
 	List valid key names.
 
@@ -601,6 +604,9 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *togglem(<layer>, <macro>)*
 	Equivalent to *toggle*, but additionally executes the supplied macro before
 	toggling the layer.
+
+*clearm(<macro>)*
+	Identical to *clear*, but executes the supplies macro before clearing layers.
 
 ## Key overloading
 
