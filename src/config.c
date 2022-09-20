@@ -92,7 +92,7 @@ static const char *resolve_include_path(const char *path, const char *include_pa
 	if (!access(resolved_path, F_OK))
 		return resolved_path;
 
-	snprintf(resolved_path, sizeof resolved_path, "/usr/share/keyd/%s", include_path);
+	snprintf(resolved_path, sizeof resolved_path, DATA_DIR"/%s", include_path);
 
 	if (!access(resolved_path, F_OK))
 		return resolved_path;

@@ -1,10 +1,8 @@
 .PHONY: all clean install uninstall debug man compose test-harness
-DESTDIR=
-PREFIX=/usr
-
 VERSION=2.4.2
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
+PREFIX=/usr
 
 CONFIG_DIR=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
@@ -18,6 +16,7 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-std=c11 \
 	-DSOCKET_PATH=\"$(SOCKET_PATH)\" \
 	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
+	-DDATA_DIR=\"$(PREFIX)/share/keyd\" \
 	-D_DEFAULT_SOURCE \
 	$(CFLAGS)
 
