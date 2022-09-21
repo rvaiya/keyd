@@ -5,6 +5,9 @@
 static int aux_fds[MAX_AUX_FDS];
 static size_t nr_aux_fds = 0;
 
+struct device device_table[MAX_DEVICES];
+size_t device_table_sz;
+
 static void panic_check(uint8_t code, uint8_t pressed)
 {
 	static uint8_t enter, backspace, escape;
@@ -37,18 +40,16 @@ int evloop(int (*event_handler) (struct event *ev))
 	int timeout = 0;
 	int monfd;
 
-	struct device devs[MAX_DEVICES];
 	struct pollfd pfds[MAX_DEVICES+MAX_AUX_FDS+1];
-	size_t ndevs;
 
 	struct event ev;
 
 	monfd = devmon_create();
-	ndevs = device_scan(devs);
+	device_table_sz = device_scan(device_table);
 
-	for (i = 0; i < ndevs; i++) {
+	for (i = 0; i < device_table_sz; i++) {
 		ev.type = EV_DEV_ADD;
-		ev.dev = &devs[i];
+		ev.dev = &device_table[i];
 
 		event_handler(&ev);
 	}
@@ -62,18 +63,18 @@ int evloop(int (*event_handler) (struct event *ev))
 		pfds[0].fd = monfd;
 		pfds[0].events = POLLIN;
 
-		for (i = 0; i < ndevs; i++) {
-			pfds[i+1].fd = devs[i].fd;
+		for (i = 0; i < device_table_sz; i++) {
+			pfds[i+1].fd = device_table[i].fd;
 			pfds[i+1].events = POLLIN | POLLERR;
 		}
 
 		for (i = 0; i < nr_aux_fds; i++) {
-			pfds[i+ndevs+1].fd = aux_fds[i];
-			pfds[i+ndevs+1].events = POLLIN | POLLERR;
+			pfds[i+device_table_sz+1].fd = aux_fds[i];
+			pfds[i+device_table_sz+1].events = POLLIN | POLLERR;
 		}
 
 		start_time = get_time_ms();
-		poll(pfds, ndevs+nr_aux_fds+1, timeout > 0 ? timeout : -1);
+		poll(pfds, device_table_sz+nr_aux_fds+1, timeout > 0 ? timeout : -1);
 		ev.timestamp = get_time_ms();
 		elapsed = ev.timestamp - start_time;
 
@@ -84,18 +85,18 @@ int evloop(int (*event_handler) (struct event *ev))
 			timeout -= elapsed;
 		}
 
-		for (i = 0; i < ndevs; i++) {
+		for (i = 0; i < device_table_sz; i++) {
 			if (pfds[i+1].revents) {
 				struct device_event *devev;
 
-				while ((devev = device_read_event(&devs[i]))) {
+				while ((devev = device_read_event(&device_table[i]))) {
 					if (devev->type == DEV_REMOVED) {
 						ev.type = EV_DEV_REMOVE;
-						ev.dev = &devs[i];
+						ev.dev = &device_table[i];
 
 						timeout = event_handler(&ev);
 
-						devs[i].fd = -1;
+						device_table[i].fd = -1;
 						removed = 1;
 						break;
 					} else {
@@ -104,7 +105,7 @@ int evloop(int (*event_handler) (struct event *ev))
 
 						ev.type = EV_DEV_EVENT;
 						ev.devev = devev;
-						ev.dev = &devs[i];
+						ev.dev = &device_table[i];
 
 						timeout = event_handler(&ev);
 					}
@@ -113,7 +114,7 @@ int evloop(int (*event_handler) (struct event *ev))
 		}
 
 		for (i = 0; i < nr_aux_fds; i++) {
-			short events = pfds[i+ndevs+1].revents;
+			short events = pfds[i+device_table_sz+1].revents;
 
 			if (events) {
 				ev.type = events & POLLERR ? EV_FD_ERR : EV_FD_ACTIVITY;
@@ -128,11 +129,11 @@ int evloop(int (*event_handler) (struct event *ev))
 			struct device dev;
 
 			while (devmon_read_device(monfd, &dev) == 0) {
-				assert(ndevs < MAX_DEVICES);
-				devs[ndevs++] = dev;
+				assert(device_table_sz < MAX_DEVICES);
+				device_table[device_table_sz++] = dev;
 
 				ev.type = EV_DEV_ADD;
-				ev.dev = &devs[ndevs-1];
+				ev.dev = &device_table[device_table_sz-1];
 
 				timeout = event_handler(&ev);
 			}
@@ -140,11 +141,11 @@ int evloop(int (*event_handler) (struct event *ev))
 
 		if (removed) {
 			size_t n = 0;
-			for (i = 0; i < ndevs; i++) {
-				if (devs[i].fd != -1)
-					devs[n++] = devs[i];
+			for (i = 0; i < device_table_sz; i++) {
+				if (device_table[i].fd != -1)
+					device_table[n++] = device_table[i];
 			}
-			ndevs = n;
+			device_table_sz = n;
 		}
 
 	}

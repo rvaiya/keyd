@@ -12,9 +12,6 @@ static int ipcfd = -1;
 static struct vkbd *vkbd = NULL;
 static struct config_ent *configs;
 
-static struct device *devices[MAX_DEVICES];
-static size_t nr_devices;
-
 static uint8_t keystate[256];
 
 static int listeners[32];
@@ -90,9 +87,9 @@ static void layer_observer(struct keyboard *kbd, const char *name, int state)
 	size_t n = 0;
 
 	if (kbd->config.layer_indicator) {
-		for (i = 0; i < nr_devices; i++)
-			if (devices[i]->data == kbd)
-				device_set_led(devices[i], 1, state);
+		for (i = 0; i < device_table_sz; i++)
+			if (device_table[i].data == kbd)
+				device_set_led(&device_table[i], 1, state);
 	}
 
 	if (!nr_listeners)
@@ -212,8 +209,8 @@ static void reload()
 	free_configs();
 	load_configs();
 
-	for (i = 0; i < nr_devices; i++)
-		manage_device(devices[i]);
+	for (i = 0; i < device_table_sz; i++)
+		manage_device(&device_table[i]);
 
 	clear_vkbd();
 }
@@ -386,31 +383,6 @@ static void handle_client(int con)
 	}
 }
 
-static void remove_device(struct device *dev)
-{
-	size_t i;
-	size_t n = 0;
-
-	for (i = 0; i < nr_devices; i++)
-		if (devices[i] != dev)
-			devices[n++] = devices[i];
-	
-	printf("DEVICE: \033[31;1mremoved\033[0m\t%04hx:%04hx %s\n",
-		dev->vendor_id,
-		dev->product_id,
-		dev->name);
-
-	nr_devices = n;
-}
-
-static void add_device(struct device *dev)
-{
-	assert(nr_devices < MAX_DEVICES);
-	devices[nr_devices++] = dev;
-
-	manage_device(dev);
-}
-
 static int event_handler(struct event *ev)
 {
 	static int last_time = 0;
@@ -478,10 +450,13 @@ static int event_handler(struct event *ev)
 		break;
 	case EV_DEV_ADD:
 		if (strcmp(ev->dev->name, VKBD_NAME))
-			add_device(ev->dev);
+			manage_device(ev->dev);
 		break;
 	case EV_DEV_REMOVE:
-		remove_device(ev->dev);
+		printf("DEVICE: \033[31;1mremoved\033[0m\t%04hx:%04hx %s\n",
+			ev->dev->vendor_id,
+			ev->dev->product_id,
+			ev->dev->name);
 		break;
 	case EV_FD_ACTIVITY:
 		if (ev->fd == ipcfd) {

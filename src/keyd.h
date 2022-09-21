@@ -96,4 +96,7 @@ void xread(int fd, void *buf, size_t sz);
 int ipc_create_server();
 int ipc_connect();
 
+extern struct device device_table[MAX_DEVICES];
+extern size_t device_table_sz;
+
 #endif
