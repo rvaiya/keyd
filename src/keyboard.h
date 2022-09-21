@@ -50,8 +50,27 @@ struct keyboard {
 
 	long macro_repeat_timeout;
 
-	long timeouts[32];
+	long timeouts[64];
 	size_t nr_timeouts; 
+
+	struct {
+		struct key_event queue[32];
+		size_t queue_sz;
+
+		struct descriptor match;
+		int match_layer;
+		size_t match_sz;
+
+		uint8_t start_code;
+		long last_code_time;
+
+		enum {
+			CHORD_RESOLVING,
+			CHORD_INACTIVE,
+			CHORD_PENDING_DISAMBIGUATION,
+			CHORD_PENDING_HOLD_TIMEOUT,
+		} state;
+	} chord;
 
 	struct {
 		uint8_t code;

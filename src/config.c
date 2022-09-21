@@ -190,34 +190,101 @@ static uint8_t lookup_keycode(const char *name)
 	return 0;
 }
 
+static struct descriptor *layer_lookup_chord(struct layer *layer, uint8_t *keys, size_t n)
+{
+	size_t i;
+
+	for (i = 0; i < layer->nr_chords; i++) {
+		size_t j;
+		size_t nm = 0;
+		struct chord *chord = &layer->chords[i];
+
+		for (j = 0; j < n; j++) {
+			size_t k;
+			for (k = 0; k < chord->sz; k++)
+				if (keys[j] == chord->keys[k]) {
+					nm++;
+					break;
+				}
+		}
+
+		if (nm == n)
+			return &chord->d;
+	}
+
+	return NULL;
+}
+
 /*
  * Consumes a string of the form `[<layer>.]<key> = <descriptor>` and adds the
  * mapping to the corresponding layer in the config.
  */
 
-static int set_layer_entry(const struct config *config, struct layer *layer,
-	const char *key, const struct descriptor *d)
+static int set_layer_entry(const struct config *config,
+			   struct layer *layer, char *key,
+			   const struct descriptor *d)
 {
 	size_t i;
 	int found = 0;
 
-	for (i = 0; i < 256; i++) {
-		if (!strcmp(config->aliases[i], key)) {
-			layer->keymap[i] = *d;
-			found = 1;
+	if (strchr(key, '+')) {
+		//TODO: Handle aliases
+		char *tok;
+		struct descriptor *ld;
+		uint8_t keys[ARRAY_SIZE(layer->chords[0].keys)];
+		size_t n = 0;
+
+		for (tok = strtok(key, "+"); tok; tok = strtok(NULL, "+")) {
+			uint8_t code = lookup_keycode(tok);
+			if (!code) {
+				err("%s is not a valid key", tok);
+				return -1;
+			}
+
+			if (n >= ARRAY_SIZE(keys)) {
+				err("chords cannot contain more than %ld keys", n);
+				return -1;
+			}
+
+			keys[n++] = code;
 		}
-	}
 
-	if (!found) {
-		uint8_t code;
 
-		if (!(code = lookup_keycode(key))) {
-			err("%s is not a valid key or alias", key);
-			return -1;
+		if ((ld = layer_lookup_chord(layer, keys, n))) {
+			*ld = *d;
+		} else {
+			struct chord *chord;
+			if (layer->nr_chords >= ARRAY_SIZE(layer->chords)) {
+				err("max chords exceeded(%ld)", layer->nr_chords);
+				return -1;
+			}
+
+			chord = &layer->chords[layer->nr_chords];
+			memcpy(chord->keys, keys, sizeof keys);
+			chord->sz = n;
+			chord->d = *d;
+
+			layer->nr_chords++;
+		}
+	} else {
+		for (i = 0; i < 256; i++) {
+			if (!strcmp(config->aliases[i], key)) {
+				layer->keymap[i] = *d;
+				found = 1;
+			}
 		}
 
-		layer->keymap[code] = *d;
+		if (!found) {
+			uint8_t code;
 
+			if (!(code = lookup_keycode(key))) {
+				err("%s is not a valid key or alias", key);
+				return -1;
+			}
+
+			layer->keymap[code] = *d;
+
+		}
 	}
 
 	return 0;
@@ -233,6 +300,8 @@ static int new_layer(char *s, const struct config *config, struct layer *layer)
 	type = strtok(NULL, ":");
 
 	strcpy(layer->name, name);
+
+	layer->nr_chords = 0;
 
 	if (strchr(name, '+')) {
 		char *layername;
@@ -348,6 +417,9 @@ static void config_init(struct config *config)
 	}
 
 	/* In ms */
+	config->chord_interkey_timeout = 50;
+	config->chord_hold_timeout = 0;
+
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;
 
@@ -658,6 +730,10 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->macro_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_sequence_timeout"))
 			config->macro_sequence_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "chord_hold_timeout"))
+			config->chord_hold_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "chord_timeout"))
+			config->chord_interkey_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "default_layout"))
 			snprintf(config->default_layout, sizeof config->default_layout,
 				 "%s", ent->val);

@@ -350,6 +350,24 @@ b = c
 ```
 
 
+## Chording
+
+_Chords_ are groups of keys which are treated as a unit when simultaneously
+depressed. A chord can be defined by using a group of + delimited key names as
+a left hand value. The corresponding action will be activated if all keys are
+struck within the chording interval (_chord_timeout_).
+
+E.g
+
+```
+j+k = esc
+```
+
+will cause _esc_ to be produced if both _j_ and _k_ are simultaneously depressed.
+
+Note: It may be desirable to change the default chording interval (50ms) to
+account for the physical characteristics of your keyboard.
+
 ## Unicode Support
 
 If keyd encounters a valid UTF8 sequence as a right hand value, it will try and
@@ -515,6 +533,12 @@ any of the following options:
 	*macro_sequence_timeout:* If set, this will add a timeout (*in
 	microseconds*) between each emitted key in a macro sequence. This is
 	useful to avoid overflowing the input buffer on some systems.
+
+	*chord_timeout:* The maximum time between successive keys
+	interpreted as part of a chord. (default: 50)
+
+	*chord_hold_timeout:* The length of time a chord
+	must be held before being activated. (default: 0)
 
 	(default: 0)
 

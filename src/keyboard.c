@@ -258,6 +258,100 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 1);
 }
 
+/* Returns:
+ *  0 on no match
+ *  1 on partial match
+ *  2 on exact match
+ */
+static int chord_event_match(struct chord *chord, struct key_event *events, size_t nevents)
+{
+	size_t i, j;
+	size_t n = 0;
+	size_t npressed = 0;
+
+	if (!nevents)
+		return 0;
+
+	for (i = 0; i < nevents; i++)
+		if (events[i].pressed) {
+			int found = 0;
+
+			npressed++;
+			for (j = 0; j < chord->sz; j++)
+				if (chord->keys[j] == events[i].code)
+					found = 1;
+
+			if (!found)
+				return 0;
+			else
+				n++;
+		}
+
+	if (npressed == 0)
+		return 0;
+	else
+		return n == chord->sz ? 2 : 1;
+}
+
+static void enqueue_chord_event(struct keyboard *kbd, uint8_t code, uint8_t pressed, long time)
+{
+	if (!code)
+		return;
+
+	assert(kbd->chord.queue_sz < ARRAY_SIZE(kbd->chord.queue));
+
+	kbd->chord.queue[kbd->chord.queue_sz].code = code;
+	kbd->chord.queue[kbd->chord.queue_sz].pressed = pressed;
+	kbd->chord.queue[kbd->chord.queue_sz].timestamp = time;
+
+	kbd->chord.queue_sz++;
+}
+
+/* Returns:
+ *  0 in the case of no match
+ *  1 in the case of a partial match
+ *  2 in the case of an unambiguous match (populating d and dl)
+ *  3 in the case of an ambiguous match (populating d and dl)
+ */
+static int check_chord_match(struct keyboard *kbd, struct descriptor *d, int *dl)
+{
+	size_t idx;
+	int full_match = 0;
+	int partial_match = 0;
+	long maxts = -1;
+
+	for (idx = 0; idx < kbd->config.nr_layers; idx++) {
+		size_t i;
+		struct layer *layer = &kbd->config.layers[idx];
+
+		if (!kbd->layer_state[idx].active)
+			continue;
+
+		for (i = 0; i < layer->nr_chords; i++) {
+			int ret = chord_event_match(&layer->chords[i],
+						    kbd->chord.queue,
+						    kbd->chord.queue_sz);
+
+			if (ret == 2 &&
+				maxts <= kbd->layer_state[idx].activation_time) {
+				*d = layer->chords[i].d;
+				*dl = idx;
+				full_match = 1;
+				maxts = kbd->layer_state[idx].activation_time;
+			} else if (ret == 1) {
+				partial_match = 1;
+			}
+		}
+	}
+
+	if (full_match)
+		return partial_match ? 3 : 2;
+	else if (partial_match)
+		return 1;
+	else
+		return 0;
+}
+
 static void execute_command(const char *cmd)
 {
 	int fd;
@@ -346,7 +440,7 @@ static void schedule_timeout(struct keyboard *kbd, long timeout)
 	kbd->timeouts[kbd->nr_timeouts++] = timeout;
 }
 
-static long calculate_main_loop_timeout(struct keyboard *kbd, long time) 
+static long calculate_main_loop_timeout(struct keyboard *kbd, long time)
 {
 	size_t i;
 	long timeout = 0;
@@ -365,7 +459,7 @@ static long calculate_main_loop_timeout(struct keyboard *kbd, long time)
 }
 
 static long process_descriptor(struct keyboard *kbd, uint8_t code,
-			       struct descriptor *d, int dl,
+			       const struct descriptor *d, int dl,
 			       int pressed, long time)
 {
 	int timeout = 0;
@@ -421,7 +515,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			struct descriptor *action = &kbd->config.descriptors[d->args[1].idx];
 
 			kbd->pending_key.code = code;
-			kbd->pending_key.behaviour = 
+			kbd->pending_key.behaviour =
 				d->op == OP_OVERLOAD_TIMEOUT_TAP ?
 					PK_UNINTERRUPTIBLE_TAP_ACTION2 :
 					PK_UNINTERRUPTIBLE;
@@ -647,10 +741,150 @@ struct keyboard *new_keyboard(struct config *config,
 				kbd->config.default_layout);
 	}
 
+	kbd->chord.queue_sz = 0;
+	kbd->chord.state = CHORD_INACTIVE;
 	kbd->output = sink;
 	kbd->layer_observer = layer_observer;
 
 	return kbd;
+}
+
+static int resolve_chord(struct keyboard *kbd)
+{
+	if (kbd->chord.match_sz != 0) {
+		process_descriptor(kbd,
+				   kbd->chord.start_code,
+				   &kbd->chord.match,
+				   kbd->chord.match_layer, 1, kbd->chord.last_code_time);
+		cache_set(kbd,
+			  kbd->chord.start_code,
+			  &kbd->chord.match, kbd->chord.match_layer);
+	}
+
+	kbd->chord.state = CHORD_RESOLVING;
+	kbd_process_events(kbd,
+			   kbd->chord.queue + kbd->chord.match_sz,
+			   kbd->chord.queue_sz - kbd->chord.match_sz);
+	kbd->chord.state = CHORD_INACTIVE;
+	return 1;
+}
+
+static int abort_chord(struct keyboard *kbd)
+{
+	kbd->chord.match_sz = 0;
+	return resolve_chord(kbd);
+}
+
+static int handle_chord(struct keyboard *kbd,
+			uint8_t code, int pressed, long time)
+{
+	const long interkey_timeout = kbd->config.chord_interkey_timeout;
+	const long hold_timeout = kbd->config.chord_hold_timeout;
+
+	switch (kbd->chord.state) {
+	case CHORD_RESOLVING:
+		return 0;
+	case CHORD_INACTIVE:
+		kbd->chord.queue_sz = 0;
+		kbd->chord.match_sz = 0;
+		kbd->chord.start_code = code;
+
+		enqueue_chord_event(kbd, code, pressed, time);
+		switch (check_chord_match(kbd, &kbd->chord.match, &kbd->chord.match_layer)) {
+			case 0:
+				return 0;
+			case 3:
+				kbd->chord.match_sz = kbd->chord.queue_sz;
+			case 1:
+				kbd->chord.state = CHORD_PENDING_DISAMBIGUATION;
+				kbd->chord.last_code_time = time;
+				schedule_timeout(kbd, time + interkey_timeout);
+				return 1;
+			default:
+			case 2:
+				kbd->chord.match_sz = kbd->chord.queue_sz;
+
+				kbd->chord.last_code_time = time;
+				if (hold_timeout) {
+					kbd->chord.state = CHORD_PENDING_HOLD_TIMEOUT;
+					schedule_timeout(kbd, time + hold_timeout);
+				} else {
+					return resolve_chord(kbd);
+				}
+				return 1;
+		}
+	case CHORD_PENDING_DISAMBIGUATION:
+		if (!code) {
+			if ((time - kbd->chord.last_code_time) >= interkey_timeout) {
+				if (kbd->chord.match_sz) {
+					long timeleft = hold_timeout - interkey_timeout;
+					if (timeleft > 0) {
+						schedule_timeout(kbd, time + timeleft);
+						kbd->chord.state = CHORD_PENDING_HOLD_TIMEOUT;
+					} else {
+						return resolve_chord(kbd);
+					}
+				} else {
+					return abort_chord(kbd);
+				}
+
+				return 1;
+			}
+
+			return 0;
+		}
+
+		enqueue_chord_event(kbd, code, pressed, time);
+
+		if (!pressed)
+			return abort_chord(kbd);
+
+		switch (check_chord_match(kbd, &kbd->chord.match, &kbd->chord.match_layer)) {
+			case 0:
+				return abort_chord(kbd);
+			case 3:
+				kbd->chord.match_sz = kbd->chord.queue_sz;
+			case 1:
+				kbd->chord.last_code_time = time;
+
+				kbd->chord.state = CHORD_PENDING_DISAMBIGUATION;
+				schedule_timeout(kbd, time + interkey_timeout);
+				return 1;
+			default:
+			case 2:
+				kbd->chord.last_code_time = time;
+
+				kbd->chord.match_sz = kbd->chord.queue_sz;
+				if (hold_timeout) {
+					kbd->chord.state = CHORD_PENDING_HOLD_TIMEOUT;
+					schedule_timeout(kbd, time + hold_timeout);
+				} else {
+					return resolve_chord(kbd);
+				}
+				return 1;
+		}
+	case CHORD_PENDING_HOLD_TIMEOUT:
+		if (!code) {
+			if ((time - kbd->chord.last_code_time) >= hold_timeout)
+				return resolve_chord(kbd);
+
+			return 0;
+		}
+
+		enqueue_chord_event(kbd, code, pressed, time);
+
+		if (!pressed) {
+			size_t i;
+
+			for (i = 0; i < kbd->chord.match_sz; i++)
+				if (kbd->chord.queue[i].code == code)
+					return abort_chord(kbd);
+		}
+
+		return 1;
+	}
+
+	return 0;
 }
 
 /*
@@ -724,6 +958,9 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 		goto exit;
 	}
 
+	if (handle_chord(kbd, code, pressed, time))
+		goto exit;
+
 	if (kbd->active_macro) {
 		if (code) {
 			kbd->active_macro = NULL;
@@ -732,7 +969,7 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
 			schedule_timeout(kbd, time+kbd->macro_repeat_timeout);
 		}
-	} 
+	}
 
 	if (code) {
 		if (pressed) {
@@ -774,14 +1011,14 @@ long kbd_process_events(struct keyboard *kbd, const struct key_event *events, si
 	while (i != n) {
 		const struct key_event *ev = &events[i];
 
-		if (timeout > 0 && timeout_ts < ev->timestamp) {
+		if (timeout > 0 && timeout_ts <= ev->timestamp) {
 			timeout = process_event(kbd, 0, 0, timeout_ts);
+			timeout_ts = timeout_ts + timeout;
 		} else {
 			timeout = process_event(kbd, ev->code, ev->pressed, ev->timestamp);
+			timeout_ts = ev->timestamp + timeout;
 			i++;
 		}
-
-		timeout_ts = ev->timestamp + timeout;
 	}
 
 	return timeout;

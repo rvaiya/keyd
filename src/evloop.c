@@ -80,6 +80,8 @@ int evloop(int (*event_handler) (struct event *ev))
 
 		if (timeout > 0 && elapsed >= timeout) {
 			ev.type = EV_TIMEOUT;
+			ev.dev = NULL;
+			ev.devev = NULL;
 			timeout = event_handler(&ev);
 		} else {
 			timeout -= elapsed;

@@ -60,6 +60,13 @@ struct descriptor {
 	union descriptor_arg args[MAX_DESCRIPTOR_ARGS];
 };
 
+struct chord {
+	uint8_t keys[8];
+	size_t sz;
+
+	struct descriptor d;
+};
+
 /*
  * A layer is a map from keycodes to descriptors. It may optionally
  * contain one or more modifiers which are applied to the base layout in
@@ -79,6 +86,9 @@ struct layer {
 
 	uint8_t mods;
 	struct descriptor keymap[256];
+
+	struct chord chords[32];
+	size_t nr_chords;
 
 	/* Used for composite layers. */
 	size_t nr_constituents;
@@ -113,6 +123,9 @@ struct config {
 	long macro_timeout;
 	long macro_sequence_timeout;
 	long macro_repeat_timeout;
+
+	long chord_interkey_timeout;
+	long chord_hold_timeout;
 
 	uint8_t layer_indicator;
 	char default_layout[MAX_LAYER_NAME_LEN];
