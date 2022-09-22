@@ -175,10 +175,14 @@ static int lookup_config_ent(uint32_t id, struct config_ent **match)
 
 static void manage_device(struct device *dev)
 {
+	int match;
 	uint32_t id = dev->vendor_id << 16 | dev->product_id;
 	struct config_ent *ent = NULL;
 
-	int match = lookup_config_ent(id, &ent);
+	if (!strcmp(dev->name, VKBD_NAME))
+		return;
+
+	match = lookup_config_ent(id, &ent);
 
 	if ((match && dev->capabilities & CAP_KEYBOARD) ||
 	    (match == 2 && dev->capabilities & (CAP_MOUSE | CAP_MOUSE_ABS))) {
@@ -449,8 +453,7 @@ static int event_handler(struct event *ev)
 
 		break;
 	case EV_DEV_ADD:
-		if (strcmp(ev->dev->name, VKBD_NAME))
-			manage_device(ev->dev);
+		manage_device(ev->dev);
 		break;
 	case EV_DEV_REMOVE:
 		printf("DEVICE: \033[31;1mremoved\033[0m\t%04hx:%04hx %s\n",
