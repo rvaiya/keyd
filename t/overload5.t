@@ -7,10 +7,6 @@ x down
 x up
 7 up
 
-meta down
-control down
-meta up
-control up
 control down
 x down
 x up

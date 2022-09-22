@@ -96,7 +96,9 @@ test:
 	done
 test-io:
 	-mkdir bin
-	$(CC) -o bin/test-io \
+	$(CC) \
+	-DDATA_DIR= \
+	-o bin/test-io \
 		t/test-io.c \
 		src/keyboard.c \
 		src/string.c \

@@ -17,8 +17,8 @@ x down
 x up
 control up
 ' down
-' up
 x down
+' up
 x up
 control down
 x down

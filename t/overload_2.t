@@ -22,10 +22,10 @@ a up
 control down
 control up
 a down
-a up
 x down
 x up
-a down
 a up
+a down
 x down
+a up
 x up

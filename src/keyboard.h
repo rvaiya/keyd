@@ -49,21 +49,28 @@ struct keyboard {
 	int active_macro_layer;
 
 	long macro_repeat_timeout;
-	int timeout;
-	int last_event_ts;
+
+	long timeouts[32];
+	size_t nr_timeouts; 
 
 	struct {
-		uint8_t active;
 		uint8_t code;
-
-		uint8_t layer;
-		struct descriptor *action;
 		uint8_t dl;
+		long expire;
 
-		struct key_event queued[32];
-		uint8_t n;
-		uint8_t resolve_on_tap;
-	} overload2;
+		enum {
+			PK_INTERRUPT_ACTION1,
+			PK_INTERRUPT_ACTION2,
+			PK_UNINTERRUPTIBLE,
+			PK_UNINTERRUPTIBLE_TAP_ACTION2,
+		} behaviour;
+
+		struct key_event queue[32];
+		size_t queue_sz;
+
+		struct descriptor action1;
+		struct descriptor action2;
+	} pending_key;
 
 	struct {
 		long activation_time;
@@ -72,17 +79,6 @@ struct keyboard {
 		uint8_t toggled;
 		uint8_t oneshot;
 	} layer_state[MAX_LAYERS];
-
-	struct {
-		uint8_t active;
-
-		uint8_t code;
-
-		struct descriptor d1;
-		struct descriptor d2;
-
-		int dl;
-	} pending_timeout;
 
 	uint8_t keystate[256];
 	void (*output) (uint8_t code, uint8_t state);

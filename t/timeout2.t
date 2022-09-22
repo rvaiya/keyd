@@ -12,8 +12,6 @@ control down
 x down
 x up
 control up
-control down
-control up
 a down
 a up
 b down
