@@ -610,7 +610,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	Set the current layout.
 
 *clear()*
-	Clear any active layers (the active layout is preserved).
+	Clear any toggled or oneshot layers.
 
 *toggle(<layer>)*
 	Permanently toggle the state of the given layer.

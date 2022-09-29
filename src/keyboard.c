@@ -397,21 +397,18 @@ static void clear_oneshot(struct keyboard *kbd)
 static void clear(struct keyboard *kbd)
 {
 	size_t i;
+	clear_oneshot(kbd);
 	for (i = 1; i < kbd->config.nr_layers; i++) {
 		struct layer *layer = &kbd->config.layers[i];
 
 		if (layer->type != LT_LAYOUT) {
-			if (kbd->layer_state[i].active && kbd->layer_observer)
-				kbd->layer_observer(kbd, kbd->config.layers[i].name, 0);
-
-			memset(&kbd->layer_state[i], 0, sizeof kbd->layer_state[0]);
+			if (kbd->layer_state[i].toggled) {
+				kbd->layer_state[i].toggled = 0;
+				deactivate_layer(kbd, i);
+			}
 		}
 	}
 
-	/* Neutralize upstroke for active keys. */
-	memset(kbd->cache, 0, sizeof(kbd->cache));
-
-	kbd->oneshot_latch = 0;
 	kbd->active_macro = NULL;
 
 	reset_keystate(kbd);
