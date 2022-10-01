@@ -607,12 +607,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				macro = &kbd->config.macros[d->args[2].idx];
 
 				timeout = d->args[0].timeout;
-				kbd->macro_repeat_timeout = d->args[1].timeout;
+				kbd->macro_repeat_interval = d->args[1].timeout;
 			} else {
 				macro = &kbd->config.macros[d->args[0].idx];
 
 				timeout = kbd->config.macro_timeout;
-				kbd->macro_repeat_timeout = kbd->config.macro_repeat_timeout;
+				kbd->macro_repeat_interval = kbd->config.macro_repeat_timeout;
 			}
 
 			clear_oneshot(kbd);
@@ -620,6 +620,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			execute_macro(kbd, dl, macro);
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
+
+			kbd->macro_timeout = time + kbd->config.macro_timeout;
+			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 
 		break;
@@ -964,9 +967,10 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 		if (code) {
 			kbd->active_macro = NULL;
 			update_mods(kbd, -1, 0);
-		} else {
+		} else if (time >= kbd->macro_timeout) {
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
-			schedule_timeout(kbd, time+kbd->macro_repeat_timeout);
+			kbd->macro_timeout = time+kbd->macro_repeat_interval;
+			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 	}
 
