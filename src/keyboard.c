@@ -792,6 +792,7 @@ static int handle_chord(struct keyboard *kbd,
 				return 0;
 			case 3:
 				kbd->chord.match_sz = kbd->chord.queue_sz;
+				/* FALLTHROUGH */
 			case 1:
 				kbd->chord.state = CHORD_PENDING_DISAMBIGUATION;
 				kbd->chord.last_code_time = time;
@@ -841,6 +842,7 @@ static int handle_chord(struct keyboard *kbd,
 				return abort_chord(kbd);
 			case 3:
 				kbd->chord.match_sz = kbd->chord.queue_sz;
+				/* FALLTHROUGH */
 			case 1:
 				kbd->chord.last_code_time = time;
 
