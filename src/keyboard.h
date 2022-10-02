@@ -7,6 +7,7 @@
 #define KEYBOARD_H
 
 #include "keyd.h"
+#include "keys.h"
 #include "unicode.h"
 #include "config.h"
 #include "device.h"
@@ -54,13 +55,18 @@ struct keyboard {
 	long timeouts[64];
 	size_t nr_timeouts; 
 
+	struct active_chord {
+		uint8_t active;
+		struct chord chord;
+		int layer;
+	} active_chords[KEYD_CHORD_MAX-KEYD_CHORD_1+1];
+
 	struct {
 		struct key_event queue[32];
 		size_t queue_sz;
 
-		struct descriptor match;
+		const struct chord *match;
 		int match_layer;
-		size_t match_sz;
 
 		uint8_t start_code;
 		long last_code_time;

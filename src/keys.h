@@ -278,6 +278,9 @@ struct modifier_table_ent {
 
 #define  KEYD_NOOP             		195
 #define  KEYD_EXTERNAL_MOUSE_BUTTON     196
+#define  KEYD_CHORD_1			197
+#define  KEYD_CHORD_2			198
+#define  KEYD_CHORD_MAX			199
 #define  KEYD_LEFT_MOUSE       		249
 #define  KEYD_MIDDLE_MOUSE     		250
 #define  KEYD_RIGHT_MOUSE		251
