@@ -118,6 +118,10 @@ of _[global]_ (see _GLOBALS_).
 Config errors will appear in the log output and can be accessed in the usual
 way using your system's service manager (e.g sudo journalctl -eu keyd).
 
+If a vendor/product pair matches more than one device type, the prefix k: may
+be used to exclusively match keyboards and the prefix m: may be used to
+exclusively match mice. (E.g m:046d:b01d)
+
 Note: All keyboards defined within a given config file will share the
 same state. This is useful for linking separate input devices together
 (e.g foot pedals).

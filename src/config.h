@@ -20,6 +20,9 @@
 #define PATH_MAX 1024
 #endif
 
+#define ID_EXCLUDED	1
+#define ID_MOUSE	2
+#define ID_KEYBOARD	4
 
 enum op {
 	OP_KEYSEQUENCE = 1,
@@ -110,11 +113,15 @@ struct config {
 	char aliases[256][32];
 
 	uint8_t wildcard;
-	uint32_t ids[64];
-	uint32_t excluded_ids[64];
+	struct {
+		uint16_t product;
+		uint16_t vendor;
+		uint8_t flags;
+	} ids[64];
+
 
 	size_t nr_ids;
-	size_t nr_excluded_ids;
+
 	size_t nr_layers;
 	size_t nr_macros;
 	size_t nr_descriptors;
@@ -135,6 +142,6 @@ int config_parse(struct config *config, const char *path);
 int config_add_entry(struct config *config, const char *exp);
 int config_get_layer_index(const struct config *config, const char *name);
 
-int config_check_match(struct config *config, uint32_t id);
+int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags);
 
 #endif

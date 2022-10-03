@@ -152,40 +152,46 @@ static void load_configs()
 	closedir(dh);
 }
 
-static int lookup_config_ent(uint32_t id, struct config_ent **match)
+static struct config_ent *lookup_config_ent(uint16_t vendor,
+					    uint16_t product,
+					    uint8_t flags)
 {
 	struct config_ent *ent = configs;
+	struct config_ent *match = NULL;
 	int rank = 0;
 
-	*match = NULL;
-
 	while (ent) {
-		int r = config_check_match(&ent->config, id);
+		int r = config_check_match(&ent->config, vendor, product, flags);
 
 		if (r > rank) {
-			*match = ent;
+			match = ent;
 			rank = r;
 		}
 
 		ent = ent->next;
 	}
 
-	return rank;
+	/* The wildcard should not match mice. */
+	if (rank == 1 && (flags == ID_MOUSE))
+		return NULL;
+	else
+		return match;
 }
 
 static void manage_device(struct device *dev)
 {
-	int match;
-	uint32_t id = dev->vendor_id << 16 | dev->product_id;
-	struct config_ent *ent = NULL;
+	uint8_t flags = 0;
+	struct config_ent *ent;
 
 	if (!strcmp(dev->name, VKBD_NAME))
 		return;
 
-	match = lookup_config_ent(id, &ent);
+	if (dev->capabilities & CAP_KEYBOARD)
+		flags |= ID_KEYBOARD;
+	if (dev->capabilities & (CAP_MOUSE|CAP_MOUSE_ABS))
+		flags |= ID_MOUSE;
 
-	if ((match && dev->capabilities & CAP_KEYBOARD) ||
-	    (match == 2 && dev->capabilities & (CAP_MOUSE | CAP_MOUSE_ABS))) {
+	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, flags))) {
 		if (device_grab(dev)) {
 			warn("Failed to grab %s", dev->path);
 			dev->data = NULL;

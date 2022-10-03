@@ -758,12 +758,34 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 		if (!strcmp(s, "*")) {
 			config->wildcard = 1;
 		} else {
-			if (sscanf(s, "-%hx:%hx", &vendor, &product) == 2) {
-				assert(config->nr_excluded_ids < ARRAY_SIZE(config->excluded_ids));
-				config->excluded_ids[config->nr_excluded_ids++] = (vendor << 16 | product);
+			if (sscanf(s, "m:%hx:%hx", &vendor, &product) == 2) {
+				assert(config->nr_ids < ARRAY_SIZE(config->ids));
+				config->ids[config->nr_ids].product = product;
+				config->ids[config->nr_ids].vendor = vendor;
+				config->ids[config->nr_ids].flags = ID_MOUSE;
+
+				config->nr_ids++;
+			} else if (sscanf(s, "k:%hx:%hx", &vendor, &product) == 2) {
+				assert(config->nr_ids < ARRAY_SIZE(config->ids));
+				config->ids[config->nr_ids].product = product;
+				config->ids[config->nr_ids].vendor = vendor;
+				config->ids[config->nr_ids].flags = ID_KEYBOARD;
+
+				config->nr_ids++;
+			} else if (sscanf(s, "-%hx:%hx", &vendor, &product) == 2) {
+				assert(config->nr_ids < ARRAY_SIZE(config->ids));
+				config->ids[config->nr_ids].product = product;
+				config->ids[config->nr_ids].vendor = vendor;
+				config->ids[config->nr_ids].flags = ID_EXCLUDED;
+
+				config->nr_ids++;
 			} else if (sscanf(s, "%hx:%hx", &vendor, &product) == 2) {
 				assert(config->nr_ids < ARRAY_SIZE(config->ids));
-				config->ids[config->nr_ids++] = (vendor << 16 | product);
+				config->ids[config->nr_ids].product = product;
+				config->ids[config->nr_ids].vendor = vendor;
+				config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
+
+				config->nr_ids++;
 			} 
 			else {
 				warn("%s is not a valid device id", s);
@@ -871,19 +893,19 @@ int config_parse(struct config *config, const char *path)
 	return 0;
 }
 
-int config_check_match(struct config *config, uint32_t id)
+int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags)
 {
 	size_t i;
 
 	for (i = 0; i < config->nr_ids; i++) {
-		if (config->ids[i] == id)
-			return 2;
-	}
-
-	for (i = 0; i < config->nr_excluded_ids; i++)
-		if (config->excluded_ids[i] == id) {
-			return 0;
+		if (config->ids[i].product == product && config->ids[i].vendor == vendor) {
+			if (config->ids[i].flags & ID_EXCLUDED) {
+				return 0;
+			} else if (config->ids[i].flags & flags) {
+				return 2;
+			}
 		}
+	}
 
 	return config->wildcard ? 1 : 0;
 }
