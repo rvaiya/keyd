@@ -503,6 +503,7 @@ int run_daemon(int argc, char *argv[])
 
 	atexit(cleanup);
 
+	printf("Starting keyd "VERSION"\n");
 	evloop(event_handler);
 
 	return 0;
