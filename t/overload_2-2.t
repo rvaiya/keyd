@@ -5,6 +5,6 @@ o up
 ; up
 
 control down
-shift down
 control up
+shift down
 shift up

@@ -4,6 +4,6 @@ j up
 6 up
 
 j down
-esc down
 j up
+esc down
 esc up

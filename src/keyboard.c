@@ -945,6 +945,82 @@ static int handle_chord(struct keyboard *kbd,
 	return 0;
 }
 
+int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long time)
+{
+	if (!kbd->pending_key.code)
+		return 0;
+
+	struct descriptor action = {0};
+
+	if (code) {
+		struct key_event *ev;
+
+		assert(kbd->pending_key.queue_sz < ARRAY_SIZE(kbd->pending_key.queue));
+
+		if (!pressed) {
+			size_t i;
+			int found = 0;
+
+			for (i = 0; i < kbd->pending_key.queue_sz; i++)
+				if (kbd->pending_key.queue[i].code == code)
+					found = 1;
+
+			/* Propagate key up events for keys which were struck before the pending key. */
+			if (!found && code != kbd->pending_key.code)
+				return 0;
+		}
+
+		ev = &kbd->pending_key.queue[kbd->pending_key.queue_sz];
+		ev->code = code;
+		ev->pressed = pressed;
+		ev->timestamp = time;
+
+		kbd->pending_key.queue_sz++;
+	}
+
+
+	if (time >= kbd->pending_key.expire)
+		action = kbd->pending_key.action2;
+	else if (code == kbd->pending_key.code)
+		action = kbd->pending_key.action1;
+	else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION1)
+		action = kbd->pending_key.action1;
+	else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION2)
+		action = kbd->pending_key.action2;
+	else if (kbd->pending_key.behaviour == PK_UNINTERRUPTIBLE_TAP_ACTION2 && !pressed) {
+		size_t i;
+
+		for (i = 0; i < kbd->pending_key.queue_sz; i++)
+			if (kbd->pending_key.queue[i].code == code) {
+				action = kbd->pending_key.action2;
+				break;
+			}
+	}
+
+	if (action.op) {
+		/* Create a copy of the queue on the stack to
+		   allow for recursive pending key processing. */
+		struct key_event queue[ARRAY_SIZE(kbd->pending_key.queue)];
+		size_t queue_sz = kbd->pending_key.queue_sz;
+
+		uint8_t code = kbd->pending_key.code;
+		int dl = kbd->pending_key.dl;
+
+		memcpy(queue, kbd->pending_key.queue, sizeof kbd->pending_key.queue);
+
+		kbd->pending_key.code = 0;
+		kbd->pending_key.queue_sz = 0;
+
+		process_descriptor(kbd, code, &action, dl, 1, time);
+		cache_set(kbd, code, &action, dl);
+
+		/* Flush queued events */
+		kbd_process_events(kbd, queue, queue_sz);
+	}
+
+	return 1;
+}
+
 /*
  * `code` may be 0 in the event of a timeout.
  *
@@ -960,64 +1036,8 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 	if (handle_chord(kbd, code, pressed, time))
 		goto exit;
 
-	if (kbd->pending_key.code) {
-		struct descriptor action = {0};
-
-		if (code) {
-			struct key_event *ev;
-
-			assert(kbd->pending_key.queue_sz < ARRAY_SIZE(kbd->pending_key.queue));
-
-			ev = &kbd->pending_key.queue[kbd->pending_key.queue_sz];
-			ev->code = code;
-			ev->pressed = pressed;
-			ev->timestamp = time;
-
-			kbd->pending_key.queue_sz++;
-		}
-
-
-		if (time >= kbd->pending_key.expire)
-			action = kbd->pending_key.action2;
-		else if (code == kbd->pending_key.code)
-			action = kbd->pending_key.action1;
-		else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION1)
-			action = kbd->pending_key.action1;
-		else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION2)
-			action = kbd->pending_key.action2;
-		else if (kbd->pending_key.behaviour == PK_UNINTERRUPTIBLE_TAP_ACTION2 && !pressed) {
-			size_t i;
-
-			for (i = 0; i < kbd->pending_key.queue_sz; i++)
-				if (kbd->pending_key.queue[i].code == code) {
-					action = kbd->pending_key.action2;
-					break;
-				}
-		}
-
-		if (action.op) {
-			/* Create a copy of the queue on the stack to
-			   allow for recursive pending key processing. */
-			struct key_event queue[ARRAY_SIZE(kbd->pending_key.queue)];
-			size_t queue_sz = kbd->pending_key.queue_sz;
-
-			uint8_t code = kbd->pending_key.code;
-			int dl = kbd->pending_key.dl;
-
-			memcpy(queue, kbd->pending_key.queue, sizeof kbd->pending_key.queue);
-
-			kbd->pending_key.code = 0;
-			kbd->pending_key.queue_sz = 0;
-
-			process_descriptor(kbd, code, &action, dl, 1, time);
-			cache_set(kbd, code, &action, dl);
-
-			/* Flush queued events */
-			kbd_process_events(kbd, queue, queue_sz);
-		}
-
+	if (handle_pending_key(kbd, code, pressed, time))
 		goto exit;
-	}
 
 	if (kbd->active_macro) {
 		if (code) {
