@@ -49,6 +49,7 @@ struct keyboard {
 	struct macro *active_macro;
 	int active_macro_layer;
 	long macro_timeout;
+	long oneshot_timeout;
 
 	long macro_repeat_interval;
 

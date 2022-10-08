@@ -404,6 +404,7 @@ static void clear_oneshot(struct keyboard *kbd)
 		}
 
 	kbd->oneshot_latch = 0;
+	kbd->oneshot_timeout = 0;
 }
 
 static void clear(struct keyboard *kbd)
@@ -605,6 +606,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		} else {
 			if (kbd->oneshot_latch) {
 				kbd->layer_state[idx].oneshot = 1;
+				if (kbd->config.oneshot_timeout) {
+					kbd->oneshot_timeout = time + kbd->config.oneshot_timeout;
+					schedule_timeout(kbd, kbd->oneshot_timeout);
+				}
 			} else {
 				deactivate_layer(kbd, idx);
 				update_mods(kbd, -1, 0);
@@ -1038,6 +1043,11 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 
 	if (handle_pending_key(kbd, code, pressed, time))
 		goto exit;
+
+	if (kbd->oneshot_timeout && time >= kbd->oneshot_timeout) {
+		clear_oneshot(kbd);
+		update_mods(kbd, -1, 0);
+	}
 
 	if (kbd->active_macro) {
 		if (code) {

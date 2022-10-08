@@ -419,10 +419,10 @@ static void config_init(struct config *config)
 	/* In ms */
 	config->chord_interkey_timeout = 50;
 	config->chord_hold_timeout = 0;
+	config->oneshot_timeout = 0;
 
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;
-
 }
 
 /* Modifies the input string */
@@ -730,6 +730,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->macro_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_sequence_timeout"))
 			config->macro_sequence_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "oneshot_timeout"))
+			config->oneshot_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_hold_timeout"))
 			config->chord_hold_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_timeout"))

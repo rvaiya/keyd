@@ -130,6 +130,7 @@ struct config {
 	long macro_timeout;
 	long macro_sequence_timeout;
 	long macro_repeat_timeout;
+	long oneshot_timeout;
 
 	long chord_interkey_timeout;
 	long chord_hold_timeout;

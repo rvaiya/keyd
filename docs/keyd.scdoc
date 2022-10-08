@@ -543,7 +543,10 @@ any of the following options:
 
 	*chord_hold_timeout:* The length of time a chord
 	must be held before being activated. (default: 0)
+	(default: 0)
 
+	*oneshot_timeout:* If non-zero, timeout a oneshot layer
+	activation after the supplied number of milliseconds. 
 	(default: 0)
 
 *Note:* Unicode characters and key sequences are treated as macros, and
