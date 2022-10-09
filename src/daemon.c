@@ -398,7 +398,7 @@ static int event_handler(struct event *ev)
 	static int last_time = 0;
 	static int timeout = 0;
 	static struct keyboard *timeout_kbd = NULL;
-	struct key_event kev;
+	struct key_event kev = {0};
 
 	timeout -= ev->timestamp - last_time;
 	last_time = ev->timestamp;
@@ -495,7 +495,11 @@ int run_daemon(int argc, char *argv[])
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
-	nice(-20);
+
+	if (nice(-20) == -1) {
+		perror("nice");
+		exit(-1);
+	}
 
 	evloop_add_fd(ipcfd);
 

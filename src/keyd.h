@@ -26,6 +26,7 @@
 #include <sys/un.h>
 #include <termios.h>
 #include <getopt.h>
+#include <errno.h>
 #include <time.h>
 #include <unistd.h>
 

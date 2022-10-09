@@ -28,8 +28,8 @@ static int ipc_exec(int type, const char *data, size_t sz, uint32_t timeout)
 	xread(con, &msg, sizeof msg);
 
 	if (msg.sz) {
-		write(1, msg.data, msg.sz);
-		write(1, "\n", 1);
+		xwrite(1, msg.data, msg.sz);
+		xwrite(1, "\n", 1);
 	}
 
 	return msg.type == IPC_FAIL;
@@ -182,7 +182,7 @@ static int layer_listen(int argc, char *argv[])
 		if (sz <= 0)
 			return -1;
 
-		write(1, buf, sz);
+		xwrite(1, buf, sz);
 	}
 }
 

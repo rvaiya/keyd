@@ -1,10 +1,10 @@
 a down
 b down
-200 ms
+200ms
 a up
 j down
 k down
-200 ms
+200ms
 b up
 j up
 k up

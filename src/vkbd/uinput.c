@@ -23,9 +23,7 @@
 #define REPEAT_INTERVAL 40
 #define REPEAT_TIMEOUT 200
 
-#include "../vkbd.h"
-#include "../keys.h"
-#include "../error.h"
+#include "../keyd.h"
 
 struct vkbd {
 	int fd;
@@ -200,14 +198,14 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(fd, &ev, sizeof(ev));
+	xwrite(fd, &ev, sizeof(ev));
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
 
-	write(fd, &ev, sizeof(ev));
+	xwrite(fd, &ev, sizeof(ev));
 
 	pthread_mutex_unlock(&mtx);
 }
@@ -259,7 +257,7 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 		ev.time.tv_sec = 0;
 		ev.time.tv_usec = 0;
 
-		write(vkbd->pfd, &ev, sizeof(ev));
+		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
 
 	if (y) {
@@ -270,14 +268,14 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 		ev.time.tv_sec = 0;
 		ev.time.tv_usec = 0;
 
-		write(vkbd->pfd, &ev, sizeof(ev));
+		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
 }
 
 void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
@@ -291,7 +289,7 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
 
 	ev.type = EV_REL;
 	ev.code = REL_HWHEEL;
@@ -300,13 +298,13 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 	ev.time.tv_sec = 0;
 	ev.time.tv_usec = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
 }
 
 void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
@@ -321,7 +319,7 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 		ev.time.tv_sec = 0;
 		ev.time.tv_usec = 0;
 
-		write(vkbd->pfd, &ev, sizeof(ev));
+		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
 
 	if (y) {
@@ -332,14 +330,14 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 		ev.time.tv_sec = 0;
 		ev.time.tv_usec = 0;
 
-		write(vkbd->pfd, &ev, sizeof(ev));
+		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
 
 	ev.type = EV_SYN;
 	ev.code = 0;
 	ev.value = 0;
 
-	write(vkbd->pfd, &ev, sizeof(ev));
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
 }
 
 void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)

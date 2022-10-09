@@ -4,10 +4,7 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 
-#include "error.h"
-#include "device.h"
-#include "keys.h"
-
+#include "keyd.h"
 
 #include <stdio.h>
 #include <pthread.h>
@@ -469,5 +466,5 @@ void device_set_led(const struct device *dev, int led, int state)
 		.value = state
 	};
 
-	write(dev->fd, &ev, sizeof ev);
+	xwrite(dev->fd, &ev, sizeof ev);
 }
