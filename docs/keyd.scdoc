@@ -539,15 +539,23 @@ any of the following options:
 	useful to avoid overflowing the input buffer on some systems.
 
 	*chord_timeout:* The maximum time between successive keys
-	interpreted as part of a chord. (default: 50)
+	interpreted as part of a chord. 
+	(default: 50)
 
 	*chord_hold_timeout:* The length of time a chord
-	must be held before being activated. (default: 0)
+	must be held before being activated.
 	(default: 0)
 
 	*oneshot_timeout:* If non-zero, timeout a oneshot layer
 	activation after the supplied number of milliseconds. 
 	(default: 0)
+
+	*disable_modifier_guard:* By default, keyd will inject additional
+	control keypresses where necessary in order to prevent programs from
+	seeing additional modifier taps (E.g alt in firefox). If set, this
+	option disables that behaviour. 
+	(default: 0)
+
 
 *Note:* Unicode characters and key sequences are treated as macros, and
 are consequently affected by the corresponding timeout options.

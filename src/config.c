@@ -730,6 +730,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->macro_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_sequence_timeout"))
 			config->macro_sequence_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "disable_modifier_guard"))
+			config->disable_modifier_guard = atoi(ent->val);
 		else if (!strcmp(ent->key, "oneshot_timeout"))
 			config->oneshot_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_hold_timeout"))
