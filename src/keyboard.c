@@ -588,6 +588,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->pending_key.code = code;
 			kbd->pending_key.dl = dl;
 			kbd->pending_key.behaviour = PK_INTERRUPT_ACTION2;
+
+			if (kbd->config.overload_tap_timeout)
+				kbd->pending_key.tap_expiry = time + kbd->config.overload_tap_timeout;
 		}
 
 		break;
@@ -985,15 +988,20 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 	}
 
 
-	if (time >= kbd->pending_key.expire)
+	if (time >= kbd->pending_key.expire) {
 		action = kbd->pending_key.action2;
-	else if (code == kbd->pending_key.code)
+	} else if (code == kbd->pending_key.code) {
+		if (kbd->pending_key.tap_expiry && time >= kbd->pending_key.tap_expiry) {
+			action.op = OP_KEYSEQUENCE;
+			action.args[0].code = KEYD_NOOP;
+		} else {
+			action = kbd->pending_key.action1;
+		}
+	} else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION1) {
 		action = kbd->pending_key.action1;
-	else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION1)
-		action = kbd->pending_key.action1;
-	else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION2)
+	} else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION2) {
 		action = kbd->pending_key.action2;
-	else if (kbd->pending_key.behaviour == PK_UNINTERRUPTIBLE_TAP_ACTION2 && !pressed) {
+	} else if (kbd->pending_key.behaviour == PK_UNINTERRUPTIBLE_TAP_ACTION2 && !pressed) {
 		size_t i;
 
 		for (i = 0; i < kbd->pending_key.queue_sz; i++)
@@ -1016,6 +1024,7 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 
 		kbd->pending_key.code = 0;
 		kbd->pending_key.queue_sz = 0;
+		kbd->pending_key.tap_expiry = 0;
 
 		process_descriptor(kbd, code, &action, dl, 1, time);
 		cache_set(kbd, code, &action, dl);

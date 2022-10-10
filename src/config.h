@@ -132,6 +132,8 @@ struct config {
 	long macro_repeat_timeout;
 	long oneshot_timeout;
 
+	long overload_tap_timeout;
+
 	long chord_interkey_timeout;
 	long chord_hold_timeout;
 

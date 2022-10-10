@@ -556,6 +556,10 @@ any of the following options:
 	option disables that behaviour. 
 	(default: 0)
 
+	*overload_tap_timeout:* If non-zero, ignore the tap behaviour of an
+	overloaded key if it is held for the given number of miliseconds.
+	(default: 0).
+
 
 *Note:* Unicode characters and key sequences are treated as macros, and
 are consequently affected by the corresponding timeout options.

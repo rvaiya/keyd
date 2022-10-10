@@ -84,6 +84,7 @@ struct keyboard {
 		uint8_t code;
 		uint8_t dl;
 		long expire;
+		long tap_expiry;
 
 		enum {
 			PK_INTERRUPT_ACTION1,

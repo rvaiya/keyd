@@ -745,6 +745,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->macro_repeat_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "layer_indicator"))
 			config->layer_indicator = atoi(ent->val);
+		else if (!strcmp(ent->key, "overload_tap_timeout"))
+			config->overload_tap_timeout = atoi(ent->val);
 		else
 			warn("line %zd: %s is not a valid global option", ent->lnum, ent->key);
 	}
