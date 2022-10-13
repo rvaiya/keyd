@@ -7,7 +7,11 @@ x up
 4ms
 6 up
 
+control down
+control up
 x down
 x up
+control down
+control up
 esc down
 esc up

@@ -53,6 +53,8 @@ struct keyboard {
 
 	long macro_repeat_interval;
 
+	long overload_start_time;
+
 	long timeouts[64];
 	size_t nr_timeouts; 
 

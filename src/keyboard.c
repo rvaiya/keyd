@@ -580,17 +580,21 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		action = &kbd->config.descriptors[d->args[1].idx];
 
 		if (pressed) {
-			kbd->pending_key.action1 = *action;
-			kbd->pending_key.action2.op = OP_LAYER;
-			kbd->pending_key.action2.args[0].idx = idx;
+			kbd->overload_start_time = time;
+			activate_layer(kbd, code, idx);
+			update_mods(kbd, -1, 0);
+		} else {
+			deactivate_layer(kbd, idx);
+			update_mods(kbd, -1, 0);
 
-			kbd->pending_key.expire = time+1E6;
-			kbd->pending_key.code = code;
-			kbd->pending_key.dl = dl;
-			kbd->pending_key.behaviour = PK_INTERRUPT_ACTION2;
+			if (kbd->last_pressed_code == code &&
+			    (!kbd->config.overload_tap_timeout ||
+			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
+				clear_oneshot(kbd);
 
-			if (kbd->config.overload_tap_timeout)
-				kbd->pending_key.tap_expiry = time + kbd->config.overload_tap_timeout;
+				process_descriptor(kbd, code, action, dl, 1, time);
+				process_descriptor(kbd, code, action, dl, 0, time);
+			}
 		}
 
 		break;
