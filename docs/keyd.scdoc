@@ -900,6 +900,16 @@ keys. If tapped, it will function as escape.
 	l = right
 ```
 
+## Example 8
+
+Disables the esc and end keys.
+
+```
+	[main]
+	esc = noop
+	end = noop
+```
+
 # AUTHOR
 
 Written by Raheman Vaiya (2017-).
