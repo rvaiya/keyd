@@ -16,7 +16,7 @@ keyd(1)
 *listen*
 	Print layer state changes of the running keyd daemon to stdout. Useful for scripting.
 
-*bind <binding> [<binding>...]*
+*bind <binding> [reset] [<binding>...]*
 	Apply the supplied bindings. See _Bindings_ for details.
 
 *reload*
@@ -733,6 +733,14 @@ The _bind_ command accepts one or more _bindings_, each of which must have the f
 	\[<layer>.\]<key> = <key>|<macro>|<action>
 
 Where _<layer>_ is the name of an (existing) layer in which the key is to be bound.
+Available are user-configured layers and the following, default layers:
+
+	*main* - main layer++
+*control* - Control++
+*meta* - Meta/Super++
+*alt* - Alt++
+*shift* - Shift++
+*altgr* - AltGr
 
 As a special case, the string "reset" may be used in place of a binding, in
 which case the current keymap will revert to its original state (all

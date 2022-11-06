@@ -27,7 +27,7 @@ Where _<filter>_ has one of the following forms:
 	\[<class exp>\]              # Match by window class
 	\[<class exp>|<title exp>\]  # Match by class and title
 
-and each _<expression>_ is a valid argument to _-e_ (see *Expressions*).
+and each _<expression>_ is a valid argument to _keyd bind_ (see *Bindings*).
 
 _<class exp>_ and _<title exp>_ are strings which describe window class and title names
 to be matched, and may optionally contain unix style wildcards (\*). For example,
