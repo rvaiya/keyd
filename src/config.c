@@ -955,7 +955,7 @@ int config_add_entry(struct config *config, const char *exp)
 	dot = strchr(s, '.');
 	paren = strchr(s, '(');
 
-	if (dot && (!paren || dot < paren)) {
+	if (dot && dot != s && (!paren || dot < paren)) {
 		layername = s;
 		*dot = 0;
 		s = dot+1;
