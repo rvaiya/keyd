@@ -112,7 +112,8 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 			 * additional control sequences.
 			 */
 			int guard = ((((kbd->last_pressed_output_code == KEYD_LEFTMETA) && mask == MOD_SUPER) ||
-					((kbd->last_pressed_output_code == KEYD_LEFTALT) && mask == MOD_ALT)) &&
+					((kbd->last_pressed_output_code == KEYD_LEFTALT) && mask == MOD_ALT) ||
+					((kbd->last_pressed_output_code == KEYD_RIGHTALT) && mask == MOD_ALT_GR)) &&
 				    !kbd->inhibit_modifier_guard &&
 				    !kbd->config.disable_modifier_guard);
 

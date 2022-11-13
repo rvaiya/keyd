@@ -1,0 +1,27 @@
+rightalt down
+a down
+a up
+rightalt up
+rightalt down
+rightalt up
+rightalt down
+x down
+x up
+rightalt up
+
+rightalt down
+control down
+rightalt up
+control up
+a down
+a up
+rightalt down
+control down
+rightalt up
+control up
+rightalt down
+rightalt up
+rightalt down
+x down
+x up
+rightalt up
