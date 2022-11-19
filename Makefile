@@ -52,12 +52,6 @@ install:
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
-	@if [ -e $(DESTDIR)$(PREFIX)/share/libinput/ ]; then \
-		install -Dm644 keyd.quirks $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks; \
-	else \
-		echo "WARNING: libinput not found, not installing keyd.quirks."; \
-	fi
-
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
 		install -Dm644 src/vkbd/usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service; \
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
@@ -80,8 +74,7 @@ install:
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
 
 uninstall:
-	rm -rf $(DESTDIR)$(PREFIX)/share/libinput/30-keyd.quirks \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
