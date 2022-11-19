@@ -680,7 +680,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	event of an intervening key tap.
 
 *timeout(<action 1>, <timeout>, <action 2>)*
-	If the key is held in isolation for more than _<timeout> ms_, activate the first
+	If the key is held in isolation for more than _<timeout> ms_, activate the second
 	action, if the key is held for less than _<timeout> ms_ or another key is struck
 	before <timeout> ms expires, execute the first action.
 
