@@ -112,6 +112,24 @@ Will match all devices which *do not*(2) have the id _0123:4567_, while:
 
 will exclusively match any devices which do.
 
+These vendor and product ids can be found from `/proc/bus/input/devices` file. For example:
+
+```
+I: Bus=0011 Vendor=0001 Product=0001 Version=ab54
+N: Name="AT Translated Set 2 keyboard"
+P: Phys=isa0060/serio0/input0
+S: Sysfs=/devices/platform/i8042/serio0/input/input3
+U: Uniq=
+H: Handlers=sysrq kbd leds event3 
+B: PROP=0
+B: EV=120013
+B: KEY=402000000 3803078f800d001 feffffdfffefffff fffffffffffffffe
+B: MSC=10
+B: LED=7
+```
+
+Where vendor id would be `0001` and product id would be `0001`.
+
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
 
