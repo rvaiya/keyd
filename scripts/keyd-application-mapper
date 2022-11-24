@@ -151,6 +151,43 @@ class SwayMonitor():
 
                 self.on_window_change(cls, title)
 
+class HyprMonitor():
+    def __init__(self, on_window_change):
+        assert_env('HYPRLAND_INSTANCE_SIGNATURE')
+
+        self.on_window_change = on_window_change
+
+    def init(self):
+        pass
+
+    def run(self):
+        import socket
+
+        last_cls = ''
+        last_title = ''
+
+        s = "/tmp/hypr/" + str(os.getenv('HYPRLAND_INSTANCE_SIGNATURE')) + "/.socket2.sock"
+
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client.connect(s)
+
+        while True:
+            data = client.recv(4096)
+            msg = data.decode('utf-8')
+            tmp = msg.split('>>')
+            if tmp[0] == 'activewindow' and len(tmp) > 1:
+                cls, title = tmp[1].split(',')
+
+                if title == '' and cls == '':
+                    continue
+
+                if last_cls != cls or last_title != title:
+                    last_cls = cls
+                    last_title = title
+
+                    self.on_window_change(cls, title)
+
+        client.close()
 
 class XMonitor():
     def __init__(self, on_window_change):
@@ -361,6 +398,7 @@ class GnomeMonitor():
 def get_monitor(on_window_change):
     monitors = [
         ('Sway', SwayMonitor),
+        ('Hyprland', HyprMonitor),
         ('Gnome', GnomeMonitor),
         ('X', XMonitor),
     ]
