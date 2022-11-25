@@ -40,6 +40,12 @@ def assert_env(var):
     if not os.getenv(var):
         raise Exception(f'Missing environment variable {var}')
 
+def assert_gnome():
+    if 'gnome' not in os.getenv('XDG_CURRENT_DESKTOP', '').lower() and \
+        not os.getenv('GNOME_SETUP_DISPLAY'):
+        raise Exception(f'Gnome desktop environment not detected by inspecting'
+            'XDG_CURRENT_DESKTOP and GNOME_SETUP_DISPLAY environment variables')
+
 def run(cmd):
     return subprocess.check_output(['/bin/sh', '-c', cmd]).decode('utf8')
 
@@ -253,7 +259,7 @@ class XMonitor():
 # :(
 class GnomeMonitor():
     def __init__(self, on_window_change):
-        assert_env('GNOME_SETUP_DISPLAY')
+        assert_gnome()
 
         self.on_window_change = on_window_change
 
