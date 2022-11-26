@@ -404,7 +404,7 @@ struct device_event *device_read_event(struct device *dev)
 
 			break;
 		default:
-			fprintf(stderr, "Unrecognized EV_ABS code: %d\n", ev.code);
+			dbg("Unrecognized EV_ABS code: %x", ev.code);
 			break;
 		}
 
