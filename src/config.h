@@ -45,7 +45,11 @@ enum op {
 	OP_MACRO,
 	OP_MACRO2,
 	OP_COMMAND,
-	OP_TIMEOUT
+	OP_TIMEOUT,
+
+/* Experimental */
+	OP_SCROLL_TOGGLE,
+	OP_SCROLL,
 };
 
 union descriptor_arg {
@@ -54,6 +58,7 @@ union descriptor_arg {
 	int16_t idx;
 	uint16_t sz;
 	uint16_t timeout;
+	int16_t sensitivity;
 };
 
 /* Describes the intended purpose of a key (corresponds to an 'action' in user parlance). */

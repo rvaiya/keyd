@@ -520,6 +520,18 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_SCROLL:
+		kbd->scroll.sensitivity = d->args[0].sensitivity;
+		if (pressed)
+			kbd->scroll.active = 1;
+		else
+			kbd->scroll.active = 0;
+		break;
+	case OP_SCROLL_TOGGLE:
+		kbd->scroll.sensitivity = d->args[0].sensitivity;
+		if (pressed)
+			kbd->scroll.active = !kbd->scroll.active;
+		break;
 	case OP_OVERLOAD_TIMEOUT_TAP:
 	case OP_OVERLOAD_TIMEOUT:
 		if (pressed) {

@@ -417,6 +417,7 @@ static int event_handler(struct event *ev)
 		break;
 	case EV_DEV_EVENT:
 		if (ev->dev->data) {
+			struct keyboard *kbd = ev->dev->data;
 			timeout_kbd = ev->dev->data;
 			switch (ev->devev->type) {
 			case DEV_KEY:
@@ -426,10 +427,28 @@ static int event_handler(struct event *ev)
 				kev.pressed = ev->devev->pressed;
 				kev.timestamp = ev->timestamp;
 
-				timeout = kbd_process_events(ev->dev->data, &kev, 1);
+				timeout = kbd_process_events(kbd, &kev, 1);
 				break;
 			case DEV_MOUSE_MOVE:
-				vkbd_mouse_move(vkbd, ev->devev->x, ev->devev->y);
+				if (kbd->scroll.active) {
+					if (kbd->scroll.sensitivity == 0)
+						break;
+					int xticks, yticks;
+
+					kbd->scroll.y += ev->devev->y;
+					kbd->scroll.x += ev->devev->x;
+
+					yticks = kbd->scroll.y / kbd->scroll.sensitivity;
+					kbd->scroll.y %= kbd->scroll.sensitivity;
+
+					xticks = kbd->scroll.x / kbd->scroll.sensitivity;
+					kbd->scroll.x %= kbd->scroll.sensitivity;
+
+					vkbd_mouse_scroll(vkbd, 0, -1*yticks);
+					vkbd_mouse_scroll(vkbd, 0, xticks);
+				} else {
+					vkbd_mouse_move(vkbd, ev->devev->x, ev->devev->y);
+				}
 				break;
 			case DEV_MOUSE_MOVE_ABS:
 				vkbd_mouse_move_abs(vkbd, ev->devev->x, ev->devev->y);

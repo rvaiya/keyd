@@ -41,6 +41,7 @@ static struct {
 		ARG_LAYER,
 		ARG_LAYOUT,
 		ARG_TIMEOUT,
+		ARG_SENSITIVITY,
 		ARG_DESCRIPTOR,
 	} args[MAX_DESCRIPTOR_ARGS];
 } actions[] =  {
@@ -66,7 +67,11 @@ static struct {
 	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
 
-	//TODO: deprecate
+	/* Experimental */
+	{ "scrollt", 	NULL,	OP_SCROLL_TOGGLE,		{ARG_SENSITIVITY} },
+	{ "scroll", 	NULL,	OP_SCROLL,			{ARG_SENSITIVITY} },
+
+	/* TODO: deprecate */
 	{ "overload2", 	"overloadt",	OP_OVERLOAD_TIMEOUT,		{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
 	{ "overload3", 	"overloadt2",	OP_OVERLOAD_TIMEOUT_TAP,	{ ARG_LAYER, ARG_DESCRIPTOR, ARG_TIMEOUT } },
 	{ "toggle2", 	"togglem",	OP_TOGGLEM,			{ ARG_LAYER, ARG_MACRO } },
@@ -686,6 +691,9 @@ static int parse_descriptor(char *s,
 
 						config->descriptors[config->nr_descriptors] = desc;
 						arg->idx = config->nr_descriptors++;
+						break;
+					case ARG_SENSITIVITY:
+						arg->sensitivity = atoi(argstr);
 						break;
 					case ARG_TIMEOUT:
 						arg->timeout = atoi(argstr);

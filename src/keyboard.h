@@ -115,6 +115,14 @@ struct keyboard {
 	uint8_t keystate[256];
 	void (*output) (uint8_t code, uint8_t state);
 	void (*layer_observer) (struct keyboard *kbd, const char *layer, int state);
+
+	struct {
+		int x;
+		int y;
+
+		int sensitivity; /* Mouse units per scroll unit (higher == slower scrolling). */
+		int active;
+	} scroll;
 };
 
 struct keyboard *new_keyboard(struct config *config,
