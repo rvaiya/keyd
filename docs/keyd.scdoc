@@ -11,7 +11,7 @@ keyd(1)
 # COMMANDS
 
 *monitor [-t]*
-	Print key events. If -t is supplied, also prints time since the last event in ms. Useful for discovering key names and debugging.
+	Print key events. If -t is supplied, also prints time since the last event in ms. Useful for discovering key names/device ids and debugging.
 
 *listen*
 	Print layer state changes of the running keyd daemon to stdout. Useful for scripting.
