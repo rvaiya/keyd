@@ -582,6 +582,13 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		if (pressed) {
 			kbd->overload_start_time = time;
+
+			/*
+			 * Preserve the original last layer activation code in the event
+			 * that the tap action is a swap.
+			 */
+			kbd->overload_last_layer_code = kbd->last_layer_code;
+
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, -1, 0);
 		} else {
@@ -591,6 +598,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->last_pressed_code == code &&
 			    (!kbd->config.overload_tap_timeout ||
 			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
+				kbd->last_layer_code = kbd->overload_last_layer_code;
 				clear_oneshot(kbd);
 
 				process_descriptor(kbd, code, action, dl, 1, time);

@@ -48,6 +48,8 @@ struct keyboard {
 
 	struct macro *active_macro;
 	int active_macro_layer;
+	int overload_last_layer_code;
+
 	long macro_timeout;
 	long oneshot_timeout;
 

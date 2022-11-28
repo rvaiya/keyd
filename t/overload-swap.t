@@ -1,0 +1,27 @@
+6 down
+x down
+x up
+a down
+a up
+6 up
+6 down
+x down
+a down
+a up
+x up
+6 up
+
+control down
+meta down
+meta up
+shift down
+control up
+a down
+a up
+shift up
+control down
+meta down
+a down
+a up
+meta up
+control up
