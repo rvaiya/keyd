@@ -191,6 +191,18 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	 */
 	if (is_btn) {
 		fd = vkbd->pfd;
+
+		/*
+		 * Give key events preceding a mouse click
+		 * a chance to propagate to avoid event
+		 * order transposition. A bit kludegy,
+		 * but better than waiting for all events
+		 * to propagate and then checking them
+		 * on re-entry.
+		 *
+		 * TODO: fixme (maybe)
+		 */
+		usleep(1000);
 	}
 
 	ev.value = state;
