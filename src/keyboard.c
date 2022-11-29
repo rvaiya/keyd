@@ -707,8 +707,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			for (i = 0; i < CACHE_SIZE; i++) {
 				uint8_t code = kbd->cache[i].code;
 				int layer = kbd->cache[i].layer;
+				int type = kbd->config.layers[layer].type;
 
-				if (code && layer == dl) {
+				if (code && layer == dl && type == LT_NORMAL && layer != 0) {
 					ce = &kbd->cache[i];
 					break;
 				}
