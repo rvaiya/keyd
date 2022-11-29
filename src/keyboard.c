@@ -19,8 +19,7 @@ static long get_time()
 	return time++;
 }
 
-static int cache_set(struct keyboard *kbd, uint8_t code,
-		     const struct descriptor *d, int dl)
+static int cache_set(struct keyboard *kbd, uint8_t code, struct cache_entry *ent)
 {
 	size_t i;
 	int slot = -1;
@@ -36,33 +35,25 @@ static int cache_set(struct keyboard *kbd, uint8_t code,
 	if (slot == -1)
 		return -1;
 
-	if (d == NULL) {
+	if (ent == NULL) {
 		kbd->cache[slot].code = 0;
 	} else {
+		kbd->cache[slot] = *ent;
 		kbd->cache[slot].code = code;
-		kbd->cache[slot].d = *d;
-		kbd->cache[slot].dl = dl;
 	}
 
 	return 0;
 }
 
-static int cache_get(struct keyboard *kbd, uint8_t code,
-		     struct descriptor *d, int *dl)
+static struct cache_entry *cache_get(struct keyboard *kbd, uint8_t code)
 {
 	size_t i;
 
 	for (i = 0; i < CACHE_SIZE; i++)
-		if (kbd->cache[i].code == code) {
-			if (d)
-				*d = kbd->cache[i].d;
-			if (dl)
-				*dl = kbd->cache[i].dl;
+		if (kbd->cache[i].code == code)
+			return &kbd->cache[i];
 
-			return 0;
-		}
-
-	return -1;
+	return NULL;
 }
 
 static void reset_keystate(struct keyboard *kbd)
@@ -240,6 +231,7 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 		d->op = OP_KEYSEQUENCE;
 		d->args[0].code = code;
 		d->args[1].mods = 0;
+		*dl = 0;
 	}
 }
 
@@ -262,10 +254,13 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 {
 	dbg("Activating layer %s", kbd->config.layers[idx].name);
+	struct cache_entry *ce;
 
 	kbd->layer_state[idx].activation_time = get_time();
 	kbd->layer_state[idx].active++;
-	kbd->last_layer_code = code;
+
+	if ((ce = cache_get(kbd, code)))
+		ce->layer = idx;
 
 	if (kbd->layer_observer)
 		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 1);
@@ -594,13 +589,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		if (pressed) {
 			kbd->overload_start_time = time;
-
-			/*
-			 * Preserve the original last layer activation code in the event
-			 * that the tap action is a swap.
-			 */
-			kbd->overload_last_layer_code = kbd->last_layer_code;
-
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, -1, 0);
 		} else {
@@ -610,7 +598,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->last_pressed_code == code &&
 			    (!kbd->config.overload_tap_timeout ||
 			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
-				kbd->last_layer_code = kbd->overload_last_layer_code;
 				clear_oneshot(kbd);
 
 				process_descriptor(kbd, code, action, dl, 1, time);
@@ -626,7 +613,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		if (pressed) {
 			if (kbd->layer_state[idx].active) {
 				/* Neutralize the upstroke. */
-				cache_set(kbd, code, NULL, -1);
+				cache_set(kbd, code, NULL);
 			} else {
 				activate_layer(kbd, code, idx);
 				update_mods(kbd, dl, 0);
@@ -714,22 +701,30 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		macro = d->op == OP_SWAPM ?  &kbd->config.macros[d->args[1].idx] : NULL;
 
 		if (pressed) {
-			struct descriptor od;
-			int odl;
+			size_t i;
+			struct cache_entry *ce = NULL;
 
-			if (kbd->last_layer_code &&
-				!cache_get(kbd, kbd->last_layer_code, &od, &odl)) {
-				int oldlayer = od.args[0].idx;
-				od.args[0].idx = d->args[0].idx;
+			for (i = 0; i < CACHE_SIZE; i++) {
+				uint8_t code = kbd->cache[i].code;
+				int layer = kbd->cache[i].layer;
 
-				cache_set(kbd, kbd->last_layer_code, &od, odl);
+				if (code && layer == dl) {
+					ce = &kbd->cache[i];
+					break;
+				}
+			}
 
-				deactivate_layer(kbd, oldlayer);
-				activate_layer(kbd, kbd->last_layer_code, idx);
-				update_mods(kbd, -1, 0);
+			if (ce) {
+				ce->d.op = OP_LAYER;
+				ce->d.args[0].idx = idx;
+
+				deactivate_layer(kbd, dl);
+				activate_layer(kbd, ce->code, idx);
 
 				if (macro)
 					execute_macro(kbd, dl, macro);
+
+				update_mods(kbd, -1, 0);
 			}
 		} else {
 			if (macro &&
@@ -1052,7 +1047,11 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 		kbd->pending_key.tap_expiry = 0;
 
 		process_descriptor(kbd, code, &action, dl, 1, time);
-		cache_set(kbd, code, &action, dl);
+		cache_set(kbd, code, &(struct cache_entry) {
+			.d = action,
+			.dl = dl,
+			.layer = 0,
+		});
 
 		/* Flush queued events */
 		kbd_process_events(kbd, queue, queue_sz);
@@ -1096,6 +1095,9 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 	}
 
 	if (code) {
+		struct descriptor d;
+		int dl = 0;
+
 		if (pressed) {
 			/*
 			 * Guard against successive key down events
@@ -1103,18 +1105,22 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 			 * by unorthodox hardware or by different
 			 * devices mapped to the same config.
 			 */
-			if (cache_get(kbd, code, &d, &dl) == 0)
+			if (cache_get(kbd, code))
 				goto exit;
 
 			lookup_descriptor(kbd, code, &d, &dl);
 
-			if (cache_set(kbd, code, &d, dl) < 0)
+			if (cache_set(kbd, code, &(struct cache_entry) { .d = d, .dl = dl, .layer = 0 }))
 				goto exit;
 		} else {
-			if (cache_get(kbd, code, &d, &dl) < 0)
+			struct cache_entry *ce;
+			if (!(ce = cache_get(kbd, code)))
 				goto exit;
 
-			cache_set(kbd, code, NULL, -1);
+			cache_set(kbd, code, NULL);
+
+			d = ce->d;
+			dl = ce->dl;
 		}
 
 		process_descriptor(kbd, code, &d, dl, pressed, time);

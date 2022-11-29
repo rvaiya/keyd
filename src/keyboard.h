@@ -19,6 +19,7 @@ struct cache_entry {
 	uint8_t code;
 	struct descriptor d;
 	int dl;
+	int layer;
 };
 
 struct key_event {
@@ -40,7 +41,6 @@ struct keyboard {
 
 	uint8_t last_pressed_output_code;
 	uint8_t last_pressed_code;
-	uint8_t last_layer_code;
 
 	uint8_t oneshot_latch;
 
