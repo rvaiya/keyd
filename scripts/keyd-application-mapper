@@ -311,6 +311,7 @@ class GnomeMonitor():
         extension = '''
         const Shell = imports.gi.Shell;
         const GLib = imports.gi.GLib;
+        const Main = imports.ui.main;
 
         // We have to keep an explicit reference around to prevent garbage collection :/.
         let file = imports.gi.Gio.File.new_for_path('%s');
@@ -342,6 +343,13 @@ class GnomeMonitor():
 
                     send(`${cls}\\t${title}\\n`);
                 });
+
+                Main.layoutManager.connectObject(
+                    'system-modal-opened', () => {
+                        send(`system-modal\\t${global.stage.get_title()}\\n`);
+                    },
+                    this
+                );
 
                 return {
                     enable: ()=>{ GLib.spawn_command_line_async('keyd-application-mapper -d'); },
