@@ -110,7 +110,9 @@ Will match all devices which *do not*(2) have the id _0123:4567_, while:
 	0123:4567
 ```
 
-will exclusively match any devices which do.
+will exclusively match any devices which do. Note that you can obtain
+the '<vendor id>:<product id>' specifiers from the monitor command (see
+_COMMANDS_).
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
