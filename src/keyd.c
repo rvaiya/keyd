@@ -163,7 +163,7 @@ static int input(int argc, char *argv[])
 
 static int layer_listen(int argc, char *argv[])
 {
-	struct ipc_message msg;
+	struct ipc_message msg = {0};
 
 	int con = ipc_connect();
 

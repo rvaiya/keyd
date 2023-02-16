@@ -323,7 +323,7 @@ static void handle_client(int con)
 
 	xread(con, &msg, sizeof msg);
 
-	if (msg.sz == sizeof(msg.data)) {
+	if (msg.sz >= sizeof(msg.data)) {
 		send_fail(con, "maximum message size exceeded");
 		return;
 	}
