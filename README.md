@@ -141,6 +141,9 @@ display server initialization logic (e.g ~/.xinitrc) unless you are running Gnom
 
 See the man page for more details.
 
+Also note that this feature currently doesn't work on gnome version greater than 42. 
+See [issue 422](https://github.com/rvaiya/keyd/issues/422).
+
 ## SBC support
 
 Experimental support for single board computers (SBCs) via usb-gadget
