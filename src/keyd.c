@@ -5,6 +5,7 @@
  */
 
 #include "keyd.h"
+#include "sys/wait.h"
 
 static int ipc_exec(int type, const char *data, size_t sz, uint32_t timeout)
 {
@@ -215,6 +216,16 @@ struct {
 	{"list-keys", "", "", list_keys},
 };
 
+void catch_child(int sig_num)
+{
+	int status;
+	wait(&status);
+	if (!WIFEXITED(status)) {
+		dbg("error running child process")
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	size_t i;
@@ -227,6 +238,7 @@ int main(int argc, char *argv[])
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 	signal(SIGPIPE, SIG_IGN);
+	signal(SIGCHLD, catch_child);
 
 	if (argc > 1) {
 		for (i = 0; i < ARRAY_SIZE(commands); i++)

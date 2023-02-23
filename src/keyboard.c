@@ -369,8 +369,6 @@ static void execute_command(const char *cmd)
 
 	if (fork())
 		return;
-	if (fork())
-		exit(0);
 
 	fd = open("/dev/null", O_RDWR);
 
@@ -387,7 +385,7 @@ static void execute_command(const char *cmd)
 	dup2(fd, 1);
 	dup2(fd, 2);
 
-	execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+	execl("/bin/sh", "/bin/sh", "-c", cmd, (char *) NULL);
 }
 
 static void clear_oneshot(struct keyboard *kbd)
