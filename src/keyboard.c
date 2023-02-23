@@ -367,8 +367,10 @@ static void execute_command(const char *cmd)
 
 	dbg("executing command: %s", cmd);
 
-	if (fork())
+	if (fork()) {
+		wait(NULL);
 		return;
+	}
 	if (fork())
 		exit(0);
 
