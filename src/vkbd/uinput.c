@@ -65,6 +65,11 @@ static int create_virtual_keyboard(const char *name)
 		}
 	}
 
+	if (ioctl(fd, UI_SET_KEYBIT, KEY_ZOOM)) {
+		perror("ioctl set_keybit");
+		exit(-1);
+	}
+
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
 	udev.id.product = 0x0ADE;
@@ -178,6 +183,7 @@ void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 		case KEYD_RIGHT_MOUSE:	ev.code = BTN_RIGHT; break;
 		case KEYD_MOUSE_1:	ev.code = BTN_SIDE; break;
 		case KEYD_MOUSE_2:	ev.code = BTN_EXTRA; break;
+		case KEYD_ZOOM:		ev.code = KEY_ZOOM; is_btn = 0; break;
 		default:
 			ev.code = code;
 			is_btn = 0;
