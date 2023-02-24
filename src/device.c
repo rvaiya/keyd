@@ -432,6 +432,8 @@ struct device_event *device_read_event(struct device *dev)
 				ev.code = KEYD_MOUSE_2;
 			else if (ev.code == KEY_FN)
 				ev.code = KEYD_FN;
+			else if (ev.code == KEY_ZOOM)
+				ev.code = KEYD_ZOOM;
 			else if (ev.code >= BTN_DIGI
 				 && ev.code <= BTN_TOOL_QUADTAP);
 			else {

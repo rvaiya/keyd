@@ -208,6 +208,7 @@ struct modifier_table_ent {
 #define KEYD_EXIT              174
 #define KEYD_MOVE              175
 #define KEYD_EDIT              176
+#define KEYD_ZOOM              177
 #define KEYD_KPLEFTPAREN       179
 #define KEYD_KPRIGHTPAREN      180
 #define KEYD_NEW               181
