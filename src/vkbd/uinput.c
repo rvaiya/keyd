@@ -124,9 +124,6 @@ static int create_virtual_pointer(const char *name)
 	for (code = BTN_LEFT; code <= BTN_TASK; code++)
 		ioctl(fd, UI_SET_KEYBIT, code);
 
-	for (code = BTN_0; code <= BTN_9; code++)
-		ioctl(fd, UI_SET_KEYBIT, code);
-
 	udev.id.bustype = BUS_USB;
 	udev.id.vendor = 0x0FAC;
 	udev.id.product = 0x1ADE;
