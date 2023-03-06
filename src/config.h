@@ -95,7 +95,7 @@ struct layer {
 	uint8_t mods;
 	struct descriptor keymap[256];
 
-	struct chord chords[32];
+	struct chord chords[64];
 	size_t nr_chords;
 
 	/* Used for composite layers. */
