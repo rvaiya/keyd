@@ -177,7 +177,7 @@ int device_scan(struct device devices[MAX_DEVICES])
 	}
 
 	while((ent = readdir(dh))) {
-		if (!strncmp(ent->d_name, "event", 5)) {
+		if (ent->d_type != DT_DIR && !strncmp(ent->d_name, "event", 5)) {
 			assert(n < MAX_DEVICES);
 			struct device_worker *w = &workers[n++];
 
