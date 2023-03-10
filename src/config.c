@@ -110,7 +110,7 @@ static char *read_file(const char *path)
 	const char include_prefix[] = "include ";
 
 	static char buf[MAX_FILE_SZ];
-	char line[MAX_LINE_LEN];
+	char line[MAX_LINE_LEN+1];
 	int sz = 0;
 
 	FILE *fh = fopen(path, "r");
@@ -123,8 +123,12 @@ static char *read_file(const char *path)
 		int len = strlen(line);
 
 		if (line[len-1] != '\n') {
-			err("maximum line length exceed (%d)", MAX_LINE_LEN);
-			goto fail;
+			if (len >= MAX_LINE_LEN) {
+				err("maximum line length exceed (%d)", MAX_LINE_LEN);
+				goto fail;
+			} else {
+				line[len++] = '\n';
+			}
 		}
 
 		if ((len+sz) > MAX_FILE_SZ) {
