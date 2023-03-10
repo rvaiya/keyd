@@ -600,8 +600,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->last_pressed_code == code &&
 			    (!kbd->config.overload_tap_timeout ||
 			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
-				clear_oneshot(kbd);
-
 				process_descriptor(kbd, code, action, dl, 1, time);
 				process_descriptor(kbd, code, action, dl, 0, time);
 			}
