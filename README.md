@@ -162,6 +162,13 @@ members, no personal responsibility is taken for them.
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
 
+### Ubuntu
+
+[deb](https://github.com/eupnea-linux/apt-repo) package maintained by [The Eupnea Project](https://github.com/eupnea-linux)
+1. Add repo as described in the [readme](https://github.com/eupnea-linux/apt-repo#add-to-system)
+2. `sudo apt update`
+3. `sudo apt install keyd`
+
 # Sample Config
 
 	[ids]
