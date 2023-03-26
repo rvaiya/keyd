@@ -96,6 +96,7 @@ capslock = overload(control, esc)
 # Remaps the escape key to capslock
 esc = capslock
 ```
+*Note*: It is recommended that you define the input/output of the desired key, referring to the output of `keyd monitor`.
 
 3. Run `sudo keyd reload` to reload the config set.
 
