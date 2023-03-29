@@ -20,7 +20,7 @@
 #include "keyd.h"
 #include "ini.h"
 #include "keys.h"
-#include "error.h"
+#include "log.h"
 #include "string.h"
 #include "unicode.h"
 
@@ -28,7 +28,7 @@
 #define MAX_LINE_LEN 256
 
 #undef warn
-#define warn(fmt, ...) fprintf(stderr, "\t\033[31;1mERROR:\033[0m "fmt"\n", ##__VA_ARGS__)
+#define warn(fmt, ...) keyd_log("\tr{ERROR:} "fmt"\n", ##__VA_ARGS__)
 
 static struct {
 	const char *name;

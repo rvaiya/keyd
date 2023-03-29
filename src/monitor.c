@@ -38,14 +38,14 @@ int event_handler(struct event *ev)
 	const char *name;
 
 	case EV_DEV_ADD:
-		printf("device added: %04x:%04x %s (%s)\n",
-		       ev->dev->vendor_id, ev->dev->product_id,
-		       ev->dev->name, ev->dev->path);
+		keyd_log("device added: %04x:%04x %s (%s)\n",
+			  ev->dev->vendor_id, ev->dev->product_id,
+			  ev->dev->name, ev->dev->path);
 		break;
 	case EV_DEV_REMOVE:
-		printf("device removed: %04x:%04x %s (%s)\n",
-		       ev->dev->vendor_id, ev->dev->product_id,
-		       ev->dev->name, ev->dev->path);
+		keyd_log("device removed: %04x:%04x %s (%s)\n",
+			  ev->dev->vendor_id, ev->dev->product_id,
+			  ev->dev->name, ev->dev->path);
 		break;
 	case EV_DEV_EVENT:
 		switch (ev->devev->type) {
@@ -53,13 +53,13 @@ int event_handler(struct event *ev)
 			name = keycode_table[ev->devev->code].name;
 
 			if (time_flag)
-				printf("+%ld ms\t", ev->timestamp - last_time);
+				keyd_log("r{+%ld} ms\t", ev->timestamp - last_time);
 
-			printf("%s\t%04x:%04x\t%s %s\n",
-			       ev->dev->name,
-			       ev->dev->vendor_id,
-			       ev->dev->product_id, name,
-			       ev->devev->pressed ? "down" : "up");
+			keyd_log("%s\t%04x:%04x\t%s %s\n",
+				 ev->dev->name,
+				 ev->dev->vendor_id,
+				 ev->dev->product_id, name,
+				 ev->devev->pressed ? "down" : "up");
 
 			break;
 		default:

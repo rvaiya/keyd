@@ -219,8 +219,13 @@ int main(int argc, char *argv[])
 {
 	size_t i;
 
-	debug_level =
+	log_level =
 	    atoi(getenv("KEYD_DEBUG") ? getenv("KEYD_DEBUG") : "");
+
+	if (isatty(1))
+		suppress_colours = getenv("NO_COLOR") ? 1 : 0;
+	else
+		suppress_colours = 1;
 
 	dbg("Debug mode activated");
 
