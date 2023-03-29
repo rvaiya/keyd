@@ -83,40 +83,45 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	}
 }
 
+static void clear_mod(struct keyboard *kbd, uint8_t code)
+{
+	/*
+	 * Some modifiers have a special meaning when used in
+	 * isolation (e.g meta in Gnome, alt in Firefox).
+	 * In order to prevent spurious key presses we
+	 * avoid adjacent down/up pairs by interposing
+	 * additional control sequences.
+	 */
+	int guard = (((kbd->last_pressed_output_code == code) &&
+			(code == KEYD_LEFTMETA ||
+			 code == KEYD_LEFTALT ||
+			 code == KEYD_RIGHTALT)) &&
+		       !kbd->inhibit_modifier_guard &&
+		       !kbd->config.disable_modifier_guard);
+
+	if (guard && !kbd->keystate[KEYD_LEFTCTRL]) {
+		send_key(kbd, KEYD_LEFTCTRL, 1);
+		send_key(kbd, code, 0);
+		send_key(kbd, KEYD_LEFTCTRL, 0);
+	} else {
+		send_key(kbd, code, 0);
+	}
+}
+
 static void set_mods(struct keyboard *kbd, uint8_t mods)
 {
 	size_t i;
 
-	for (i = 0; i < ARRAY_SIZE(modifier_table); i++) {
-		uint8_t code = modifier_table[i].code1;
-		uint8_t mask = modifier_table[i].mask;
+	for (i = 0; i < ARRAY_SIZE(modifiers); i++) {
+		uint8_t mask = modifiers[i].mask;
+		uint8_t code = modifiers[i].key;
 
 		if (mask & mods) {
 			if (!kbd->keystate[code])
 				send_key(kbd, code, 1);
 		} else {
-			/*
-			 * Some modifiers have a special meaning when used in
-			 * isolation (e.g meta in Gnome, alt in Firefox).
-			 * In order to prevent spurious key presses we
-			 * avoid adjacent down/up pairs by interposing
-			 * additional control sequences.
-			 */
-			int guard = ((((kbd->last_pressed_output_code == KEYD_LEFTMETA) && mask == MOD_SUPER) ||
-					((kbd->last_pressed_output_code == KEYD_LEFTALT) && mask == MOD_ALT) ||
-					((kbd->last_pressed_output_code == KEYD_RIGHTALT) && mask == MOD_ALT_GR)) &&
-				    !kbd->inhibit_modifier_guard &&
-				    !kbd->config.disable_modifier_guard);
-
-			if (kbd->keystate[code]) {
-				if (guard && !kbd->keystate[KEYD_LEFTCTRL]) {
-					send_key(kbd, KEYD_LEFTCTRL, 1);
-					send_key(kbd, code, 0);
-					send_key(kbd, KEYD_LEFTCTRL, 0);
-				} else {
-					send_key(kbd, code, 0);
-				}
-			}
+			if (kbd->keystate[code])
+				clear_mod(kbd, code);
 		}
 	}
 }
@@ -778,8 +783,7 @@ struct keyboard *new_keyboard(struct config *config,
 		}
 
 		if (!found)
-			fprintf(stderr,
-				"\tWARNING: could not find default layout %s.\n",
+			keyd_log("\tWARNING: could not find default layout %s.\n",
 				kbd->config.default_layout);
 	}
 

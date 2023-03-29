@@ -98,7 +98,7 @@ test-io:
 		src/string.c \
 		src/macro.c \
 		src/config.c \
-		src/error.c \
+		src/log.c \
 		src/ini.c \
 		src/keys.c  \
 		src/unicode.c && \

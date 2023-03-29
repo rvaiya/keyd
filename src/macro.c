@@ -131,9 +131,9 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			code = ent->data;
 			mods = ent->data >> 8;
 
-			for (j = 0; j < ARRAY_SIZE(modifier_table); j++) {
-				uint8_t code = modifier_table[j].code1;
-				uint8_t mask = modifier_table[j].mask;
+			for (j = 0; j < ARRAY_SIZE(modifiers); j++) {
+				uint8_t code = modifiers[j].key;
+				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)
 					output(code, 1);
@@ -142,13 +142,14 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			output(code, 1);
 			output(code, 0);
 
-			for (j = 0; j < ARRAY_SIZE(modifier_table); j++) {
-				uint8_t code = modifier_table[j].code1;
-				uint8_t mask = modifier_table[j].mask;
+			for (j = 0; j < ARRAY_SIZE(modifiers); j++) {
+				uint8_t code = modifiers[j].key;
+				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)
 					output(code, 0);
 			}
+
 
 			break;
 		case MACRO_TIMEOUT:

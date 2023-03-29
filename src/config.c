@@ -390,50 +390,6 @@ static int config_add_layer(struct config *config, const char *s)
 	return 0;
 }
 
-static void config_init(struct config *config)
-{
-	size_t i;
-
-	memset(config, 0, sizeof *config);
-
-	config_add_layer(config, "main");
-
-	config_add_layer(config, "control:C");
-	config_add_layer(config, "meta:M");
-	config_add_layer(config, "shift:S");
-	config_add_layer(config, "altgr:G");
-	config_add_layer(config, "alt:A");
-
-	/* Add default modifier bindings to the main layer. */
-	for (i = 0; i < MAX_MOD; i++) {
-		const struct modifier_table_ent *mod = &modifier_table[i];
-
-		struct descriptor *d1 = &config->layers[0].keymap[mod->code1];
-		struct descriptor *d2 = &config->layers[0].keymap[mod->code2];
-
-		int idx = config_get_layer_index(config, mod->name);
-
-		assert(idx != -1);
-
-		d1->op = OP_LAYER;
-		d1->args[0].idx = idx;
-
-		d2->op = OP_LAYER;
-		d2->args[0].idx = idx;
-
-		strcpy(config->aliases[mod->code1], mod->name);
-		strcpy(config->aliases[mod->code2], mod->name);
-	}
-
-	/* In ms */
-	config->chord_interkey_timeout = 50;
-	config->chord_hold_timeout = 0;
-	config->oneshot_timeout = 0;
-
-	config->macro_timeout = 600;
-	config->macro_repeat_timeout = 50;
-}
-
 /* Modifies the input string */
 static int parse_fn(char *s,
 		    char **name,
@@ -598,7 +554,7 @@ static int parse_descriptor(char *s,
 
 		/* TODO: fixme. */
 		if (keycode_to_mod(code))
-			warn("y{NOTE:} mapping modifier keycodes directly may produce unintended results.\n");
+			warn("y{NOTE:} mapping modifier keycodes directly may produce unintended results.");
 
 		return 0;
 	} else if ((ret=parse_command(s, &cmd)) >= 0) {
@@ -803,7 +759,7 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 				config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
 
 				config->nr_ids++;
-			} 
+			}
 			else {
 				warn("%s is not a valid device id", s);
 			}
@@ -844,27 +800,18 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 	}
 }
 
-int config_parse(struct config *config, const char *path)
+
+static int config_parse_string(struct config *config, char *content)
 {
 	size_t i;
-
-	char *content;
 	struct ini *ini;
-	struct ini_section *section;
-
-	config_init(config);
-
-	if (!(content = read_file(path)))
-		return -1;
 
 	if (!(ini = ini_parse_string(content, NULL)))
 		return -1;
 
-	snprintf(config->path, sizeof(config->path), "%s", path);
-
 	/* First pass: create all layers based on section headers.  */
 	for (i = 0; i < ini->nr_sections; i++) {
-		section = &ini->sections[i];
+		struct ini_section *section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids")) {
 			parse_id_section(config, section);
@@ -882,7 +829,7 @@ int config_parse(struct config *config, const char *path)
 	for (i = 0; i < ini->nr_sections; i++) {
 		size_t j;
 		char *layername;
-		section = &ini->sections[i];
+		struct ini_section *section = &ini->sections[i];
 
 		if (!strcmp(section->name, "ids") ||
 		    !strcmp(section->name, "aliases") ||
@@ -908,6 +855,64 @@ int config_parse(struct config *config, const char *path)
 	}
 
 	return 0;
+}
+
+static void config_init(struct config *config)
+{
+	size_t i;
+
+	memset(config, 0, sizeof *config);
+
+	char default_config[] =
+	"[aliases]\n"
+
+	"leftshift = shift\n"
+	"rightshift = shift\n"
+
+	"leftalt = alt\n"
+	"rightalt = altgr\n"
+
+	"leftmeta = meta\n"
+	"rightmeta = meta\n"
+
+	"leftcontrol = control\n"
+	"rightcontrol = control\n"
+
+	"[main]\n"
+
+	"shift = layer(shift)\n"
+	"alt = layer(alt)\n"
+	"altgr = layer(altgr)\n"
+	"meta = layer(meta)\n"
+	"control = layer(control)\n"
+
+	"[control:C]\n"
+	"[shift:S]\n"
+	"[meta:M]\n"
+	"[alt:A]\n"
+	"[altgr:G]\n";
+
+	config_parse_string(config, default_config);
+
+	/* In ms */
+	config->chord_interkey_timeout = 50;
+	config->chord_hold_timeout = 0;
+	config->oneshot_timeout = 0;
+
+	config->macro_timeout = 600;
+	config->macro_repeat_timeout = 50;
+}
+
+int config_parse(struct config *config, const char *path)
+{
+	char *content;
+
+	if (!(content = read_file(path)))
+		return -1;
+
+	config_init(config);
+	snprintf(config->path, sizeof(config->path), "%s", path);
+	return config_parse_string(config, content);
 }
 
 int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags)
@@ -941,7 +946,7 @@ int config_get_layer_index(const struct config *config, const char *name)
 	return -1;
 }
 
-/* 
+/*
  * Adds a binding of the form [<layer>.]<key> = <descriptor expression>
  * to the given config.
  */
