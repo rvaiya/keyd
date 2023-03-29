@@ -347,7 +347,7 @@ static int new_layer(char *s, const struct config *config, struct layer *layer)
 			layer->mods = mods;
 	} else {
 		if (type)
-			fprintf(stderr, "\tWARNING: \"%s\" is not a valid layer type, ignoring\n", type);
+			warn("\"%s\" is not a valid layer type, ignoring\n", type);
 
 		layer->type = LT_NORMAL;
 		layer->mods = 0;
@@ -598,8 +598,7 @@ static int parse_descriptor(char *s,
 
 		/* TODO: fixme. */
 		if (keycode_to_mod(code))
-			fprintf(stderr,
-				"\t\033[31;1mNOTE:\033[0m mapping modifier keycodes directly may produce unintended results.\n");
+			warn("y{NOTE:} mapping modifier keycodes directly may produce unintended results.\n");
 
 		return 0;
 	} else if ((ret=parse_command(s, &cmd)) >= 0) {

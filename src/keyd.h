@@ -34,7 +34,7 @@
 #include "config.h"
 #include "macro.h"
 #include "device.h"
-#include "error.h"
+#include "log.h"
 #include "keyboard.h"
 #include "keys.h"
 #include "vkbd.h"

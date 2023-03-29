@@ -135,7 +135,7 @@ static void load_configs()
 		if (len >= 5 && !strcmp(path + len - 5, ".conf")) {
 			struct config_ent *ent = calloc(1, sizeof(struct config_ent));
 
-			printf("CONFIG: parsing %s\n", path);
+			keyd_log("CONFIG: parsing %s\n", path);
 
 			if (!config_parse(&ent->config, path)) {
 				ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);
@@ -198,17 +198,17 @@ static void manage_device(struct device *dev)
 			return;
 		}
 
-		printf("DEVICE: \033[32;1mmatch   \033[0m %04hx:%04hx  %s\t(%s)\n",
-		     dev->vendor_id, dev->product_id,
-		     ent->config.path,
-		     dev->name);
+		keyd_log("DEVICE: g{match}    %04hx:%04hx  %s\t(%s)\n",
+			  dev->vendor_id, dev->product_id,
+			  ent->config.path,
+			  dev->name);
 
 		dev->data = ent->kbd;
 	} else {
 		dev->data = NULL;
 		device_ungrab(dev);
-		printf("DEVICE: \033[31;1mignoring\033[0m %04hx:%04hx  (%s)\n",
-		     dev->vendor_id, dev->product_id, dev->name);
+		keyd_log("DEVICE: r{ignoring} %04hx:%04hx  (%s)\n", 
+			  dev->vendor_id, dev->product_id, dev->name);
 	}
 }
 
@@ -481,10 +481,11 @@ static int event_handler(struct event *ev)
 		manage_device(ev->dev);
 		break;
 	case EV_DEV_REMOVE:
-		printf("DEVICE: \033[31;1mremoved\033[0m\t%04hx:%04hx %s\n",
-			ev->dev->vendor_id,
-			ev->dev->product_id,
-			ev->dev->name);
+		keyd_log("DEVICE: r{removed}\t%04hx:%04hx %s\n",
+			  ev->dev->vendor_id,
+			  ev->dev->product_id,
+			  ev->dev->name);
+
 		break;
 	case EV_FD_ACTIVITY:
 		if (ev->fd == ipcfd) {
@@ -526,7 +527,7 @@ int run_daemon(int argc, char *argv[])
 
 	atexit(cleanup);
 
-	printf("Starting keyd "VERSION"\n");
+	keyd_log("Starting keyd "VERSION"\n");
 	evloop(event_handler);
 
 	return 0;

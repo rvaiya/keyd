@@ -90,14 +90,14 @@ static int device_init(const char *path, struct device *dev)
 	struct input_absinfo absinfo;
 
 	if ((fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC, 0600)) < 0) {
-		fprintf(stderr, "failed to open %s\n", path);
+		keyd_log("failed to open %s\n", path);
 		return -1;
 	}
 
 	capabilities = resolve_device_capabilities(fd);
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
-		fprintf(stderr, "ERROR: could not fetch device name of %s\n", dev->path);
+		keyd_log("ERROR: could not fetch device name of %s\n", dev->path);
 		return -1;
 	}
 
@@ -384,7 +384,7 @@ struct device_event *device_read_event(struct device *dev)
 			/* TODO: implement me */
 			return NULL;
 		default:
-			fprintf(stderr, "Unrecognized EV_REL code: %d\n", ev.code);
+			dbg("Unrecognized EV_REL code: %d\n", ev.code);
 			return NULL;
 		}
 
@@ -437,9 +437,7 @@ struct device_event *device_read_event(struct device *dev)
 			else if (ev.code >= BTN_DIGI
 				 && ev.code <= BTN_TOOL_QUADTAP);
 			else {
-				fprintf(stderr,
-					"ERROR: unsupported evdev code: 0x%x\n",
-					ev.code);
+				keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
 				return NULL;
 			}
 		}
