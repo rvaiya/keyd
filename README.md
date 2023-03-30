@@ -96,7 +96,10 @@ capslock = overload(control, esc)
 # Remaps the escape key to capslock
 esc = capslock
 ```
-*Note*: It is recommended that you define the input/output of the desired key, referring to the output of `keyd monitor`.
+
+Key names can be obtained by using the `keyd monitor` command. Note that while keyd is running, the output of this
+command will correspond to keyd's output. The original input events can be seen by first stopping keyd and then
+running the command. See the man page for more details.
 
 3. Run `sudo keyd reload` to reload the config set.
 
