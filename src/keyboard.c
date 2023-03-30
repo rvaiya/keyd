@@ -697,8 +697,11 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_COMMAND:
-		if (pressed)
+		if (pressed) {
 			execute_command(kbd->config.commands[d->args[0].idx].cmd);
+			clear_oneshot(kbd);
+			update_mods(kbd, -1, 0);
+		}
 		break;
 	case OP_SWAP:
 	case OP_SWAPM:
