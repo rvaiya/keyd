@@ -442,7 +442,7 @@ def daemonize():
     if os.fork(): exit(0)
 
 opt = argparse.ArgumentParser()
-opt.add_argument('-q', '--quiet', default=False, action='store_true', help='suppress logging of the active window')
+opt.add_argument('-v', '--verbose', default=False, action='store_true', help='Log the active window (useful for discovering window and class names)')
 opt.add_argument('-d', '--daemonize', default=False, action='store_true', help='fork and run in the background')
 args = opt.parse_args()
 
@@ -482,7 +482,7 @@ def on_window_change(cls, title):
         config = parse_config(CONFIG_PATH)
         last_mtime = mtime
 
-    if not args.quiet:
+    if args.verbose:
         print(f'Active window: {cls}|{title}')
 
     bindings = lookup_bindings(cls, title)
