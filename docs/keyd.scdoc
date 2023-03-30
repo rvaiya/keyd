@@ -845,7 +845,7 @@ behaviour.
 
 Meta behaves as normal except when \` is pressed, after which the alt_tab layer
 is activated for the duration of the leftmeta keypress. Subsequent actuations
-of _will thus produce A-tab instead of M-\\_.
+_will thus produce A-tab instead of M-\\_.
 
 ```
 	[meta]
