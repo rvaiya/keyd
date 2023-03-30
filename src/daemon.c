@@ -135,7 +135,7 @@ static void load_configs()
 		if (len >= 5 && !strcmp(path + len - 5, ".conf")) {
 			struct config_ent *ent = calloc(1, sizeof(struct config_ent));
 
-			keyd_log("CONFIG: parsing %s\n", path);
+			keyd_log("CONFIG: parsing b{%s}\n", path);
 
 			if (!config_parse(&ent->config, path)) {
 				ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);

@@ -28,7 +28,7 @@
 #define MAX_LINE_LEN 256
 
 #undef warn
-#define warn(fmt, ...) keyd_log("\tr{ERROR:} "fmt"\n", ##__VA_ARGS__)
+#define warn(fmt, ...) keyd_log("\ty{WARNING:} "fmt"\n", ##__VA_ARGS__)
 
 static struct {
 	const char *name;
@@ -548,13 +548,30 @@ static int parse_descriptor(char *s,
 	}
 
 	if (!parse_key_sequence(s, &code, &mods)) {
+		size_t i;
+		const char *layer = NULL;
+
+		switch (code) {
+			case KEYD_LEFTSHIFT:   layer = "shift"; break;
+			case KEYD_LEFTCTRL:    layer = "control"; break;
+			case KEYD_LEFTMETA:    layer = "meta"; break;
+			case KEYD_LEFTALT:     layer = "alt"; break;
+			case KEYD_RIGHTALT:    layer = "altgr"; break;
+		}
+
+		if (layer) {
+			warn("You should use b{layer(%s)} instead of assigning to b{%s} directly.", layer, KEY_NAME(code));
+			d->op = OP_LAYER;
+			d->args[0].idx = config_get_layer_index(config, layer);
+
+			assert(d->args[0].idx != -1);
+
+			return 0;
+		}
+
 		d->op = OP_KEYSEQUENCE;
 		d->args[0].code = code;
 		d->args[1].mods = mods;
-
-		/* TODO: fixme. */
-		if (keycode_to_mod(code))
-			warn("y{NOTE:} mapping modifier keycodes directly may produce unintended results.");
 
 		return 0;
 	} else if ((ret=parse_command(s, &cmd)) >= 0) {
@@ -850,7 +867,7 @@ static int config_parse_string(struct config *config, char *content)
 			snprintf(entry, sizeof entry, "%s.%s = %s", layername, ent->key, ent->val);
 
 			if (config_add_entry(config, entry) < 0)
-				warn("line %zd: %s", ent->lnum, errstr);
+				keyd_log("\tr{ERROR:} line m{%zd}: %s\n", ent->lnum, errstr);
 		}
 	}
 

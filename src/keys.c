@@ -267,27 +267,6 @@ const struct keycode_table_ent keycode_table[256] = {
 	[KEYD_NOOP] = { "noop", NULL, NULL },
 };
 
-uint8_t keycode_to_mod(uint8_t code)
-{
-	switch (code) {
-	case KEYD_LEFTSHIFT:
-	case KEYD_RIGHTSHIFT:
-		return MOD_SHIFT;
-	case KEYD_LEFTALT:
-		return MOD_ALT;
-	case KEYD_RIGHTALT:
-		return MOD_ALT_GR;
-	case KEYD_LEFTCTRL:
-	case KEYD_RIGHTCTRL:
-		return MOD_CTRL;
-	case KEYD_LEFTMETA:
-	case KEYD_RIGHTMETA:
-		return MOD_SUPER;
-	}
-
-	return 0;
-}
-
 const char *modstring(uint8_t mods)
 {
 	static char s[16];
