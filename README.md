@@ -97,10 +97,6 @@ capslock = overload(control, esc)
 esc = capslock
 ```
 
-Key names can be obtained by using the `keyd monitor` command. Note that while keyd is running, the output of this
-command will correspond to keyd's output. The original input events can be seen by first stopping keyd and then
-running the command. See the man page for more details.
-
 3. Run `sudo keyd reload` to reload the config set.
 
 4. See the man page (`man keyd`) for a more comprehensive description.
@@ -165,6 +161,13 @@ members, no personal responsibility is taken for them.
 ### Arch
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
+
+### Fedora
+
+[rpm](https://github.com/eupnea-linux/rpm-repo) package maintained by [The Eupnea Project](https://github.com/eupnea-linux)
+1. Add repo as described in the [readme](https://github.com/eupnea-linux/rpm-repo#add-to-system)
+2. `sudo dnf update --refresh`
+3. `sudo dnf install keyd`
 
 # Sample Config
 
