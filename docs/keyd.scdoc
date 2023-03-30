@@ -66,7 +66,7 @@ the form _[section_name]_ followed by a set of _bindings_.  Lines beginning
 with a hash are ignored.
 
 Config files are stored in _/etc/keyd/_ and loaded upon initialization.
-The reload command can be used to update the working set of config 
+The reload command can be used to update the working set of config
 files (e.g sudo keyd reload).
 
 A valid config file has the extension _.conf_ and *must* begin with an _[ids]_
@@ -253,7 +253,7 @@ the full config actually looks something like this:
 	j = down
 ```
 
-If multiple bindings for the same key are present, the most recent one takes precedence. 
+If multiple bindings for the same key are present, the most recent one takes precedence.
 
 A layer heading may also appear multiple times, in which case the layer will
 contain the sum of all bindings. Note that the layer type may not be reassigned.
@@ -620,9 +620,11 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	If tapped, activate the supplied layer for the duration of the next keypress. 
 
 *swap(<layer>)*
-	Swap the currently active layer with the supplied one. The
-	supplied layer is active for the duration of the depression of the
-	current layer's activation key.
+	Swap the currently active layer with the supplied one. If the current
+	layer is toggled, it is deactivated and the supplied layer is toggled
+	instead. Otherwise, the active layer is deactivated and the supplied
+	layer remains active for the duration of the depression of the
+	activating key.
 
 ```
 	[control]
@@ -634,6 +636,13 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	s = C-s
 	b = S-insert
 ```
+
+	NOTE:
+
+	You probably don't need to use this unless you are trying to do something quite
+	involved. Think hard about whether or not what you are trying to achieve
+	can be done by other means, as it is easy to end up in states which
+	are impossible to exit.
 
 *setlayout(<layout>)*
 	Set the current layout.

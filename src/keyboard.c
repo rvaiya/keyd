@@ -709,28 +709,44 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			size_t i;
 			struct cache_entry *ce = NULL;
 
-			for (i = 0; i < CACHE_SIZE; i++) {
-				uint8_t code = kbd->cache[i].code;
-				int layer = kbd->cache[i].layer;
-				int type = kbd->config.layers[layer].type;
-
-				if (code && layer == dl && type == LT_NORMAL && layer != 0) {
-					ce = &kbd->cache[i];
-					break;
-				}
-			}
-
-			if (ce) {
-				ce->d.op = OP_LAYER;
-				ce->d.args[0].idx = idx;
-
+			if (kbd->layer_state[dl].toggled) {
 				deactivate_layer(kbd, dl);
-				activate_layer(kbd, ce->code, idx);
+				kbd->layer_state[dl].toggled = 0;
 
-				if (macro)
-					execute_macro(kbd, dl, macro);
-
+				activate_layer(kbd, 0, idx);
+				kbd->layer_state[idx].toggled = 1;
 				update_mods(kbd, -1, 0);
+			} else if (kbd->layer_state[dl].oneshot) {
+				deactivate_layer(kbd, dl);
+				kbd->layer_state[dl].oneshot = 0;
+
+				activate_layer(kbd, 0, idx);
+				kbd->layer_state[idx].oneshot = 1;
+				update_mods(kbd, -1, 0);
+			} else {
+				for (i = 0; i < CACHE_SIZE; i++) {
+					uint8_t code = kbd->cache[i].code;
+					int layer = kbd->cache[i].layer;
+					int type = kbd->config.layers[layer].type;
+
+					if (code && layer == dl && type == LT_NORMAL && layer != 0) {
+						ce = &kbd->cache[i];
+						break;
+					}
+				}
+
+				if (ce) {
+					ce->d.op = OP_LAYER;
+					ce->d.args[0].idx = idx;
+
+					deactivate_layer(kbd, dl);
+					activate_layer(kbd, ce->code, idx);
+
+					if (macro)
+						execute_macro(kbd, dl, macro);
+
+					update_mods(kbd, -1, 0);
+				}
 			}
 		} else {
 			if (macro &&
