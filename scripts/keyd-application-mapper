@@ -183,7 +183,7 @@ class Wlroots():
                 if event == 1:
                     windows[obj]['appid'] = self.wl.read_string(payload)
                 if event == 4 and payload[0] > 0 and payload[4] == 2:
-                    self.on_window_change(windows[obj]['appid'], windows[obj]['title'])
+                    self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
 
 class XMonitor():
     def __init__(self, on_window_change):
