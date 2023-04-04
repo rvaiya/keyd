@@ -31,6 +31,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef __FreeBSD__
+	#include <dev/evdev/input.h>
+#else
+	#include <linux/input.h>
+#endif
+
 #include "config.h"
 #include "macro.h"
 #include "device.h"
@@ -43,14 +49,6 @@
 #define MAX_IPC_MESSAGE_SIZE 4096
 
 #define ARRAY_SIZE(x) (int)(sizeof(x)/sizeof(x[0]))
-
-#define die(fmt, ...) \
-	do { \
-		fprintf(stderr, "FATAL: "fmt"\n", ##__VA_ARGS__); \
-		exit(-1); \
-	} while (0)
-
-#define warn(fmt, ...) fprintf(stderr, "\033[31;1mWARNING:\033[0m "fmt"\n", ##__VA_ARGS__)
 
 enum event_type {
 	EV_DEV_ADD,

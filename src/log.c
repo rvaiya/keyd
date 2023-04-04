@@ -68,6 +68,17 @@ static const char *colorize(const char *s)
 	return buf;
 }
 
+void die(const char *fmt, ...) {
+	fprintf(stderr, colorize("r{FATAL ERROR:} "));
+
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(stderr, colorize(fmt), ap);
+	va_end(ap);
+
+	exit(-1);
+}
+
 void _keyd_log(int level, const char *fmt, ...)
 {
 	if (level > log_level)

@@ -33,7 +33,7 @@ endif
 all:
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
-	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -o bin/keyd -lpthread $(LDFLAGS)
+	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -Wunused" $(MAKE)
 compose:

@@ -143,7 +143,7 @@ static void load_configs()
 				configs = ent;
 			} else {
 				free(ent);
-				warn("failed to parse %s", path);
+				keyd_log("DEVICE: y{WARNING} failed to parse %s", path);
 			}
 
 		}
@@ -193,7 +193,7 @@ static void manage_device(struct device *dev)
 
 	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, flags))) {
 		if (device_grab(dev)) {
-			warn("Failed to grab %s", dev->path);
+			keyd_log("DEVICE: y{WARNING} Failed to grab %s\n", dev->path);
 			dev->data = NULL;
 			return;
 		}

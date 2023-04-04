@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <linux/input.h>
 #include <sys/inotify.h>
 
 /*
