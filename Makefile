@@ -17,8 +17,9 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-DSOCKET_PATH=\"$(SOCKET_PATH)\" \
 	-DCONFIG_DIR=\"$(CONFIG_DIR)\" \
 	-DDATA_DIR=\"$(PREFIX)/share/keyd\" \
-	-D_FORTIFY_SOURCE=2\
+	-D_FORTIFY_SOURCE=2 \
 	-D_DEFAULT_SOURCE \
+	-Werror=format-security \
 	$(CFLAGS)
 
 platform=$(shell uname -s)

@@ -69,7 +69,7 @@ static const char *colorize(const char *s)
 }
 
 void die(const char *fmt, ...) {
-	fprintf(stderr, colorize("r{FATAL ERROR:} "));
+	fprintf(stderr, "%s", colorize("r{FATAL ERROR:} "));
 
 	va_list ap;
 	va_start(ap, fmt);
