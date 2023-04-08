@@ -921,6 +921,11 @@ Disables the esc and end keys.
 	end = noop
 ```
 
+# ENVIRONMENT VARIABLES
+
+*KEYD_DEBUG*
+	Debug log level. _0_,_1_,_2_ can be specified (default: 0).
+
 # AUTHOR
 
 Written by Raheman Vaiya (2017-).
