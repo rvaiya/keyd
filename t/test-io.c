@@ -26,7 +26,7 @@ static uint8_t lookup_code(const char *name)
 	return 0;
 }
 
-static void test_sink(uint8_t code, uint8_t pressed)
+static void send_key(uint8_t code, uint8_t pressed)
 {
 	output[noutput].code = code;
 	output[noutput].pressed = pressed;
@@ -218,12 +218,20 @@ void run_test(struct keyboard *kbd, const char *path)
 	}
 }
 
+static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t active)
+{
+}
+
 int main(int argc, char *argv[])
 {
 	size_t i;
 	struct config config;
 
 	struct keyboard *kbd;
+	struct output output = {
+		.send_key = send_key,
+		.on_layer_change = on_layer_change,
+	};
 
 	if (argc < 2) {
 		printf
@@ -237,7 +245,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	kbd = new_keyboard(&config, test_sink, NULL);
+	kbd = new_keyboard(&config, &output);
 
 	for (i = 2; i < argc; i++)
 		run_test(kbd, argv[i]);

@@ -77,7 +77,7 @@ static void add_listener(int con)
 	listeners[nr_listeners++] = con;
 }
 
-static void layer_observer(struct keyboard *kbd, const char *name, int state)
+static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t state)
 {
 	size_t i;
 	char buf[MAX_LAYER_NAME_LEN+2];
@@ -138,12 +138,17 @@ static void load_configs()
 			keyd_log("CONFIG: parsing b{%s}\n", path);
 
 			if (!config_parse(&ent->config, path)) {
-				ent->kbd = new_keyboard(&ent->config, send_key, layer_observer);
+				struct output output = {
+					.send_key = send_key,
+					.on_layer_change = on_layer_change,
+				};
+				ent->kbd = new_keyboard(&ent->config, &output);
+
 				ent->next = configs;
 				configs = ent;
 			} else {
 				free(ent);
-				keyd_log("DEVICE: y{WARNING} failed to parse %s", path);
+				keyd_log("DEVICE: y{WARNING} failed to parse %s\n", path);
 			}
 
 		}

@@ -62,7 +62,7 @@ static void reset_keystate(struct keyboard *kbd)
 
 	for (i = 0; i < 256; i++) {
 		if (kbd->keystate[i]) {
-			kbd->output(i, 0);
+			kbd->output.send_key(i, 0);
 			kbd->keystate[i] = 0;
 		}
 	}
@@ -79,7 +79,7 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 
 	if (kbd->keystate[code] != pressed) {
 		kbd->keystate[code] = pressed;
-		kbd->output(code, pressed);
+		kbd->output.send_key(code, pressed);
 	}
 }
 
@@ -169,7 +169,7 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 		send_key(kbd, code, 0);
 	} else {
 		update_mods(kbd, dl, 0);
-		macro_execute(kbd->output, macro, kbd->config.macro_sequence_timeout);
+		macro_execute(kbd->output.send_key, macro, kbd->config.macro_sequence_timeout);
 	}
 }
 
@@ -247,8 +247,7 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 	assert(kbd->layer_state[idx].active > 0);
 	kbd->layer_state[idx].active--;
 
-	if (kbd->layer_observer)
-		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 0);
+	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 0);
 }
 
 /*
@@ -267,8 +266,7 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 	if ((ce = cache_get(kbd, code)))
 		ce->layer = idx;
 
-	if (kbd->layer_observer)
-		kbd->layer_observer(kbd, kbd->config.layers[idx].name, 1);
+	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 1);
 }
 
 /* Returns:
@@ -771,9 +769,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	return timeout;
 }
 
-struct keyboard *new_keyboard(struct config *config,
-			      void (*sink) (uint8_t code, uint8_t pressed),
-			      void (*layer_observer)(struct keyboard *kbd, const char *name, int state))
+struct keyboard *new_keyboard(struct config *config, const struct output *output)
 {
 	size_t i;
 	struct keyboard *kbd;
@@ -783,6 +779,7 @@ struct keyboard *new_keyboard(struct config *config,
 	kbd->original_config = config;
 	memcpy(&kbd->config, kbd->original_config, sizeof(struct config));
 
+	kbd->output = *output;
 	kbd->layer_state[0].active = 1;
 	kbd->layer_state[0].activation_time = 0;
 
@@ -808,8 +805,6 @@ struct keyboard *new_keyboard(struct config *config,
 
 	kbd->chord.queue_sz = 0;
 	kbd->chord.state = CHORD_INACTIVE;
-	kbd->output = sink;
-	kbd->layer_observer = layer_observer;
 
 	return kbd;
 }

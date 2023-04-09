@@ -15,6 +15,8 @@
 #define MAX_ACTIVE_KEYS	32
 #define CACHE_SIZE	16 //Effectively nkro
 
+struct keyboard;
+
 struct cache_entry {
 	uint8_t code;
 	struct descriptor d;
@@ -28,10 +30,16 @@ struct key_event {
 	int timestamp;
 };
 
+struct output {
+	void (*send_key) (uint8_t code, uint8_t state);
+	void (*on_layer_change) (const struct keyboard *kbd, const char *name, uint8_t active);
+};
+
 /* May correspond to more than one physical input device. */
 struct keyboard {
 	const struct config *original_config;
 	struct config config;
+	struct output output;
 
 	/*
 	 * Cache descriptors to preserve code->descriptor
@@ -113,8 +121,6 @@ struct keyboard {
 	} layer_state[MAX_LAYERS];
 
 	uint8_t keystate[256];
-	void (*output) (uint8_t code, uint8_t state);
-	void (*layer_observer) (struct keyboard *kbd, const char *layer, int state);
 
 	struct {
 		int x;
@@ -125,9 +131,7 @@ struct keyboard {
 	} scroll;
 };
 
-struct keyboard *new_keyboard(struct config *config,
-			      void (*sink) (uint8_t code, uint8_t pressed),
-			      void (*layer_observer)(struct keyboard *kbd, const char *name, int state));
+struct keyboard *new_keyboard(struct config *config, const struct output *output);
 
 long kbd_process_events(struct keyboard *kbd, const struct key_event *events, size_t n);
 int kbd_eval(struct keyboard *kbd, const char *exp);
