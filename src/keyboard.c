@@ -743,12 +743,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 					deactivate_layer(kbd, dl);
 					activate_layer(kbd, ce->code, idx);
 
-					if (macro)
-						execute_macro(kbd, dl, macro);
-
 					update_mods(kbd, -1, 0);
 				}
 			}
+
+			if (macro)
+				execute_macro(kbd, dl, macro);
 		} else {
 			if (macro &&
 			    macro->sz == 1 &&
