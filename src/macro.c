@@ -139,6 +139,9 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 					output(code, 1);
 			}
 
+			if (mods && timeout)
+				usleep(timeout);
+
 			output(code, 1);
 			output(code, 0);
 
