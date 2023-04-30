@@ -657,7 +657,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
 
-			kbd->macro_timeout = time + kbd->config.macro_timeout;
+			kbd->macro_timeout = time + timeout;
 			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 
