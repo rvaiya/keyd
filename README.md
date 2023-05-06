@@ -166,6 +166,10 @@ members, no personal responsibility is taken for them.
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
 
+### Fedora
+
+[COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
+
 # Sample Config
 
 	[ids]
