@@ -400,9 +400,9 @@ static void clear_oneshot(struct keyboard *kbd)
 	size_t i = 0;
 
 	for (i = 0; i < kbd->config.nr_layers; i++)
-		if (kbd->layer_state[i].oneshot) {
-			kbd->layer_state[i].oneshot = 0;
+		while (kbd->layer_state[i].oneshot_depth) {
 			deactivate_layer(kbd, i);
+			kbd->layer_state[i].oneshot_depth--;
 		}
 
 	kbd->oneshot_latch = 0;
@@ -614,17 +614,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		idx = d->args[0].idx;
 
 		if (pressed) {
-			if (kbd->layer_state[idx].active) {
-				/* Neutralize the upstroke. */
-				cache_set(kbd, code, NULL);
-			} else {
-				activate_layer(kbd, code, idx);
-				update_mods(kbd, dl, 0);
-				kbd->oneshot_latch = 1;
-			}
+			activate_layer(kbd, code, idx);
+			update_mods(kbd, dl, 0);
+			kbd->oneshot_latch = 1;
 		} else {
 			if (kbd->oneshot_latch) {
-				kbd->layer_state[idx].oneshot = 1;
+				kbd->layer_state[idx].oneshot_depth++;
 				if (kbd->config.oneshot_timeout) {
 					kbd->oneshot_timeout = time + kbd->config.oneshot_timeout;
 					schedule_timeout(kbd, kbd->oneshot_timeout);
@@ -717,12 +712,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				activate_layer(kbd, 0, idx);
 				kbd->layer_state[idx].toggled = 1;
 				update_mods(kbd, -1, 0);
-			} else if (kbd->layer_state[dl].oneshot) {
+			} else if (kbd->layer_state[dl].oneshot_depth) {
 				deactivate_layer(kbd, dl);
-				kbd->layer_state[dl].oneshot = 0;
+				kbd->layer_state[dl].oneshot_depth--;
 
 				activate_layer(kbd, 0, idx);
-				kbd->layer_state[idx].oneshot = 1;
+				kbd->layer_state[idx].oneshot_depth++;
 				update_mods(kbd, -1, 0);
 			} else {
 				for (i = 0; i < CACHE_SIZE; i++) {

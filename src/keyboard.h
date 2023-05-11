@@ -117,7 +117,7 @@ struct keyboard {
 
 		uint8_t active;
 		uint8_t toggled;
-		uint8_t oneshot;
+		uint8_t oneshot_depth;
 	} layer_state[MAX_LAYERS];
 
 	uint8_t keystate[256];
