@@ -1,3 +1,34 @@
+#v2.4.3
+
+- Introduces a new layout type
+- Improves application based remapping suport for wayland/X
+- Numerous bugfixes and stability improvements
+- Adds `swap` support for toggled layers
+
+New Actions:
+
+ - togglem (#270)
+ - clear() (#253)
+ - overloadt (#309)
+ - overloadt2
+
+New Commands:
+
+ - listen command (#294, #217)
+ - reload
+ - do
+ - input
+
+New timeout and modifier knobs:
+
+ - disable_modifier_guard (#257)
+ - oneshot_timeout option
+ - overload_tap_timeout
+ - macro_sequence_timeout (#255)
+
+See the manpage for details.
+
+
 # v2.4.2
 
  - Add include directive to the config syntax
