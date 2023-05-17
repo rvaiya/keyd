@@ -120,6 +120,8 @@ static int create_virtual_pointer(const char *name)
 	ioctl(fd, UI_SET_RELBIT, REL_X);
 	ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
 	ioctl(fd, UI_SET_RELBIT, REL_HWHEEL);
+	ioctl(fd, UI_SET_RELBIT, REL_WHEEL_HI_RES);
+	ioctl(fd, UI_SET_RELBIT, REL_HWHEEL_HI_RES);
 	ioctl(fd, UI_SET_RELBIT, REL_Y);
 	ioctl(fd, UI_SET_RELBIT, REL_Z);
 
@@ -269,6 +271,35 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 
 	ev.type = EV_REL;
 	ev.code = REL_HWHEEL;
+	ev.value = x;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_SYN;
+	ev.code = 0;
+	ev.value = 0;
+
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
+}
+
+void vkbd_mouse_scroll_hi_res(const struct vkbd *vkbd, int x, int y)
+{
+	struct input_event ev;
+
+	ev.type = EV_REL;
+	ev.code = REL_WHEEL_HI_RES;
+	ev.value = y;
+
+	ev.time.tv_sec = 0;
+	ev.time.tv_usec = 0;
+
+	xwrite(vkbd->pfd, &ev, sizeof(ev));
+
+	ev.type = EV_REL;
+	ev.code = REL_HWHEEL_HI_RES;
 	ev.value = x;
 
 	ev.time.tv_sec = 0;

@@ -438,10 +438,14 @@ static int event_handler(struct event *ev)
 				if (kbd->scroll.active) {
 					if (kbd->scroll.sensitivity == 0)
 						break;
-					int xticks, yticks;
+					const int scale = 10;
+					int scaled_y, scaled_x, xticks, yticks;
 
-					kbd->scroll.y += ev->devev->y;
-					kbd->scroll.x += ev->devev->x;
+					scaled_y = ev->devev->y << scale;
+					scaled_x = ev->devev->x << scale;
+
+					kbd->scroll.y += scaled_y;
+					kbd->scroll.x += scaled_x;
 
 					yticks = kbd->scroll.y / kbd->scroll.sensitivity;
 					kbd->scroll.y %= kbd->scroll.sensitivity;
@@ -449,8 +453,7 @@ static int event_handler(struct event *ev)
 					xticks = kbd->scroll.x / kbd->scroll.sensitivity;
 					kbd->scroll.x %= kbd->scroll.sensitivity;
 
-					vkbd_mouse_scroll(vkbd, 0, -1*yticks);
-					vkbd_mouse_scroll(vkbd, 0, xticks);
+					vkbd_mouse_scroll_hi_res(vkbd, xticks, -1 * yticks);
 				} else {
 					vkbd_mouse_move(vkbd, ev->devev->x, ev->devev->y);
 				}
