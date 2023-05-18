@@ -284,7 +284,9 @@ struct modifier {
 #define  KEYD_RIGHT_MOUSE		251
 #define  KEYD_MOUSE_1          		252
 #define  KEYD_MOUSE_2          		253
+#define  KEYD_MOUSE_BACK       		178
 #define  KEYD_FN               		254
+#define  KEYD_MOUSE_FORWARD    		255
 
 #define KEY_NAME(code) (keycode_table[code].name ? keycode_table[code].name : "UNKNOWN")
 

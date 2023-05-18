@@ -429,6 +429,10 @@ struct device_event *device_read_event(struct device *dev)
 				ev.code = KEYD_MOUSE_1;
 			else if (ev.code == BTN_EXTRA)
 				ev.code = KEYD_MOUSE_2;
+			else if (ev.code == BTN_BACK)
+				ev.code = KEYD_MOUSE_BACK;
+			else if (ev.code == BTN_FORWARD)
+				ev.code = KEYD_MOUSE_FORWARD;
 			else if (ev.code == KEY_FN)
 				ev.code = KEYD_FN;
 			else if (ev.code == KEY_ZOOM)

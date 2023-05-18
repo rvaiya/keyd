@@ -160,12 +160,14 @@ static void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 
 	is_btn = 1;
 	switch (code) {
-		case KEYD_LEFT_MOUSE:	ev.code = BTN_LEFT; break;
-		case KEYD_MIDDLE_MOUSE:	ev.code = BTN_MIDDLE; break;
-		case KEYD_RIGHT_MOUSE:	ev.code = BTN_RIGHT; break;
-		case KEYD_MOUSE_1:	ev.code = BTN_SIDE; break;
-		case KEYD_MOUSE_2:	ev.code = BTN_EXTRA; break;
-		case KEYD_ZOOM:		ev.code = KEY_ZOOM; is_btn = 0; break;
+		case KEYD_LEFT_MOUSE:	 ev.code = BTN_LEFT; break;
+		case KEYD_MIDDLE_MOUSE:	 ev.code = BTN_MIDDLE; break;
+		case KEYD_RIGHT_MOUSE:	 ev.code = BTN_RIGHT; break;
+		case KEYD_MOUSE_1:	 ev.code = BTN_SIDE; break;
+		case KEYD_MOUSE_2:	 ev.code = BTN_EXTRA; break;
+		case KEYD_MOUSE_BACK:	 ev.code = BTN_BACK; break;
+		case KEYD_MOUSE_FORWARD: ev.code = BTN_FORWARD; break;
+		case KEYD_ZOOM:		 ev.code = KEY_ZOOM; is_btn = 0; break;
 		default:
 			ev.code = code;
 			is_btn = 0;
