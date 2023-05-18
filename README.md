@@ -168,6 +168,10 @@ members, no personal responsibility is taken for them.
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
 
+### openSUSE
+[keyd](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
+Easy install with `sudo zypper in keyd`.
+
 # Sample Config
 
 	[ids]
