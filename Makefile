@@ -58,7 +58,7 @@ install:
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
 	fi
 
-	mkdir -p $(DESTDIR)/etc/keyd
+	mkdir -p $(DESTDIR)$(CONFIG_DIR)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/keyd/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/keyd/layouts/
