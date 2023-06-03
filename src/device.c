@@ -376,12 +376,12 @@ struct device_event *device_read_event(struct device *dev)
 			devev.x = 0;
 
 			break;
-		case REL_WHEEL_HI_RES:
-			/* TODO: implement me */
-			return NULL;
-		case REL_HWHEEL_HI_RES:
-			/* TODO: implement me */
-			return NULL;
+//		case REL_WHEEL_HI_RES:
+//			/* TODO: implement me */
+//			return NULL;
+//		case REL_HWHEEL_HI_RES:
+//			/* TODO: implement me */
+//			return NULL;
 		default:
 			dbg("Unrecognized EV_REL code: %d\n", ev.code);
 			return NULL;
