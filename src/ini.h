@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #define MAX_SECTIONS 32
-#define MAX_SECTION_ENTRIES 128
+#define MAX_SECTION_ENTRIES 1024
 
 struct ini_entry {
 	char *key;
