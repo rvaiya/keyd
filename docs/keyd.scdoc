@@ -177,13 +177,13 @@ For example:
 	j = down
 ```
 
-will cause _capslock_ to behave as _control_, except in the case of _control+j_, which will
+will cause _capslock_ to behave as _control_, except in the case of _capslock+j_, which will
 emit _down_. This makes it trivial to define custom modifiers which don't interfere with
 one another.
 
 Note that bindings are not affected by the modifiers of the layer in which they
 are defined. Thus *capslock+j* will produce an unmodified *down* keypress, while
-*shift+control+j* will produce *shift+down* as expected.
+*control+capslock+j* will produce *control+down* as expected.
 
 
 Formally, each layer heading has the following form:
