@@ -14,7 +14,7 @@ using kernel level input primitives (evdev, uinput).
 
 The config format has undergone several iterations since the first
 release. For those migrating their configs from v1 it is best
-to reread the man page. 
+to reread the man page.
 
 See also: [changelog](docs/CHANGELOG.md).
 
@@ -77,7 +77,9 @@ between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), an
     git clone https://github.com/rvaiya/keyd
     cd keyd
     make && sudo make install
-    sudo systemctl enable keyd && sudo systemctl start keyd
+    sudo systemctl daemon-reload && sudo systemctl enable keyd && sudo systemctl start keyd
+
+**Note:** This can be built without root as a user and installed into `/usr/local` by an administrator. The caveat is that the admin should add the system-level `keyd` group in whateverx manner appropriate.
 
 # Quickstart
 
@@ -142,7 +144,7 @@ E.G
 
 	`keyd-application-mapper`
 
-You will probably want to put `keyd-application-mapper -d` somewhere in your 
+You will probably want to put `keyd-application-mapper -d` somewhere in your
 display server initialization logic (e.g ~/.xinitrc) unless you are running Gnome.
 
 See the man page for more details.
@@ -173,7 +175,7 @@ members, no personal responsibility is taken for them.
 	[ids]
 
 	*
-	
+
 	[main]
 
 	leftshift = oneshot(shift)
