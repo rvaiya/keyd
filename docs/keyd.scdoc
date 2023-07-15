@@ -410,6 +410,11 @@ layout and keyd's unicode functionality.
 normal way. If you want shift to produce a different symbol, you will need to
 define a custom shift layer (see the included layout files for an example).
 
+
+**Note 3:**
+known issue:
+/usr/share/keyd/keyd.compose is a significantly big file, and could make application using GTK4 as dependency crash
+
 ## Aliases
 
 Each key may optionally be assigned an *alias*. This alias may be used in place
