@@ -185,7 +185,6 @@ static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
 
 	if (code >= KEYD_CHORD_1 && code <= KEYD_CHORD_MAX) {
 		size_t idx = code - KEYD_CHORD_1;
-
 		*d = kbd->active_chords[idx].chord.d;
 		*dl = kbd->active_chords[idx].layer;
 
@@ -596,13 +595,17 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->overload_start_time = time;
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, -1, 0);
+                        kbd->last_pressed_code = 0;
+                        goto _end;
 		} else {
 			deactivate_layer(kbd, idx);
 			update_mods(kbd, -1, 0);
 
-			if (kbd->last_pressed_code == code &&
+			if (!kbd->last_pressed_code &&
 			    (!kbd->config.overload_tap_timeout ||
-			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
+			     ((time - kbd->overload_start_time) <
+                              kbd->config.overload_tap_timeout)
+                              )) {
 				process_descriptor(kbd, code, action, dl, 1, time);
 				process_descriptor(kbd, code, action, dl, 0, time);
 			}
@@ -759,8 +762,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	}
 
 	if (pressed)
-		kbd->last_pressed_code = code;
+                kbd->last_pressed_code = code;
 
+_end:
 	return timeout;
 }
 
@@ -1083,7 +1087,7 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
  */
 static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long time)
 {
-	int dl = -1;
+	int dl = 0;
 	struct descriptor d;
 
 	if (handle_chord(kbd, code, pressed, time))
@@ -1109,9 +1113,6 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 	}
 
 	if (code) {
-		struct descriptor d;
-		int dl = 0;
-
 		if (pressed) {
 			/*
 			 * Guard against successive key down events
@@ -1140,11 +1141,9 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 		process_descriptor(kbd, code, &d, dl, pressed, time);
 	}
 
-
 exit:
 	return calculate_main_loop_timeout(kbd, time);
 }
-
 
 long kbd_process_events(struct keyboard *kbd, const struct key_event *events, size_t n)
 {

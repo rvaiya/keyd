@@ -48,8 +48,7 @@ struct keyboard {
 	struct cache_entry cache[CACHE_SIZE];
 
 	uint8_t last_pressed_output_code;
-	uint8_t last_pressed_code;
-
+        uint8_t last_pressed_code; // the last translated and pressed key
 	uint8_t oneshot_latch;
 
 	uint8_t inhibit_modifier_guard;
@@ -66,7 +65,7 @@ struct keyboard {
 	long overload_start_time;
 
 	long timeouts[64];
-	size_t nr_timeouts; 
+	size_t nr_timeouts;
 
 	struct active_chord {
 		uint8_t active;
