@@ -410,10 +410,9 @@ layout and keyd's unicode functionality.
 normal way. If you want shift to produce a different symbol, you will need to
 define a custom shift layer (see the included layout files for an example).
 
-
 **Note 3:**
-known issue:
-/usr/share/keyd/keyd.compose is a significantly big file, and could make application using GTK4 as dependency crash
+GTK4 currently has a bug which causes it to crash in the presence of large XCompose files
+(like /usr/share/keyd/keyd.compose).
 
 ## Aliases
 
