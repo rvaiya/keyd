@@ -86,7 +86,7 @@ def parse_config(path):
 
     return config
 
-def new_interruptible_generator(monfd, genfn):
+def new_interruptible_generator(fd, event_fn, flushed_fn = None):
     intr, intw = os.pipe()
 
     def handler(s, _):
@@ -95,13 +95,17 @@ def new_interruptible_generator(monfd, genfn):
     signal.signal(signal.SIGUSR1, handler)
 
     while True:
-        r,_,_ = select.select([monfd, intr], [], [])
+        r,_,_ = select.select([fd, intr], [], [])
 
         if intr in r:
             os.read(intr, 1)
             yield None
-        if monfd in r:
-            yield genfn()
+        if fd in r:
+            if flushed_fn:
+                while not flushed_fn():
+                    yield event_fn()
+            else:
+                yield event_fn()
 
 
 # Just enough wayland wire protocol to listen for interesting events.
@@ -260,7 +264,7 @@ class XMonitor():
 
             return self.dpy.get_input_focus().focus
 
-        for ev in new_interruptible_generator(self.dpy.fileno(), self.dpy.next_event):
+        for ev in new_interruptible_generator(self.dpy.fileno(), self.dpy.next_event, lambda: not self.dpy.pending_events()):
             if ev == None:
                 self.on_window_change(last_active_class, last_active_title)
             else:
@@ -388,7 +392,7 @@ class GnomeMonitor():
         last_cls = ''
         last_title = ''
 
-        for line in new_interruptible_generator(fh.fileno(), fh.readline):
+        for line in new_interruptible_generator(fh.fileno(), fh.readline, None):
             if line == None:
                 self.on_window_change(last_cls, last_title)
                 continue
