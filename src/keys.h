@@ -244,7 +244,7 @@ struct modifier {
 #define KEYD_FINANCE           219
 #define KEYD_SPORT             220
 #define KEYD_SHOP              221
-#define KEYD_ALTERASE          222
+#define KEYD_VOICECOMMAND      222
 #define KEYD_CANCEL            223
 #define KEYD_BRIGHTNESSDOWN    224
 #define KEYD_BRIGHTNESSUP      225
