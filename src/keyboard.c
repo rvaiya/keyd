@@ -496,9 +496,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		struct macro *macro;
 		struct descriptor *action;
 		uint8_t mods;
+		uint8_t new_code;
 
 	case OP_KEYSEQUENCE:
-		code = d->args[0].code;
+		new_code = d->args[0].code;
 		mods = d->args[1].mods;
 
 		if (pressed) {
@@ -507,15 +508,15 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			 * to be actuated next to each other
 			 * E.G [/{
 			 */
-			if (kbd->keystate[code])
-				send_key(kbd, code, 0);
+			if (kbd->keystate[new_code])
+				send_key(kbd, new_code, 0);
 
 			update_mods(kbd, dl, mods);
 
-			send_key(kbd, code, 1);
+			send_key(kbd, new_code, 1);
 			clear_oneshot(kbd);
 		} else {
-			send_key(kbd, code, 0);
+			send_key(kbd, new_code, 0);
 			update_mods(kbd, -1, 0);
 		}
 
