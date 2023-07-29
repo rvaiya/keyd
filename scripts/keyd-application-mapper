@@ -182,7 +182,7 @@ class Wlroots():
             (obj, event, payload) = self.wl.recv_msg()
             if obj == 4 and event == 0:
                 # zwlr_foreign_toplevel_manager_v1::toplevel event
-                windows[struct.unpack('I', payload)[0]] = {'title': '', 'appid': '', 'state': 0}
+                windows[struct.unpack('I', payload)[0]] = {'title': '', 'appid': ''}
                 continue
 
             if obj not in windows:
@@ -196,18 +196,20 @@ class Wlroots():
                 windows[obj]['appid'] = self.wl.read_string(payload)
             elif event == 4:
                 # zwlr_foreign_toplevel_handle_v1::state event
-                windows[obj]['state'] = 0
                 if active_window == windows[obj]:
                     active_window = None
+                window_is_active = False
 
                 array_size = struct.unpack('I', payload[0:4])[0]
                 for i in range(0, array_size, 4):
                     start_offset = i + 4
                     end_offset = start_offset + 4
-                    windows[obj]['state'] |= struct.unpack('I', payload[start_offset:end_offset])[0]
+                    state = struct.unpack('I', payload[start_offset:end_offset])[0]
+                    # zwlr_foreign_toplevel_handle_v1::state enum -> activated
+                    if state == 2:
+                        window_is_active = True
 
-                # zwlr_foreign_toplevel_handle_v1::state enum -> activated
-                if windows[obj]['state'] & 2:
+                if window_is_active:
                     active_window = windows[obj]
             elif event == 5 and active_window == windows[obj]:
                 # zwlr_foreign_toplevel_handle_v1::done event
