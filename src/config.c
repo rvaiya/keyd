@@ -369,6 +369,11 @@ static int config_add_layer(struct config *config, const char *s)
 	char buf[MAX_LAYER_NAME_LEN];
 	char *name;
 
+	if (strlen(s) >= sizeof buf) {
+		err("%s exceeds maximum section length(%d) (ignoring)", s, MAX_LAYER_NAME_LEN);
+		return -1;
+	}
+
 	strcpy(buf, s);
 	name = strtok(buf, ":");
 
