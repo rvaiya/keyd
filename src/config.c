@@ -366,11 +366,11 @@ static int new_layer(char *s, const struct config *config, struct layer *layer)
 static int config_add_layer(struct config *config, const char *s)
 {
 	int ret;
-	char buf[MAX_LAYER_NAME_LEN];
+	char buf[MAX_LAYER_NAME_LEN+1];
 	char *name;
 
 	if (strlen(s) >= sizeof buf) {
-		err("%s exceeds maximum section length(%d) (ignoring)", s, MAX_LAYER_NAME_LEN);
+		err("%s exceeds maximum section length (%d) (ignoring)", s, MAX_LAYER_NAME_LEN);
 		return -1;
 	}
 
