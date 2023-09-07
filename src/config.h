@@ -9,7 +9,7 @@
 #include <limits.h>
 #include "macro.h"
 
-#define MAX_LAYER_NAME_LEN	32
+#define MAX_LAYER_NAME_LEN	64
 #define MAX_DESCRIPTOR_ARGS	3
 
 #define MAX_LAYERS		32
