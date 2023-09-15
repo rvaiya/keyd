@@ -329,7 +329,7 @@ static int input(char *buf, size_t sz, uint32_t timeout)
 	return 0;
 }
 
-static void handle_client(int con)
+static void handle_client(int con, struct keyboard *kbd)
 {
 	struct ipc_message msg;
 
@@ -376,6 +376,22 @@ static void handle_client(int con)
 		break;
 	case IPC_LAYER_LISTEN:
 		add_listener(con);
+		/* when a new listener is added announce the last used layout */
+		if (kbd) {
+			char *name = NULL;
+			for (size_t i = 0; i < kbd->config.nr_layers; i++) {
+				if (kbd->config.layers[i].type == LT_LAYOUT &&
+				    kbd->layer_state[i].active) {
+					name = kbd->config.layers[i].name;
+					break;
+				}
+			}
+			if (name != NULL) {
+				char buf[MAX_LAYER_NAME_LEN+3];
+				ssize_t bufsz = snprintf(buf, sizeof(buf), "/%s\n", name);
+				ssize_t ignore = write(con, buf, bufsz);
+			}
+		}
 		break;
 	case IPC_BIND:
 		success = 0;
@@ -507,7 +523,7 @@ static int event_handler(struct event *ev)
 				exit(-1);
 			}
 
-			handle_client(con);
+			handle_client(con, timeout_kbd);
 		}
 		break;
 	default:
