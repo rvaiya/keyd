@@ -33,6 +33,7 @@ struct key_event {
 struct output {
 	void (*send_key) (uint8_t code, uint8_t state);
 	void (*on_layer_change) (const struct keyboard *kbd, const char *name, uint8_t active);
+	void (*on_layout_change) (const struct keyboard *kbd, const char *name);
 };
 
 /* May correspond to more than one physical input device. */

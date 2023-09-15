@@ -222,6 +222,10 @@ static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_
 {
 }
 
+static void on_layout_change(const struct keyboard *kbd, const char *name)
+{
+}
+
 int main(int argc, char *argv[])
 {
 	size_t i;
@@ -231,6 +235,7 @@ int main(int argc, char *argv[])
 	struct output output = {
 		.send_key = send_key,
 		.on_layer_change = on_layer_change,
+		.on_layout_change = on_layout_change,
 	};
 
 	if (argc < 2) {

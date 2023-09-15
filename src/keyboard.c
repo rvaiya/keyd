@@ -443,8 +443,9 @@ static void setlayout(struct keyboard *kbd, uint8_t idx)
 
 	kbd->layer_state[idx].activation_time = 1;
 	kbd->layer_state[idx].active = 1;
-}
 
+	kbd->output.on_layout_change(kbd, kbd->config.layers[idx].name);
+}
 
 static void schedule_timeout(struct keyboard *kbd, long timeout)
 {

@@ -112,6 +112,11 @@ static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_
 	write_msg(kbd, state ? '+' : '-', name);
 }
 
+static void on_layout_change(const struct keyboard *kbd, const char *name)
+{
+	write_msg(kbd, '/', name);
+}
+
 static void load_configs()
 {
 	DIR *dh = opendir(CONFIG_DIR);
@@ -142,6 +147,7 @@ static void load_configs()
 				struct output output = {
 					.send_key = send_key,
 					.on_layer_change = on_layer_change,
+					.on_layout_change = on_layout_change,
 				};
 				ent->kbd = new_keyboard(&ent->config, &output);
 
