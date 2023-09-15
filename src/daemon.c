@@ -77,26 +77,17 @@ static void add_listener(int con)
 	listeners[nr_listeners++] = con;
 }
 
-static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t state)
+static void write_msg(const struct keyboard *kbd, const char prefix, const char *name)
 {
-	size_t i;
-	char buf[MAX_LAYER_NAME_LEN+2];
-	ssize_t bufsz;
-
+	char buf[MAX_LAYER_NAME_LEN+3];
 	int keep[ARRAY_SIZE(listeners)];
 	size_t n = 0;
-
-	if (kbd->config.layer_indicator) {
-		for (i = 0; i < device_table_sz; i++)
-			if (device_table[i].data == kbd)
-				device_set_led(&device_table[i], 1, state);
-	}
 
 	if (!nr_listeners)
 		return;
 
-	bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', name);
-	for (i = 0; i < nr_listeners; i++) {
+	ssize_t bufsz = snprintf(buf, sizeof(buf), "%c%s\n", prefix, name);
+	for (size_t i = 0; i < nr_listeners; i++) {
 		ssize_t nw = write(listeners[i], buf, bufsz);
 
 		if (nw == bufsz)
@@ -109,6 +100,16 @@ static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_
 		nr_listeners = n;
 		memcpy(listeners, keep, n * sizeof(int));
 	}
+}
+
+static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t state)
+{
+	if (kbd->config.layer_indicator) {
+		for (size_t i = 0; i < device_table_sz; i++)
+			if (device_table[i].data == kbd)
+				device_set_led(&device_table[i], 1, state);
+	}
+	write_msg(kbd, state ? '+' : '-', name);
 }
 
 static void load_configs()
