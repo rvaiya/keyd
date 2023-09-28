@@ -238,6 +238,10 @@ in Haskell). Having said that, it supplies (in the author's opinion) the
 most valuable features in less than 2000 lines of C while providing
 a simple language agnostic config format.
 
+## The keyd.service starts up slowly at OS startup and I cannot operate the keyboard!
+
+Adding `nofail` to the mount option of a file system other than root in fstab can result in a faster startup of `keyd.service`.
+
 ## Why doesn't keyd implement feature X?
 
 If you feel something is missing or find a bug you are welcome to file an issue
