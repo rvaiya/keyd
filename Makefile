@@ -47,10 +47,18 @@ man:
 		scdoc < "$$f" | gzip > "$$target"; \
 	done
 install:
-	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
+# First check if DESTDIR already has the systemd
+# directory. Then if it exists under the system's base
+# PREFIX (e.g. /usr/local), and finally check the
+# standard systemd location in /usr.
+
+	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ -o \
+	      -e ${PREFIX}/lib/systemd/ -o \
+	      -e /usr/lib/systemd ]; \
+	then \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
-		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
+		@echo "$$(tput bold)$$(tput setaf 1)warning: systemd not found, you will need to manually add keyd to your system's init process.$$(tput sgr0)"; \
 	fi
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
@@ -66,7 +74,11 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 
+ifeq ($(shell id -u), 0)
 	-groupadd keyd
+else
+	@echo "$$(tput bold)$$(tput setaf 1)warning: Use 'groupadd keyd' or your distribution's equivalent as root to add the access group.$$(tput sgr0)"
+endif
 	install -m755 bin/* $(DESTDIR)$(PREFIX)/bin/
 	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
