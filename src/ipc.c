@@ -37,7 +37,7 @@ int ipc_connect()
 	strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path)-1);
 
 	if (connect(sd, (struct sockaddr *) &addr, sizeof addr) < 0) {
-		fprintf(stderr, "ERROR: Failed to connect to \"" SOCKET_PATH "\", make sure keyd is running and you have permission to access the socket.");
+		fprintf(stderr, "ERROR: Failed to connect to \"" SOCKET_PATH "\", make sure the daemon is running and you have permission to access the socket.\n");
 		exit(-1);
 	}
 
