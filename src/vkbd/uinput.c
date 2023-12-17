@@ -33,6 +33,7 @@ struct vkbd {
 
 static int create_virtual_keyboard(const char *name)
 {
+	int i;
 	int ret;
 	size_t code;
 	struct uinput_user_dev udev = {0};
@@ -53,6 +54,11 @@ static int create_virtual_keyboard(const char *name)
 		exit(-1);
 	}
 
+	if (ioctl(fd, UI_SET_EVBIT, EV_LED)) {
+		perror("ioctl set_evbit");
+		exit(-1);
+	}
+
 	if (ioctl(fd, UI_SET_EVBIT, EV_SYN)) {
 		perror("ioctl set_evbit");
 		exit(-1);
@@ -66,6 +72,12 @@ static int create_virtual_keyboard(const char *name)
 			}
 		}
 	}
+
+	for (i = LED_NUML; i <= LED_MISC; i++)
+		if (ioctl(fd, UI_SET_LEDBIT, i)) {
+			perror("ioctl set_ledbit");
+			exit(-1);
+		}
 
 	if (ioctl(fd, UI_SET_KEYBIT, KEY_ZOOM)) {
 		perror("ioctl set_keybit");

@@ -138,6 +138,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->data = NULL;
 		dev->grabbed = 0;
 
+		dev->is_virtual = !strcmp(dev->name, VKBD_NAME);
 		return 0;
 	} else {
 		close(fd);
@@ -452,6 +453,12 @@ struct device_event *device_read_event(struct device *dev)
 		devev.pressed = ev.value;
 
 		dbg2("key %s %s", KEY_NAME(devev.code), devev.pressed ? "down" : "up");
+
+		break;
+	case EV_LED:
+		devev.type = DEV_LED;
+		devev.code = ev.code;
+		devev.pressed = ev.value;
 
 		break;
 	default:

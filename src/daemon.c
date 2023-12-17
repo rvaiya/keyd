@@ -1,7 +1,5 @@
 #include "keyd.h"
 
-#define VKBD_NAME "keyd virtual keyboard"
-
 struct config_ent {
 	struct config config;
 	struct keyboard *kbd;
@@ -188,7 +186,7 @@ static void manage_device(struct device *dev)
 	uint8_t flags = 0;
 	struct config_ent *ent;
 
-	if (!strcmp(dev->name, VKBD_NAME))
+	if (dev->is_virtual)
 		return;
 
 	if (dev->capabilities & CAP_KEYBOARD)
@@ -425,6 +423,7 @@ static int event_handler(struct event *ev)
 			struct keyboard *kbd = ev->dev->data;
 			timeout_kbd = ev->dev->data;
 			switch (ev->devev->type) {
+			size_t i;
 			case DEV_KEY:
 				dbg("input %s %s", KEY_NAME(ev->devev->code), ev->devev->pressed ? "down" : "up");
 
@@ -479,6 +478,18 @@ static int event_handler(struct event *ev)
 				vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
 				break;
 			}
+		} else if (ev->dev->is_virtual && ev->devev->type == DEV_LED) {
+			size_t i;
+
+			/* 
+			 * Propagate LED events received by the virtual device from userspace
+			 * to all grabbed devices.
+			 *
+			 * NOTE/TODO: Account for potential layer_indicator interference
+			 */
+			for (i = 0; i < device_table_sz; i++)
+				if (device_table[i].data)
+					device_set_led(&device_table[i], ev->devev->code, ev->devev->pressed);
 		}
 
 		break;

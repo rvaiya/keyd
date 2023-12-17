@@ -25,6 +25,7 @@ struct device {
 	uint8_t capabilities;
 	uint16_t product_id;
 	uint16_t vendor_id;
+	uint8_t is_virtual;
 
 	char name[64];
 	char path[256];
@@ -42,6 +43,7 @@ struct device {
 struct device_event {
 	enum {
 		DEV_KEY,
+		DEV_LED,
 
 		DEV_MOUSE_MOVE,
 		/* All absolute values are relative to a resolution of 1024x1024. */
