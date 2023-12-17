@@ -85,9 +85,17 @@ static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_
 	size_t n = 0;
 
 	if (kbd->config.layer_indicator) {
+		int active_layers = 0;
+
+		for (i = 1; i < kbd->config.nr_layers; i++)
+			if (kbd->config.layers[i].type != LT_LAYOUT && kbd->layer_state[i].active) {
+				active_layers = 1;
+				break;
+			}
+
 		for (i = 0; i < device_table_sz; i++)
 			if (device_table[i].data == kbd)
-				device_set_led(&device_table[i], 1, state);
+				device_set_led(&device_table[i], 1, active_layers);
 	}
 
 	if (!nr_listeners)
