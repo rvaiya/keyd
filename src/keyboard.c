@@ -604,8 +604,17 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->last_pressed_code == code &&
 			    (!kbd->config.overload_tap_timeout ||
 			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
-				process_descriptor(kbd, code, action, dl, 1, time);
-				process_descriptor(kbd, code, action, dl, 0, time);
+				if (action->op == OP_MACRO) {
+					/*
+					 * Macro release relies on event logic, so we can't just synthesize a
+					 * descriptor release.
+					 */
+					struct macro *macro = &kbd->config.macros[action->args[0].idx];
+					execute_macro(kbd, dl, macro);
+				} else {
+					process_descriptor(kbd, code, action, dl, 1, time);
+					process_descriptor(kbd, code, action, dl, 0, time);
+				}
 			}
 		}
 
