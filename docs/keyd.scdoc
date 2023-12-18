@@ -663,10 +663,10 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	Permanently toggle the state of the given layer.
 
 *layerm(<layer>, <macro>)*
-	Identical to *layer*, but executes the supplies macro before the layer change.
+	Identical to *layer*, but executes the supplied macro before the layer change.
 
 *oneshotm(<layer>, <macro>)*
-	Identical to *oneshot*, but executes the supplies macro before the layer change.
+	Identical to *oneshot*, but executes the supplied macro before the layer change.
 
 *swapm(<layer>, <macro>)*
 	Identical to *swap*, but accepts a macro to be executed immediately
@@ -677,7 +677,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	toggling the layer.
 
 *clearm(<macro>)*
-	Identical to *clear*, but executes the supplies macro before clearing layers.
+	Identical to *clear*, but executes the supplied macro before clearing layers.
 
 ## Key overloading
 
