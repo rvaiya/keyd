@@ -697,9 +697,9 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	Identical to overloadt, but additionally resolves as a hold in the
 	event of an intervening key tap.
 
-*overloadi(<action 1>, <action 2>, <timeout>)*
-	Activate \<action 1\> if the last non-action (i.e symbol) key was struck less
-	than \<timeout\> milliseconds ago, otherwise activate \<action 2\>.
+*overloadi(<action 1>, <action 2>, <idle timeout>)*
+	Activate <action 1> if the last non-action (i.e symbol) key was struck less
+	than <timeout> milliseconds ago, otherwise activate <action 2>.
 
 	This can be used in combination with other overload timeouts and is particularly
 	useful for overloading letter keys (often called 'homerow mods').
@@ -707,17 +707,26 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	For example:
 
 ```
-	a = overloadi(a, overloadt(control, a, 200), 150)
+	a = overloadi(a, overloadt2(control, a, 200), 150)
 ```
 
-	will produce _a_ if:
+	will produce _a_ if and only if:
 
 		- _a_ is struck within 150ms of another non-action key.
-		- _a_ is struck more than 150ms after a non-action key but held for less than 200ms.
+		- _a_ is struck more than 150ms after the last non-action key but held for less than 200ms
+		  and there are no intervening key taps.
 
 	This reduces the visual latency by immediately resolving the key as a letter when
-	typed midword but also facilitates its use as a modifier if it is held for long 
-	enough with no preceding symbol.
+	typed midword, but also facilitates its use as a layer trigger if it is held for a long 
+	enough period with no intervening symbols.
+
+	Since this is a common usecase, a macro called *lettermod* (defined below) has been
+	defined to facilitate such definitions.
+
+*lettermod(<layer>, <key>, <idle timeout>, <hold timeout>)*
+	An alias for:
+
+		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the second

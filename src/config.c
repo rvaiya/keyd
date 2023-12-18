@@ -399,7 +399,7 @@ static int config_add_layer(struct config *config, const char *s)
 /* Modifies the input string */
 static int parse_fn(char *s,
 		    char **name,
-		    char *args[MAX_DESCRIPTOR_ARGS],
+		    char *args[5],
 		    size_t *nargs)
 {
 	char *c, *arg;
@@ -453,7 +453,7 @@ exit:
 			return -1;
 
 		if (arg != c) {
-			assert(*nargs < MAX_DESCRIPTOR_ARGS);
+			assert(*nargs < 5);
 			args[(*nargs)++] = arg;
 		}
 
@@ -541,7 +541,7 @@ static int parse_descriptor(char *s,
 			    struct config *config)
 {
 	char *fn = NULL;
-	char *args[MAX_DESCRIPTOR_ARGS];
+	char *args[5];
 	size_t nargs = 0;
 	uint8_t code, mods;
 	int ret;
@@ -614,6 +614,24 @@ static int parse_descriptor(char *s,
 		return 0;
 	} else if (!parse_fn(s, &fn, args, &nargs)) {
 		int i;
+
+		if (!strcmp(fn, "lettermod")) {
+			char buf[1024];
+
+			if (nargs != 4) {
+				err("%s requires 4 arguments", fn);
+				return -1;
+			}
+
+			snprintf(buf, sizeof buf,
+				"overloadi(%s, overloadt2(%s, %s, %s), %s)",
+				args[1], args[0], args[1], args[3], args[2]);
+
+			if (parse_fn(buf, &fn, args, &nargs)) {
+				err("failed to parse %s", buf);
+				return -1;
+			}
+		}
 
 		for (i = 0; i < ARRAY_SIZE(actions); i++) {
 			if (!strcmp(actions[i].name, fn)) {
