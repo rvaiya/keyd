@@ -34,6 +34,7 @@ endif
 all:
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
+	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -Wunused" $(MAKE)
@@ -47,7 +48,8 @@ man:
 		scdoc < "$$f" | gzip > "$$target"; \
 	done
 install:
-	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
+	@if [ -e /run/systemd/system ]; then \
+		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
@@ -81,9 +83,10 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
+		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	-rm -rf bin
+	-rm -rf bin keyd.service
 test:
 	@cd t; \
 	for f in *.sh; do \
