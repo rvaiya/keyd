@@ -247,7 +247,7 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 	assert(kbd->layer_state[idx].active > 0);
 	kbd->layer_state[idx].active--;
 
-	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 0);
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 0);
 }
 
 /*
@@ -266,7 +266,7 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 	if ((ce = cache_get(kbd, code)))
 		ce->layer = idx;
 
-	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 1);
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 1);
 }
 
 /* Returns:
@@ -443,6 +443,8 @@ static void setlayout(struct keyboard *kbd, uint8_t idx)
 
 	kbd->layer_state[idx].activation_time = 1;
 	kbd->layer_state[idx].active = 1;
+
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 1);
 }
 
 

@@ -218,7 +218,7 @@ void run_test(struct keyboard *kbd, const char *path)
 	}
 }
 
-static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t active)
+static void on_layer_change(const struct keyboard *kbd, const struct layer *layer, uint8_t active)
 {
 }
 
