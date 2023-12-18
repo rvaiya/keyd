@@ -172,6 +172,11 @@ members, no personal responsibility is taken for them.
 
 [COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
 
+### openSUSE
+[opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
+
+Easy install with `sudo zypper in keyd`.
+
 # Sample Config
 
 	[ids]
