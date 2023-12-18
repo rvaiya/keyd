@@ -65,6 +65,8 @@ struct keyboard {
 
 	long overload_start_time;
 
+	long last_simple_key_time;
+
 	long timeouts[64];
 	size_t nr_timeouts; 
 

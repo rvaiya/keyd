@@ -474,6 +474,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			       const struct descriptor *d, int dl,
 			       int pressed, long time)
 {
+	int i;
 	int timeout = 0;
 
 	if (pressed) {
@@ -520,6 +521,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			update_mods(kbd, -1, 0);
 		}
 
+		if (!mods)
+			kbd->last_simple_key_time = time;
+
 		break;
 	case OP_SCROLL:
 		kbd->scroll.sensitivity = d->args[0].sensitivity;
@@ -532,6 +536,25 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		kbd->scroll.sensitivity = d->args[0].sensitivity;
 		if (pressed)
 			kbd->scroll.active = !kbd->scroll.active;
+		break;
+	case OP_OVERLOAD_IDLE_TIMEOUT:
+		if (pressed) {
+			struct descriptor *action;
+			long timeout = d->args[2].timeout;
+
+			if (((time - kbd->last_simple_key_time) >= timeout))
+				action = &kbd->config.descriptors[d->args[1].idx];
+			else
+				action = &kbd->config.descriptors[d->args[0].idx];
+
+			process_descriptor(kbd, code, action, dl, 1, time);
+			for (i = 0; i < CACHE_SIZE; i++) {
+				if (code == kbd->cache[i].code) {
+					kbd->cache[i].d = *action;
+					break;
+				}
+			}
+		}
 		break;
 	case OP_OVERLOAD_TIMEOUT_TAP:
 	case OP_OVERLOAD_TIMEOUT:

@@ -547,7 +547,7 @@ any of the following options:
 	*macro_repeat_timeout:* The time separating successive executions of a macro.
 	(default: 50)
 
-	*layer_indicator:* If set, this will turn the capslock light on whenever a layer is active. 
+	*layer_indicator:* If set, this will turn the capslock light on whenever a layer is active.
 	Note: Some wayland compositors will aggressively toggle LED state rendering this option
 	unusable.
 
@@ -558,7 +558,7 @@ any of the following options:
 	useful to avoid overflowing the input buffer on some systems.
 
 	*chord_timeout:* The maximum time between successive keys
-	interpreted as part of a chord. 
+	interpreted as part of a chord.
 	(default: 50)
 
 	*chord_hold_timeout:* The length of time a chord
@@ -566,13 +566,13 @@ any of the following options:
 	(default: 0)
 
 	*oneshot_timeout:* If non-zero, timeout a oneshot layer
-	activation after the supplied number of milliseconds. 
+	activation after the supplied number of milliseconds.
 	(default: 0)
 
 	*disable_modifier_guard:* By default, keyd will inject additional
 	control keypresses where necessary in order to prevent programs from
 	seeing additional modifier taps (E.g alt in firefox). If set, this
-	option disables that behaviour. 
+	option disables that behaviour.
 	(default: 0)
 
 	*overload_tap_timeout:* If non-zero, ignore the tap behaviour of an
@@ -624,9 +624,9 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *layer(<layer>)*
 	Activate the given layer for the duration of the keypress.
 
-*oneshot(<layer>)* 
+*oneshot(<layer>)*
 
-	If tapped, activate the supplied layer for the duration of the next keypress. 
+	If tapped, activate the supplied layer for the duration of the next keypress.
 
 *swap(<layer>)*
 	Swap the currently active layer with the supplied one. If the current
@@ -687,7 +687,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *overloadt(<layer>, <action>, <timeout>)*
 	Identical to overload, but only activates the layer if the bound key is
 	held for \<timeout\> milliseconds. This is mainly useful for overloading keys
-	which are commonly struck in sequence (e.g letter keys). 
+	which are commonly struck in sequence (e.g letter keys).
 
 	Note that this will add a visual delay when typing, since overlapping
 	keys will be queued until the timeout expires or the bound key is
@@ -696,6 +696,28 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *overloadt2(<layer>, <action>, <timeout>)*
 	Identical to overloadt, but additionally resolves as a hold in the
 	event of an intervening key tap.
+
+*overloadi(<action 1>, <action 2>, <timeout>)*
+	Activate \<action 1\> if the last non-action (i.e symbol) key was struck less
+	than \<timeout\> milliseconds ago, otherwise activate \<action 2\>.
+
+	This can be used in combination with other overload timeouts and is particularly
+	useful for overloading letter keys (often called 'homerow mods').
+
+	For example:
+
+```
+	a = overloadi(a, overloadt(control, a, 200), 150)
+```
+
+	will produce _a_ if:
+
+		- _a_ is struck within 150ms of another non-action key.
+		- _a_ is struck more than 150ms after a non-action key but held for less than 200ms.
+
+	This reduces the visual latency by immediately resolving the key as a letter when
+	typed midword but also facilitates its use as a modifier if it is held for long 
+	enough with no preceding symbol.
 
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the second
