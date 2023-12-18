@@ -2,7 +2,7 @@
 VERSION=2.4.3
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
-PREFIX=/usr
+PREFIX?=/usr/local
 
 CONFIG_DIR=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
@@ -77,11 +77,13 @@ install:
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
 
 uninstall:
+	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
+		$(DESTDIR)$(PREFIX)/share/keyd/ \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
