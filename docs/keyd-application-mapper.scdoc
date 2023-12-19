@@ -75,6 +75,11 @@ which manages the script lifecycle.
 In order for this to work, keyd must be running and the user must have access
 to */var/run/keyd.socket* (i.e be a member of the *keyd* group). 
 
+# ENVIRONMENT VARIABLES
+
+*KEYD_DEBUG*
+	Debug log level. _0_,_1_ can be specified (default: 0).
+
 # A note on security
 
 *Any user which can interact with a program that directly controls input devices
