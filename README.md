@@ -166,7 +166,7 @@ members, no personal responsibility is taken for them.
 
 ### Arch
 
-[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
+[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by [@eNV25](https://github.com/eNV25).
 
 ### Fedora
 
