@@ -1,11 +1,9 @@
 [Unit]
 Description=key remapping daemon
-Requires=local-fs.target
-After=local-fs.target
 
 [Service]
 Type=simple
 ExecStart=@PREFIX@/bin/keyd
 
 [Install]
-WantedBy=sysinit.target
+WantedBy=default.target
