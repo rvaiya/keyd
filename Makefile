@@ -32,7 +32,7 @@ else
 endif
 
 all:
-	-mkdir bin
+	mkdir -p bin
 	cp scripts/keyd-application-mapper bin/
 	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
 	sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service
@@ -40,7 +40,7 @@ all:
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
-	-mkdir data
+	mkdir -p data
 	./scripts/generate_xcompose
 man:
 	for f in docs/*.scdoc; do \
@@ -97,7 +97,7 @@ test:
 		./$$f; \
 	done
 test-io:
-	-mkdir bin
+	mkdir -p bin
 	$(CC) \
 	-DDATA_DIR= \
 	-o bin/test-io \
