@@ -31,7 +31,7 @@ else
 	COMPAT_FILES=
 endif
 
-all:
+all: compose man
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
 	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
@@ -90,7 +90,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	rm -rf bin keyd.service src/vkbd/usb-gadget.service
+	rm -rf bin data/*.1.gz data/keyd.compose keyd.service src/unicode.c src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
