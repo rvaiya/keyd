@@ -1,10 +1,14 @@
 keyd-application-mapper(1)
 
-# USAGE
+# NAME
 
-keyd-application-mapper [-d]
+keyd-application-mapper - remap keys when window focus changes
 
-# OVERVIEW
+# SYNOPSIS
+
+*keyd-application-mapper* [*-d*]
+
+# DESCRIPTION
 
 A script which reads _~/.config/keyd/app.conf_ and applies the supplied
 bindings whenever a window with a matching class comes into focus.
