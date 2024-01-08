@@ -59,14 +59,30 @@ Some of the more interesting ones include:
 
 # Dependencies
 
- - Your favourite C compiler
- - Linux kernel headers (already present on most systems)
+## Required Build Dependencies
 
-## Optional
+  * Your favourite C11 compiler
+  * POSIX-compatible `make` (e.g., [GNU
+    Make](https://www.gnu.org/software/make/))
+  * Linux kernel headers (already present on most systems)
+  * [Python](https://www.python.org/) 3.8 or newer
+  * [scdoc](https://git.sr.ht/~sircmpwn/scdoc)
 
- - python      (for application specific remapping)
- - python-xlib (only for X support)
- - dbus-python (only for KDE support)
+## Optional Build Dependencies
+
+  * [bash](https://www.gnu.org/software/bash/) (for the `usb-gadget` virtual
+    keyboard driver)
+  * [systemd](https://systemd.io/) (for system services)
+
+## Optional Runtime Dependencies
+
+  * [bash](https://www.gnu.org/software/bash/) (for the `usb-gadget` virtual
+    keyboard driver)
+  * [Python](https://www.python.org/) 3.8 or newer (for application specific
+    remapping)
+  * [python-xlib](https://pypi.org/project/python-xlib/) (only for X support)
+  * [dbus-python](https://pypi.org/project/dbus-python/) (only for KDE support)
+  * [systemd](https://systemd.io/) (for system services)
 
 # Installation
 
@@ -125,10 +141,57 @@ If you wish to help maintain this PPA, please contact
 > announced on the [releases page](https://github.com/rvaiya/keyd/releases);
 > these versions are known to work.
 
-    git clone https://github.com/rvaiya/keyd
-    cd keyd
-    make && sudo make install
-    sudo systemctl enable keyd && sudo systemctl start keyd
+### From a Source Code Distribution Tarball
+
+  1. Download the desired tarball:
+       * Releases can be found on the [releases
+         page](https://github.com/rvaiya/keyd/releases).
+
+  2. Extract the tarball and `cd` to the source code directory:
+
+     ```shell
+     tar xvfa /path/to/keyd-*.tar.gz
+     cd keyd-*
+     ```
+
+  3. Ensure that all [required build dependencies](#required-build-dependencies)
+     have been installed.
+
+  4. Build and install keyd:
+
+     ```shell
+     ./configure
+     make
+     sudo make install
+     ```
+
+#### From Git
+
+  1. Install [Git](https://git-scm.com/), [GNU
+     Autoconf](https://www.gnu.org/software/autoconf/), and [GNU
+     Automake](https://www.gnu.org/software/automake/).
+
+  2. Get the source code:
+
+     ```shell
+     git clone https://github.com/rvaiya/keyd
+     cd keyd
+     ```
+
+  3. Optionally switch to a released revision, if desired:
+
+     ```shell
+     git checkout v2.5.0
+     ```
+
+  4. Generate the `configure` script:
+
+     ```shell
+     ./autogen
+     ```
+
+  5. Follow steps 3 and later from [installation from a source code distribution
+     tarball](#from-a-source-code-distribution-tarball).
 
 # Quickstart
 

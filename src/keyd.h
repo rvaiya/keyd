@@ -6,6 +6,8 @@
 #ifndef KEYD_H_
 #define KEYD_H_
 
+#include <autoconfig.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
