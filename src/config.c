@@ -21,7 +21,7 @@
 #include "ini.h"
 #include "keys.h"
 #include "log.h"
-#include "string.h"
+#include "strutil.h"
 #include "unicode.h"
 
 #define MAX_FILE_SZ 65536
