@@ -79,6 +79,9 @@ static uint8_t resolve_device_capabilities(int fd)
 	if ((mask[0] & keyboard_mask) == keyboard_mask)
 		capabilities |= CAP_KEYBOARD;
 
+	if (mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32)))
+		capabilities |= CAP_KEYBOARD;
+
 	return capabilities;
 }
 
