@@ -222,6 +222,8 @@ static void manage_device(struct device *dev)
 		flags |= ID_MOUSE;
 
 	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, flags))) {
+		dev->fd = abs(dev->fd);
+
 		if (device_grab(dev)) {
 			keyd_log("DEVICE: y{WARNING} Failed to grab %s\n", dev->path);
 			dev->data = NULL;
@@ -237,6 +239,7 @@ static void manage_device(struct device *dev)
 	} else {
 		dev->data = NULL;
 		device_ungrab(dev);
+		dev->fd = -abs(dev->fd);
 		keyd_log("DEVICE: r{ignoring} %04hx:%04hx  (%s)\n", 
 			  dev->vendor_id, dev->product_id, dev->name);
 	}
