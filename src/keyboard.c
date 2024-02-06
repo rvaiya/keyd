@@ -484,6 +484,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		switch (d->op) {
 		case OP_LAYERM:
+		case OP_LAYERM2:
 		case OP_ONESHOTM:
 		case OP_TOGGLEM:
 			macro = &kbd->config.macros[d->args[1].idx];
@@ -585,6 +586,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_LAYERM:
+	case OP_LAYERM2:
 	case OP_LAYER:
 		idx = d->args[0].idx;
 
@@ -791,6 +793,18 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	}
+	if (!pressed) {
+		struct macro *macro;
+
+		switch (d->op) {
+		case OP_LAYERM2:
+			macro = &kbd->config.macros[d->args[2].idx];
+			execute_macro(kbd, dl, macro);
+			break;
+		default:
+			break;
+		}
 	}
 
 	if (pressed)
