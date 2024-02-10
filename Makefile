@@ -68,7 +68,7 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 
-	-groupadd keyd
+	-groupadd -r keyd
 	install -m755 bin/* $(DESTDIR)$(PREFIX)/bin/
 	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
