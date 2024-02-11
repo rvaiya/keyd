@@ -54,6 +54,7 @@ static uint8_t resolve_device_capabilities(int fd)
 	uint8_t has_rel;
 	uint8_t has_abs;
 	uint8_t capabilities = 0;
+	int has_brightness_key;
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
 		perror("ioctl: ev_key");
@@ -76,10 +77,19 @@ static uint8_t resolve_device_capabilities(int fd)
 	if (has_abs)
 		capabilities |= CAP_MOUSE_ABS;
 
-	if ((mask[0] & keyboard_mask) == keyboard_mask)
-		capabilities |= CAP_KEYBOARD;
+	/*
+	 * If the device can emit KEY_BRIGHTNESSUP we treat it as a keyboard.
+	 *
+	 * This is mainly to accommodate laptops with brightness buttons which create
+	 * a different device node from the main keyboard for some hotkeys.
+	 *
+	 * NOTE: This will subsume anything that can emit a brightness key and may produce
+	 * false positives which need to be explcitly excluded by the user if they use
+	 * the wildcard id.
+	 */
+	has_brightness_key = mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32))
 
-	if (mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32)))
+	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_brightness_key)
 		capabilities |= CAP_KEYBOARD;
 
 	return capabilities;
