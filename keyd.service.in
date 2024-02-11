@@ -6,4 +6,4 @@ Type=simple
 ExecStart=@PREFIX@/bin/keyd
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
