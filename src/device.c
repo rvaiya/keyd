@@ -87,7 +87,7 @@ static uint8_t resolve_device_capabilities(int fd)
 	 * false positives which need to be explcitly excluded by the user if they use
 	 * the wildcard id.
 	 */
-	has_brightness_key = mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32))
+	has_brightness_key = mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32));
 
 	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_brightness_key)
 		capabilities |= CAP_KEYBOARD;
