@@ -73,6 +73,7 @@ install:
 	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 	install -m644 layouts/* $(DESTDIR)$(PREFIX)/share/keyd/layouts
+	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
 	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
 

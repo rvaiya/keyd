@@ -6,6 +6,7 @@ import select
 import socket
 import struct
 import os
+import errno
 import shutil
 import re
 import sys
@@ -294,97 +295,37 @@ class GnomeMonitor():
 
         self.on_window_change = on_window_change
 
-        self.version = '1.4'
-        self.extension_dir = os.getenv('HOME') + '/.local/share/gnome-shell/extensions/keyd'
-        self.fifo_path = self.extension_dir + '/keyd.fifo'
-
-    def _install(self):
-        shutil.rmtree(self.extension_dir, ignore_errors=True)
-        os.makedirs(self.extension_dir, exist_ok=True)
-
-        extension = '''
-        const Shell = imports.gi.Shell;
-        const GLib = imports.gi.GLib;
-        const Main = imports.ui.main;
-
-        // We have to keep an explicit reference around to prevent garbage collection :/.
-        let file = imports.gi.Gio.File.new_for_path('%s');
-        let pipe = file.append_to_async(0, 0, null, on_pipe_open);
-
-        function send(msg) {
-            if (!pipe)
-                return;
-
-            try {
-                pipe.write(msg, null);
-            } catch {
-                log('pipe closed, reopening...');
-                pipe = null;
-                file.append_to_async(0, 0, null, on_pipe_open);
-            }
-        }
-
-        function on_pipe_open(file, res) {
-            log('pipe opened');
-            pipe = file.append_to_finish(res);
-        }
-
-        function init() {
-                Shell.WindowTracker.get_default().connect('notify::focus-app', () => {
-                    const win = global.display.focus_window;
-                    const cls = win ? win.get_wm_class() : 'root';
-                    const title = win ? win.get_title() : '';
-
-                    send(`${cls}\\t${title}\\n`);
-                });
-
-                Main.layoutManager.connectObject(
-                    'system-modal-opened', () => {
-                        send(`system-modal\\t${global.stage.get_title()}\\n`);
-                    },
-                    this
-                );
-
-                return {
-                    enable: ()=>{ GLib.spawn_command_line_async('keyd-application-mapper -d'); },
-                    disable: ()=>{ GLib.spawn_command_line_async('pkill -f keyd-application-mapper'); }
-                };
-
-        }
-        ''' % (self.fifo_path)
-
-        metadata = '''
-        {
-                "name": "keyd",
-                "description": "Used by keyd to obtain active window information.",
-                "uuid": "keyd",
-                "shell-version": [ "41", "42", "43" ]
-        }
-        '''
-
-        open(self.extension_dir + '/version', 'w').write(self.version)
-        open(self.extension_dir + '/metadata.json', 'w').write(metadata)
-        open(self.extension_dir + '/extension.js', 'w').write(extension)
-        os.mkfifo(self.fifo_path)
-
-    def _is_installed(self):
-        try:
-            return open(self.extension_dir + '/version', 'r').read() == self.version
-        except:
-            return False
+        self.fifo_path = (os.getenv('XDG_RUNTIME_DIR') or '/run/user/'+str(os.getuid())) + '/keyd.fifo'
 
     def init(self):
-        if not self._is_installed():
-            print('keyd extension not found, installing...')
-            self._install()
-            run_or_die('gsettings set org.gnome.shell disable-user-extensions false');
+        if not os.path.exists(self.fifo_path):
+            print("""Gnome extension doesn't appear to be running:
 
-            print('Success! Please restart Gnome and run this script one more time.')
-            exit(0)
+You will need to install the keyd gnome extension in order for the
+application mapper to work correctly.
 
-        if 'DISABLED' in run('gnome-extensions show keyd'):
-            run_or_die('gnome-extensions enable keyd', 'Failed to enable keyd extension.')
-            print(f'Successfully enabled keyd extension :). Output will be stored in {LOGFILE}')
+This can usually be achieved by running:
+
+rm -r ~/.local/share/gnome-shell/extensions/keyd # Remove any older versions of the extension
+mkdir -p ~/.local/share/gnome-shell/extensions
+
+Followed by:
+
+Gnome 42-44:
+    ln -s /usr/local/share/keyd/gnome-extension ~/.local/share/gnome-shell/extensions/keyd
+
+Gnome 45:
+    ln -s /usr/local/share/keyd/gnome-extension-45 ~/.local/share/gnome-shell/extensions/keyd
+
+Finally restart Gnome and run:
+
+            gnome-extensions enable keyd
+            gnome-extensions show keyd (verify the extension is enabled)
+
+NOTE:
+    You may need to adjust the above paths (e.g /usr/share/keyd/gnome-extension)
+    depending on your distro.
+""")
             exit(0)
 
     def run(self):
@@ -397,9 +338,13 @@ class GnomeMonitor():
                 self.on_window_change(last_cls, last_title)
                 continue
 
-            (cls, title) = line.strip('\n').split('\t')
-            last_cls = cls
-            last_title = title
+            try:
+                (cls, title) = line.strip('\n').split('\t')
+                last_cls = cls
+                last_title = title
+            except:
+                cls = ''
+                title = ''
 
             self.on_window_change(cls, title)
 
