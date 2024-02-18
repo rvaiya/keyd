@@ -801,6 +801,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		case OP_LAYERM2:
 			macro = &kbd->config.macros[d->args[2].idx];
 			execute_macro(kbd, dl, macro);
+			update_mods(kbd, -1, 0);
 			break;
 		default:
 			break;
