@@ -4,7 +4,7 @@ COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
 PREFIX?=/usr/local
 
-CONFIG_DIR=/etc/keyd
+CONFIG_DIR?=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
 
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
