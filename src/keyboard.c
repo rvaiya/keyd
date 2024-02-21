@@ -1095,12 +1095,12 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 		kbd->pending_key.queue_sz = 0;
 		kbd->pending_key.tap_expiry = 0;
 
-		process_descriptor(kbd, code, &action, dl, 1, time);
 		cache_set(kbd, code, &(struct cache_entry) {
 			.d = action,
 			.dl = dl,
 			.layer = 0,
 		});
+		process_descriptor(kbd, code, &action, dl, 1, time);
 
 		/* Flush queued events */
 		kbd_process_events(kbd, queue, queue_sz);
