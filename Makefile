@@ -32,13 +32,13 @@ else
 endif
 
 all:
-	-mkdir bin
+	mkdir -p bin
 	cp scripts/keyd-application-mapper bin/
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
-	-mkdir data
+	mkdir -p data
 	./scripts/generate_xcompose
 man:
 	for f in docs/*.scdoc; do \
@@ -84,8 +84,7 @@ install:
 
 uninstall:
 	-groupdel keyd
-	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd \
+	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
@@ -93,17 +92,16 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/share/doc/keyd \
 		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
-	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
+	rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
 		./$$f; \
 	done
 test-io:
-	-mkdir bin
+	mkdir -p bin
 	$(CC) \
 	-DDATA_DIR=\"\" \
 	-o bin/test-io \
