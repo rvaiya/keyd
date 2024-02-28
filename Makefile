@@ -7,6 +7,8 @@ PREFIX?=/usr/local
 CONFIG_DIR?=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
 
+SYSTEMD_SYSTEM_DIR = $(PREFIX)/lib/systemd/system
+
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
 	-L/usr/local/lib \
@@ -50,14 +52,14 @@ man:
 	done
 install:
 	@if [ -e /run/systemd/system ]; then \
-		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
-		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
+		mkdir -p '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)'; \
+		install -Dm644 keyd.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service'; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
-		install -Dm644 src/vkbd/usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service; \
+		install -Dm644 src/vkbd/usb-gadget.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service'; \
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
 	fi
 
@@ -80,15 +82,14 @@ install:
 
 uninstall:
 	-groupdel keyd
-	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd \
+	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
 		$(DESTDIR)$(PREFIX)/share/keyd/ \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
+		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service' \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
+		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service'
 clean:
 	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
