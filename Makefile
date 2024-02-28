@@ -52,12 +52,10 @@ man:
 	done
 install:
 
-	@if [ -e /run/systemd/system ] && [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
+	@if [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
 		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)'; \
 		install -Dm644 keyd.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service'; \
-	elif [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
-		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
