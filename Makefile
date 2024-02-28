@@ -96,7 +96,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/share/doc/keyd \
 		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
-	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
+	rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
