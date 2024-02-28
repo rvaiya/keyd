@@ -89,7 +89,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	-rm -rf bin keyd.service
+	rm -rf bin keyd.service
 test:
 	@cd t; \
 	for f in *.sh; do \
