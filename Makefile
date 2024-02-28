@@ -7,7 +7,7 @@ PREFIX?=/usr/local
 CONFIG_DIR?=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
 
-SYSTEMD_SYSTEM_DIR = $(PREFIX)/lib/systemd/system
+SYSTEMD_SYSTEM_DIR = /usr/lib/systemd/system
 
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
