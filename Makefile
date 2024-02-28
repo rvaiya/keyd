@@ -7,6 +7,8 @@ PREFIX?=/usr/local
 CONFIG_DIR?=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
 
+# If this variable is set to the empty string, no systemd unit files will be
+# installed.
 SYSTEMD_SYSTEM_DIR = /usr/lib/systemd/system
 
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
@@ -50,17 +52,19 @@ man:
 	done
 install:
 
-	@if [ -e /run/systemd/system ]; then \
+	@if [ -e /run/systemd/system ] && [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
 		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)'; \
 		install -Dm644 keyd.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service'; \
-	else \
+	elif [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
-		sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service; \
-		install -Dm644 src/vkbd/usb-gadget.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service'; \
+		if [ -n '$(SYSTEMD_SYSTEM_DIR)' ]; then \
+			sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service; \
+			install -Dm644 src/vkbd/usb-gadget.service '$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service'; \
+		fi; \
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
 	fi
 
@@ -83,14 +87,15 @@ install:
 
 uninstall:
 	-groupdel keyd
+	[ -z '$(SYSTEMD_SYSTEM_DIR)' ] || rm -f \
+		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service' \
+		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service'
 	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
 		$(DESTDIR)$(PREFIX)/share/keyd/ \
-		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd-usb-gadget.service' \
-		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		'$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/keyd.service'
+		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
 clean:
 	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
