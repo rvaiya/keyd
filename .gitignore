@@ -9,3 +9,6 @@ bin/
 __pycache__
 test.log
 keyd.service
+/data/*.1.gz
+/data/keyd.compose
+/src/unicode.c
