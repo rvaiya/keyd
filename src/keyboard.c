@@ -696,7 +696,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_TOGGLE:
 		idx = d->args[0].idx;
 
-		if (!pressed) {
+		if (pressed) {
 			kbd->layer_state[idx].toggled = !kbd->layer_state[idx].toggled;
 
 			if (kbd->layer_state[idx].toggled)
@@ -705,7 +705,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				deactivate_layer(kbd, idx);
 
 			update_mods(kbd, -1, 0);
-		} else {
 			clear_oneshot(kbd);
 		}
 
