@@ -337,8 +337,8 @@ and not
 
 A layout is a special kind of layer intended for modifying alpha keys. Unlike
 layers, layouts cannot have any associated modifiers, and only one layout may
-be active at a given time. The current layout can be set using the _setlayout_
-action.
+be active at a given time. The default layout is called 'main', and can be
+changed using the _setlayout()_ action.
 
 For convenience, keyd ships with a number of common letter layouts in
 /usr/share/keyd/layouts. Before including these, it is instructive to inspect them.

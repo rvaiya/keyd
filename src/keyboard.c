@@ -441,8 +441,11 @@ static void setlayout(struct keyboard *kbd, uint8_t idx)
 			kbd->layer_state[i].active = 0;
 	}
 
-	kbd->layer_state[idx].activation_time = 1;
-	kbd->layer_state[idx].active = 1;
+	// Setting the layout to main is equivalent to clearing all occluding layouts.
+	if (idx != 0) {
+		kbd->layer_state[idx].activation_time = 1;
+		kbd->layer_state[idx].active = 1;
+	}
 
 	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 1);
 }

@@ -674,7 +674,9 @@ static int parse_descriptor(char *s,
 						break;
 					case ARG_LAYOUT:
 						arg->idx = config_get_layer_index(config, argstr);
-						if (arg->idx == -1 || config->layers[arg->idx].type != LT_LAYOUT) {
+						if (arg->idx == -1 ||
+							(arg->idx != 0 && //Treat main as a valid layout
+							 config->layers[arg->idx].type != LT_LAYOUT)) {
 							err("%s is not a valid layout", argstr);
 							return -1;
 						}
