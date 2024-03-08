@@ -169,6 +169,20 @@ members, no personal responsibility is taken for them.
 
 [AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by [@eNV25](https://github.com/eNV25).
 
+### Debian
+
+Experimental `keyd` and `keyd-application-mapper` packages can be found in the
+CI build artifacts of the [work-in-progress Debian package
+repository](https://salsa.debian.org/rhansen/keyd):
+
+  * [amd64 (64-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build)
+  * [i386 (32-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build%20i386)
+
+Any Debian Developer who is willing to review the debianization effort and
+sponsor its upload is encouraged to contact
+[@rhansen](https://github.com/rhansen) (also see the [Debian ITP
+bug](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1060023)).
+
 ### Fedora
 
 [COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
@@ -177,6 +191,15 @@ members, no personal responsibility is taken for them.
 [opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
 
 Easy install with `sudo zypper in keyd`.
+
+### Ubuntu
+
+Experimental `keyd` and `keyd-application-mapper` packages can be found in the
+[`ppa:keyd-team/ppa`
+archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
+
+If you wish to help maintain this PPA, please contact
+[@rhansen](https://github.com/rhansen).
 
 # Sample Config
 
