@@ -1,11 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "../src/keyd.h"
 
 #define MAX_EVENTS 1024
 
 struct key_event output[MAX_EVENTS];
 size_t noutput = 0;
+
+static uint64_t get_time_ns()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+
+	return (uint64_t)(ts.tv_sec*1E9)+(uint64_t)ts.tv_nsec;
+}
 
 static uint8_t lookup_code(const char *name)
 {
@@ -191,8 +200,9 @@ static int parse_events(char *s, struct key_event in[MAX_EVENTS], size_t *nin,
 	return 0;
 }
 
-void run_test(struct keyboard *kbd, const char *path)
+uint64_t run_test(struct keyboard *kbd, const char *path)
 {
+	uint64_t time;
 	char *data = read_file(path);
 
 	struct key_event input[MAX_EVENTS];
@@ -207,15 +217,20 @@ void run_test(struct keyboard *kbd, const char *path)
 	}
 
 	noutput = 0;
+
+	time = get_time_ns();
 	kbd_process_events(kbd, input, ninput);
+	time = get_time_ns()-time;
 
 	if (cmp_events(output, noutput, expected, nexpected)) {
 		printf("%s \033[31;1mFAILED\033[0m\n", path);
 		print_diff(expected, nexpected, output, noutput);
 		exit(-1);
 	} else {
-		printf("%s \033[32;1mPASSED\033[0m\n", path);
+		printf("%s \033[32;1mPASSED\033[0m (%zu us)\n", path, time/1000);
 	}
+
+	return time;
 }
 
 static void on_layer_change(const struct keyboard *kbd, const struct layer *layer, uint8_t active)
@@ -226,8 +241,10 @@ int main(int argc, char *argv[])
 {
 	size_t i;
 	struct config config;
+	uint64_t total_time;
 
 	struct keyboard *kbd;
+
 	struct output output = {
 		.send_key = send_key,
 		.on_layer_change = on_layer_change,
@@ -248,7 +265,8 @@ int main(int argc, char *argv[])
 	kbd = new_keyboard(&config, &output);
 
 	for (i = 2; i < argc; i++)
-		run_test(kbd, argv[i]);
+		total_time += run_test(kbd, argv[i]);
 
+	printf("\nTotal time spent in the main loop: %zu us\n", total_time/1000);
 	return 0;
 }
