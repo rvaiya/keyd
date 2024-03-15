@@ -573,6 +573,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 					PK_UNINTERRUPTIBLE_TAP_ACTION2 :
 					PK_UNINTERRUPTIBLE;
 
+			kbd->pending_key.dl = dl;
 			kbd->pending_key.action1 = *action;
 			kbd->pending_key.action2.op = OP_LAYER;
 			kbd->pending_key.action2.args[0].idx = layer;
