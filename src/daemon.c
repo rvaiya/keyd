@@ -184,6 +184,7 @@ static void load_configs()
 
 static struct config_ent *lookup_config_ent(uint16_t vendor,
 					    uint16_t product,
+					    const char *name,
 					    uint8_t flags)
 {
 	struct config_ent *ent = configs;
@@ -191,7 +192,7 @@ static struct config_ent *lookup_config_ent(uint16_t vendor,
 	int rank = 0;
 
 	while (ent) {
-		int r = config_check_match(&ent->config, vendor, product, flags);
+		int r = config_check_match(&ent->config, vendor, product, name, flags);
 
 		if (r > rank) {
 			match = ent;
@@ -221,7 +222,7 @@ static void manage_device(struct device *dev)
 	if (dev->capabilities & (CAP_MOUSE|CAP_MOUSE_ABS))
 		flags |= ID_MOUSE;
 
-	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, flags))) {
+	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, dev->name, flags))) {
 		if (device_grab(dev)) {
 			keyd_log("DEVICE: y{WARNING} Failed to grab %s\n", dev->path);
 			dev->data = NULL;

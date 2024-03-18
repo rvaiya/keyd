@@ -802,6 +802,11 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 				config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
 
 				config->nr_ids++;
+			} else if (!strncmp(s, "name:", 5)) {
+				assert(config->nr_ids < ARRAY_SIZE(config->ids));
+				strcpy(config->ids[config->nr_ids].name, s + 5);
+
+				config->nr_ids++;
 			}
 			else {
 				warn("%s is not a valid device id", s);
@@ -958,7 +963,7 @@ int config_parse(struct config *config, const char *path)
 	return config_parse_string(config, content);
 }
 
-int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags)
+int config_check_match(struct config *config, uint16_t vendor, uint16_t product, const char *name, uint8_t flags)
 {
 	size_t i;
 
@@ -969,6 +974,9 @@ int config_check_match(struct config *config, uint16_t vendor, uint16_t product,
 			} else if (config->ids[i].flags & flags) {
 				return 2;
 			}
+		}
+		if (!strcmp(config->ids[i].name, name)) {
+			return 2;
 		}
 	}
 
