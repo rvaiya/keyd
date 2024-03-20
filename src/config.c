@@ -4,6 +4,7 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 
+#include <alloca.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -517,21 +518,74 @@ int parse_macro_expression(const char *s, struct macro *macro)
 	return macro_parse(ptr, macro) == 0 ? 0 : 1;
 }
 
-static int parse_command(const char *s, struct command *command)
+static int parse_command(const char *s, struct command *command, char **args, struct descriptor *d)
 {
 	int len = strlen(s);
-
-	if (len == 0 || strstr(s, "command(") != s || s[len-1] != ')')
+	if (len == 0 || strstr(s, "command") != s || s[len-1] != ')')
 		return -1;
 
-	if (len > (int)sizeof(command->cmd)) {
-		err("max command length (%ld) exceeded\n", sizeof(command->cmd));
-		return 1;
-	}
+	if (s[7] == '(') {
+		if (len-7 > (int)sizeof(command->cmd)) {
+			err("max command length (%ld) exceeded\n", sizeof(command->cmd));
+			return 1;
+		}
 
-	strcpy(command->cmd, s+8);
-	command->cmd[len-9] = 0;
-	str_escape(command->cmd);
+		if (!strlen(s+9)) {
+			err("command requires 1 argument");
+			return 1;
+		}
+
+		strcpy(command->cmd, s+8);
+		command->cmd[len-9] = 0;
+		str_escape(command->cmd);
+		d->op = OP_COMMAND;
+
+		return 0;
+	} else if (s[7] == '2' && s[8] == '(') {
+		size_t nargs = 0;
+		char *c = alloca(strlen(s+9)+1);
+		strcpy(c, s+9);
+
+		for (int i=0; i<=2; i++){
+			while (*c == ' ')
+				c++;
+
+			args[i] = c;
+			if (i < 2) {
+				while (*c != ',' && *c)
+					c++;
+
+				if (c != args[i] && *c)
+					(nargs)++;
+
+				*c++ = 0;
+			} else {
+				c[strlen(c)-1] = 0;
+				(nargs)++;
+			}
+		}
+
+		if (nargs < 3) {
+			err("command2 requires 3 arguments");
+			return 1;
+		}
+
+		if (strlen(c)+1 > (int)sizeof(command->cmd)) {
+			err("max command length (%ld) exceeded\n", sizeof(command->cmd));
+			return 1;
+		}
+
+		strcpy(command->cmd, args[2]);
+		str_escape(command->cmd);
+
+		d->op = OP_COMMAND2;
+		d->args[1].timeout = atoi(args[0]);
+		d->args[2].timeout = atoi(args[1]);
+
+		return 0;
+	} else {
+		return -1;
+	}
 
 	return 0;
 }
@@ -580,7 +634,7 @@ static int parse_descriptor(char *s,
 		d->args[1].mods = mods;
 
 		return 0;
-	} else if ((ret=parse_command(s, &cmd)) >= 0) {
+	} else if ((ret=parse_command(s, &cmd, args, d)) >= 0) {
 		if (ret) {
 			return -1;
 		}
@@ -590,10 +644,7 @@ static int parse_descriptor(char *s,
 			return -1;
 		}
 
-
-		d->op = OP_COMMAND;
 		d->args[0].idx = config->nr_commands;
-
 		config->commands[config->nr_commands++] = cmd;
 
 		return 0;
@@ -738,6 +789,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 
 		if (!strcmp(ent->key, "macro_timeout"))
 			config->macro_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "command_timeout"))
+			config->command_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "macro_sequence_timeout"))
 			config->macro_sequence_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "disable_modifier_guard"))
@@ -753,6 +806,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 				 "%s", ent->val);
 		else if (!strcmp(ent->key, "macro_repeat_timeout"))
 			config->macro_repeat_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "command_repeat_timeout"))
+			config->command_repeat_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "layer_indicator"))
 			config->layer_indicator = atoi(ent->val);
 		else if (!strcmp(ent->key, "overload_tap_timeout"))
@@ -944,6 +999,8 @@ static void config_init(struct config *config)
 
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;
+	config->command_timeout = 0;
+	config->command_repeat_timeout = 0;
 }
 
 int config_parse(struct config *config, const char *path)
