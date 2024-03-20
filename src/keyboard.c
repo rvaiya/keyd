@@ -425,6 +425,7 @@ static void clear(struct keyboard *kbd)
 	}
 
 	kbd->active_macro = NULL;
+	kbd->active_command = NULL;
 
 	reset_keystate(kbd);
 }
@@ -727,11 +728,22 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_COMMAND2:
 	case OP_COMMAND:
 		if (pressed) {
+			if (d->op == OP_COMMAND2) {
+				timeout = d->args[1].timeout;
+				kbd->command_repeat_interval = d->args[2].timeout;
+			} else {
+				timeout = kbd->config.command_timeout;
+				kbd->command_repeat_interval = kbd->config.command_repeat_timeout;
+			}
 			execute_command(kbd->config.commands[d->args[0].idx].cmd);
+			kbd->active_command = kbd->config.commands[d->args[0].idx].cmd;
 			clear_oneshot(kbd);
-			update_mods(kbd, -1, 0);
+
+			kbd->command_timeout = time + timeout;
+			schedule_timeout(kbd, kbd->command_timeout);
 		}
 		break;
 	case OP_SWAP:
@@ -1143,6 +1155,17 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
 			kbd->macro_timeout = time+kbd->macro_repeat_interval;
 			schedule_timeout(kbd, kbd->macro_timeout);
+		}
+	}
+
+	if (kbd->active_command) {
+		if (code) {
+			kbd->active_command = NULL;
+			update_mods(kbd, -1, 0);
+		} else if (time >= kbd->command_timeout) {
+			execute_command(kbd->active_command);
+			kbd->command_timeout = time+kbd->command_repeat_interval;
+			schedule_timeout(kbd, kbd->command_timeout);
 		}
 	}
 
