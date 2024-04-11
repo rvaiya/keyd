@@ -314,7 +314,7 @@ Followed by:
 Gnome 42-44:
     ln -s /usr/local/share/keyd/gnome-extension ~/.local/share/gnome-shell/extensions/keyd
 
-Gnome 45:
+Gnome 45/46:
     ln -s /usr/local/share/keyd/gnome-extension-45 ~/.local/share/gnome-shell/extensions/keyd
 
 Finally restart Gnome and run:
