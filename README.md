@@ -66,6 +66,7 @@ Some of the more interesting ones include:
 
  - python      (for application specific remapping)
  - python-xlib (only for X support)
+ - dbus-python (only for KDE support)
 
 # Installation
 
