@@ -108,6 +108,57 @@ def new_interruptible_generator(fd, event_fn, flushed_fn = None):
             else:
                 yield event_fn()
 
+class KDE():
+    def __init__(self, on_window_change):
+        import os
+        import dbus
+        import dbus.mainloop.glib
+
+        assert_env("KDE_SESSION_VERSION")
+
+        self.on_window_change = on_window_change
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+    # Inject the kwin script
+    def init(self):
+        import dbus
+
+        kwin_script = '''
+        workspace.windowActivated.connect(client => {
+            if (!client) return;
+            callDBus("org.rvaiya.keyd", "/listener", "", "updateWindow", client.caption, client.resourceClass, client.resourceName);
+        });
+        '''
+
+        f = open(f'/tmp/keyd-kwin-{os.getuid()}.js', 'w')
+        f.write(kwin_script)
+        f.close()
+
+        bus = dbus.SessionBus()
+
+        kwin = bus.get_object('org.kde.KWin', '/Scripting')
+
+        kwin.unloadScript(f.name)
+        num = kwin.loadScript(f.name)
+
+        script = bus.get_object('org.kde.KWin', '/Scripting/Script%d' % num).run()
+
+    def run(self):
+        import dbus.service
+        import gi.repository.GLib
+
+        on_window_change = self.on_window_change
+        class Listener(dbus.service.Object):
+            def __init__(self):
+                super().__init__(dbus.service.BusName('org.rvaiya.keyd', dbus.SessionBus()), '/listener')
+
+            @dbus.service.method('org.rvaiya.keyd')
+            def updateWindow(self, title, foo, appid):
+                on_window_change(appid, title)
+
+        Listener()
+
+        gi.repository.GLib.MainLoop().run()
 
 # Just enough wayland wire protocol to listen for interesting events.
 #
@@ -350,6 +401,7 @@ NOTE:
 
 def get_monitor(on_window_change):
     monitors = [
+        ('kde', KDE),
         ('wlroots', Wlroots),
         ('Gnome', GnomeMonitor),
         ('X', XMonitor),
