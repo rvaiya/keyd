@@ -123,12 +123,16 @@ class KDE():
     def init(self):
         import dbus
 
-        kwin_script = '''
-        workspace.windowActivated.connect(client => {
+        if os.getenv('KDE_SESSION_VERSION') == '6':
+                api = 'windowActivated'
+        else:
+                api = 'clientActivated'
+
+        kwin_script = '''workspace.%s.connect(client => {
             if (!client) return;
             callDBus("org.rvaiya.keyd", "/listener", "", "updateWindow", client.caption, client.resourceClass, client.resourceName);
         });
-        '''
+        ''' % api
 
         f = open(f'/tmp/keyd-kwin-{os.getuid()}.js', 'w')
         f.write(kwin_script)
@@ -141,7 +145,13 @@ class KDE():
         kwin.unloadScript(f.name)
         num = kwin.loadScript(f.name)
 
-        script = bus.get_object('org.kde.KWin', '/Scripting/Script%d' % num).run()
+        if os.getenv('KDE_SESSION_VERSION') == '6':
+                script_object = f'/Scripting/Script{num}'
+        else:
+                script_object = f'/{num}'
+
+        script = bus.get_object('org.kde.KWin',  script_object)
+        script.run()
 
     def run(self):
         import dbus.service
@@ -153,8 +163,8 @@ class KDE():
                 super().__init__(dbus.service.BusName('org.rvaiya.keyd', dbus.SessionBus()), '/listener')
 
             @dbus.service.method('org.rvaiya.keyd')
-            def updateWindow(self, title, foo, appid):
-                on_window_change(appid, title)
+            def updateWindow(self, title, klass, id):
+                on_window_change(klass, title)
 
         Listener()
 
