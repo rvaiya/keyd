@@ -8,7 +8,7 @@ After=systemd-modules-load.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/bash /usr/bin/keyd-usb-gadget.sh
+ExecStart=/bin/bash /usr/local/bin/keyd-usb-gadget.sh
 
 [Install]
 WantedBy=keyd.service
