@@ -14,7 +14,7 @@ HID reports.
     git clone https://github.com/rvaiya/keyd
     cd keyd
     make VKBD=usb-gadget && sudo make install VKBD=usb-gadget
-    sudo systemctl enable usb-gadget && sudo systemctl start usb-gadget
+    sudo systemctl enable keyd-usb-gadget && sudo systemctl start keyd-usb-gadget
     sudo systemctl enable keyd && sudo systemctl start keyd
 
 The device should show up as` 1d6b:0104 Linux Foundation Multifunction Composite Gadget`
