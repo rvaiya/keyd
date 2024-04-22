@@ -35,6 +35,7 @@ all:
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
 	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
+	sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -Wunused" $(MAKE)
@@ -89,7 +90,7 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	-rm -rf bin keyd.service
+	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
