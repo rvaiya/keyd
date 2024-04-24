@@ -41,11 +41,12 @@ void parse_kvp(char *s, char **key, char **value)
 			else
 				*c = 0;
 
-			while (*++c == ' ');
+			while (*++c == ' ' || *c == '\t');
 
 			*value = c;
 			return;
 		case ' ':
+		case '\t':
 			if (!last_space)
 				last_space = c;
 			break;

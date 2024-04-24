@@ -8,3 +8,4 @@ bin/
 *.gch
 __pycache__
 test.log
+keyd.service

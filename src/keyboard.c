@@ -247,7 +247,7 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
 	assert(kbd->layer_state[idx].active > 0);
 	kbd->layer_state[idx].active--;
 
-	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 0);
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 0);
 }
 
 /*
@@ -266,7 +266,7 @@ static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
 	if ((ce = cache_get(kbd, code)))
 		ce->layer = idx;
 
-	kbd->output.on_layer_change(kbd, kbd->config.layers[idx].name, 1);
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 1);
 }
 
 /* Returns:
@@ -441,8 +441,13 @@ static void setlayout(struct keyboard *kbd, uint8_t idx)
 			kbd->layer_state[i].active = 0;
 	}
 
-	kbd->layer_state[idx].activation_time = 1;
-	kbd->layer_state[idx].active = 1;
+	// Setting the layout to main is equivalent to clearing all occluding layouts.
+	if (idx != 0) {
+		kbd->layer_state[idx].activation_time = 1;
+		kbd->layer_state[idx].active = 1;
+	}
+
+	kbd->output.on_layer_change(kbd, &kbd->config.layers[idx], 1);
 }
 
 
@@ -474,6 +479,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			       const struct descriptor *d, int dl,
 			       int pressed, long time)
 {
+	int i;
 	int timeout = 0;
 
 	if (pressed) {
@@ -520,6 +526,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			update_mods(kbd, -1, 0);
 		}
 
+		if (!mods)
+			kbd->last_simple_key_time = time;
+
 		break;
 	case OP_SCROLL:
 		kbd->scroll.sensitivity = d->args[0].sensitivity;
@@ -533,6 +542,25 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		if (pressed)
 			kbd->scroll.active = !kbd->scroll.active;
 		break;
+	case OP_OVERLOAD_IDLE_TIMEOUT:
+		if (pressed) {
+			struct descriptor *action;
+			long timeout = d->args[2].timeout;
+
+			if (((time - kbd->last_simple_key_time) >= timeout))
+				action = &kbd->config.descriptors[d->args[1].idx];
+			else
+				action = &kbd->config.descriptors[d->args[0].idx];
+
+			process_descriptor(kbd, code, action, dl, 1, time);
+			for (i = 0; i < CACHE_SIZE; i++) {
+				if (code == kbd->cache[i].code) {
+					kbd->cache[i].d = *action;
+					break;
+				}
+			}
+		}
+		break;
 	case OP_OVERLOAD_TIMEOUT_TAP:
 	case OP_OVERLOAD_TIMEOUT:
 		if (pressed) {
@@ -545,6 +573,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 					PK_UNINTERRUPTIBLE_TAP_ACTION2 :
 					PK_UNINTERRUPTIBLE;
 
+			kbd->pending_key.dl = dl;
 			kbd->pending_key.action1 = *action;
 			kbd->pending_key.action2.op = OP_LAYER;
 			kbd->pending_key.action2.args[0].idx = layer;
@@ -604,8 +633,17 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->last_pressed_code == code &&
 			    (!kbd->config.overload_tap_timeout ||
 			     ((time - kbd->overload_start_time) < kbd->config.overload_tap_timeout))) {
-				process_descriptor(kbd, code, action, dl, 1, time);
-				process_descriptor(kbd, code, action, dl, 0, time);
+				if (action->op == OP_MACRO) {
+					/*
+					 * Macro release relies on event logic, so we can't just synthesize a
+					 * descriptor release.
+					 */
+					struct macro *macro = &kbd->config.macros[action->args[0].idx];
+					execute_macro(kbd, dl, macro);
+				} else {
+					process_descriptor(kbd, code, action, dl, 1, time);
+					process_descriptor(kbd, code, action, dl, 0, time);
+				}
 			}
 		}
 
@@ -662,7 +700,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_TOGGLE:
 		idx = d->args[0].idx;
 
-		if (!pressed) {
+		if (pressed) {
 			kbd->layer_state[idx].toggled = !kbd->layer_state[idx].toggled;
 
 			if (kbd->layer_state[idx].toggled)
@@ -671,7 +709,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				deactivate_layer(kbd, idx);
 
 			update_mods(kbd, -1, 0);
-		} else {
 			clear_oneshot(kbd);
 		}
 
@@ -1061,12 +1098,12 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 		kbd->pending_key.queue_sz = 0;
 		kbd->pending_key.tap_expiry = 0;
 
-		process_descriptor(kbd, code, &action, dl, 1, time);
 		cache_set(kbd, code, &(struct cache_entry) {
 			.d = action,
 			.dl = dl,
 			.layer = 0,
 		});
+		process_descriptor(kbd, code, &action, dl, 1, time);
 
 		/* Flush queued events */
 		kbd_process_events(kbd, queue, queue_sz);

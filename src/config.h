@@ -39,6 +39,7 @@ enum op {
 	OP_OVERLOAD,
 	OP_OVERLOAD_TIMEOUT,
 	OP_OVERLOAD_TIMEOUT_TAP,
+	OP_OVERLOAD_IDLE_TIMEOUT,
 	OP_TOGGLE,
 	OP_TOGGLEM,
 
@@ -112,7 +113,7 @@ struct config {
 	struct layer layers[MAX_LAYERS];
 
 	/* Auxiliary descriptors used by layer bindings. */
-	struct descriptor descriptors[64];
+	struct descriptor descriptors[256];
 	struct macro macros[256];
 	struct command commands[64];
 	char aliases[256][32];

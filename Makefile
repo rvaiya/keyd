@@ -2,9 +2,9 @@
 VERSION=2.4.3
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
-PREFIX=/usr
+PREFIX?=/usr/local
 
-CONFIG_DIR=/etc/keyd
+CONFIG_DIR?=/etc/keyd
 SOCKET_PATH=/var/run/keyd.socket
 
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
@@ -34,6 +34,7 @@ endif
 all:
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
+	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -Wunused" $(MAKE)
@@ -47,7 +48,8 @@ man:
 		scdoc < "$$f" | gzip > "$$target"; \
 	done
 install:
-	@if [ -e $(DESTDIR)$(PREFIX)/lib/systemd/ ]; then \
+	@if [ -e /run/systemd/system ]; then \
+		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
@@ -71,19 +73,23 @@ install:
 	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
 	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 	install -m644 layouts/* $(DESTDIR)$(PREFIX)/share/keyd/layouts
+	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
 	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
 
 uninstall:
+	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
+		$(DESTDIR)$(PREFIX)/share/keyd/ \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh
+		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	-rm -rf bin
+	-rm -rf bin keyd.service
 test:
 	@cd t; \
 	for f in *.sh; do \

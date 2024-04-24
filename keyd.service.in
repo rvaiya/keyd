@@ -1,0 +1,9 @@
+[Unit]
+Description=key remapping daemon
+
+[Service]
+Type=simple
+ExecStart=@PREFIX@/bin/keyd
+
+[Install]
+WantedBy=multi-user.target

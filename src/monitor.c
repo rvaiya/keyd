@@ -82,6 +82,8 @@ int event_handler(struct event *ev)
 
 int monitor(int argc, char *argv[])
 {
+	struct stat st;
+
 	if (argc == 2 && !strcmp(argv[1], "-h")) {
 		printf("Usage: keyd monitor [-t]\n\n\t-t: Print the time in milliseconds between events.\n");
 		return 0;
@@ -93,8 +95,13 @@ int monitor(int argc, char *argv[])
 	if (isatty(1))
 		set_tflags(ECHO, 0);
 
-	/* Eagerly terminate on pipe closures. */
-	if (!isatty(1))
+	if (fstat(1, &st)) {
+		perror("fstat");
+		exit(-1);
+	}
+
+	/* If stdout is a process, terminate on pipe closures. */
+	if (st.st_mode & S_IFIFO)
 		evloop_add_fd(1);
 
 	setvbuf(stdout, NULL, _IOLBF, 0);

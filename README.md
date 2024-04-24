@@ -66,6 +66,7 @@ Some of the more interesting ones include:
 
  - python      (for application specific remapping)
  - python-xlib (only for X support)
+ - dbus-python (only for KDE support)
 
 # Installation
 
@@ -166,7 +167,16 @@ members, no personal responsibility is taken for them.
 
 ### Arch
 
-[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by eNV25.
+[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by [@eNV25](https://github.com/eNV25).
+
+### Fedora
+
+[COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
+
+### openSUSE
+[opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
+
+Easy install with `sudo zypper in keyd`.
 
 # Sample Config
 

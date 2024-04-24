@@ -1,7 +1,5 @@
 #include "keyd.h"
 
-#define VKBD_NAME "keyd virtual keyboard"
-
 struct config_ent {
 	struct config config;
 	struct keyboard *kbd;
@@ -16,6 +14,7 @@ static uint8_t keystate[256];
 
 static int listeners[32];
 static size_t nr_listeners = 0;
+static struct keyboard *active_kbd = NULL;
 
 static void free_configs()
 {
@@ -74,10 +73,24 @@ static void add_listener(int con)
 
 	setsockopt(con, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
 
+	if (active_kbd) {
+		size_t i;
+		struct config *config = &active_kbd->config;
+
+		for (i = 0; i < config->nr_layers; i++) {
+			if (active_kbd->layer_state[i].active) {
+				struct layer *layer = &config->layers[i];
+
+				write(con, layer->type == LT_LAYOUT ? "/" : "+", 1);
+				write(con, layer->name, strlen(layer->name));
+				write(con, "\n", 1);
+			}
+		}
+	}
 	listeners[nr_listeners++] = con;
 }
 
-static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_t state)
+static void on_layer_change(const struct keyboard *kbd, const struct layer *layer, uint8_t state)
 {
 	size_t i;
 	char buf[MAX_LAYER_NAME_LEN+2];
@@ -87,15 +100,27 @@ static void on_layer_change(const struct keyboard *kbd, const char *name, uint8_
 	size_t n = 0;
 
 	if (kbd->config.layer_indicator) {
+		int active_layers = 0;
+
+		for (i = 1; i < kbd->config.nr_layers; i++)
+			if (kbd->config.layers[i].type != LT_LAYOUT && kbd->layer_state[i].active) {
+				active_layers = 1;
+				break;
+			}
+
 		for (i = 0; i < device_table_sz; i++)
 			if (device_table[i].data == kbd)
-				device_set_led(&device_table[i], 1, state);
+				device_set_led(&device_table[i], 1, active_layers);
 	}
 
 	if (!nr_listeners)
 		return;
 
-	bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', name);
+	if (layer->type == LT_LAYOUT)
+		bufsz = snprintf(buf, sizeof(buf), "/%s\n", layer->name);
+	else
+		bufsz = snprintf(buf, sizeof(buf), "%c%s\n", state ? '+' : '-', layer->name);
+
 	for (i = 0; i < nr_listeners; i++) {
 		ssize_t nw = write(listeners[i], buf, bufsz);
 
@@ -188,7 +213,7 @@ static void manage_device(struct device *dev)
 	uint8_t flags = 0;
 	struct config_ent *ent;
 
-	if (!strcmp(dev->name, VKBD_NAME))
+	if (dev->is_virtual)
 		return;
 
 	if (dev->capabilities & CAP_KEYBOARD)
@@ -402,7 +427,6 @@ static int event_handler(struct event *ev)
 {
 	static int last_time = 0;
 	static int timeout = 0;
-	static struct keyboard *timeout_kbd = NULL;
 	struct key_event kev = {0};
 
 	timeout -= ev->timestamp - last_time;
@@ -412,19 +436,20 @@ static int event_handler(struct event *ev)
 
 	switch (ev->type) {
 	case EV_TIMEOUT:
-		if (!timeout_kbd)
+		if (!active_kbd)
 			return 0;
 
 		kev.code = 0;
 		kev.timestamp = ev->timestamp;
 
-		timeout = kbd_process_events(timeout_kbd, &kev, 1);
+		timeout = kbd_process_events(active_kbd, &kev, 1);
 		break;
 	case EV_DEV_EVENT:
 		if (ev->dev->data) {
 			struct keyboard *kbd = ev->dev->data;
-			timeout_kbd = ev->dev->data;
+			active_kbd = ev->dev->data;
 			switch (ev->devev->type) {
+			size_t i;
 			case DEV_KEY:
 				dbg("input %s %s", KEY_NAME(ev->devev->code), ev->devev->pressed ? "down" : "up");
 
@@ -465,7 +490,7 @@ static int event_handler(struct event *ev)
 				 * Treat scroll events as mouse buttons so oneshot and the like get
 				 * cleared.
 				 */
-				if (timeout_kbd) {
+				if (active_kbd) {
 					kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
 					kev.pressed = 1;
 					kev.timestamp = ev->timestamp;
@@ -479,6 +504,18 @@ static int event_handler(struct event *ev)
 				vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
 				break;
 			}
+		} else if (ev->dev->is_virtual && ev->devev->type == DEV_LED) {
+			size_t i;
+
+			/* 
+			 * Propagate LED events received by the virtual device from userspace
+			 * to all grabbed devices.
+			 *
+			 * NOTE/TODO: Account for potential layer_indicator interference
+			 */
+			for (i = 0; i < device_table_sz; i++)
+				if (device_table[i].data)
+					device_set_led(&device_table[i], ev->devev->code, ev->devev->pressed);
 		}
 
 		break;

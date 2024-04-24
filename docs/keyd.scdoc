@@ -177,13 +177,13 @@ For example:
 	j = down
 ```
 
-will cause _capslock_ to behave as _control_, except in the case of _control+j_, which will
+will cause _capslock_ to behave as _control_, except in the case of _capslock+j_, which will
 emit _down_. This makes it trivial to define custom modifiers which don't interfere with
 one another.
 
 Note that bindings are not affected by the modifiers of the layer in which they
 are defined. Thus *capslock+j* will produce an unmodified *down* keypress, while
-*shift+control+j* will produce *shift+down* as expected.
+*shift+capslock+j* will produce *shift+down* as expected.
 
 
 Formally, each layer heading has the following form:
@@ -337,8 +337,8 @@ and not
 
 A layout is a special kind of layer intended for modifying alpha keys. Unlike
 layers, layouts cannot have any associated modifiers, and only one layout may
-be active at a given time. The current layout can be set using the _setlayout_
-action.
+be active at a given time. The default layout is called 'main', and can be
+changed using the _setlayout()_ action.
 
 For convenience, keyd ships with a number of common letter layouts in
 /usr/share/keyd/layouts. Before including these, it is instructive to inspect them.
@@ -548,6 +548,9 @@ any of the following options:
 	(default: 50)
 
 	*layer_indicator:* If set, this will turn the capslock light on whenever a layer is active.
+	Note: Some wayland compositors will aggressively toggle LED state rendering this option
+	unusable.
+
 	(default: 0)
 
 	*macro_sequence_timeout:* If set, this will add a timeout (*in
@@ -555,7 +558,7 @@ any of the following options:
 	useful to avoid overflowing the input buffer on some systems.
 
 	*chord_timeout:* The maximum time between successive keys
-	interpreted as part of a chord. 
+	interpreted as part of a chord.
 	(default: 50)
 
 	*chord_hold_timeout:* The length of time a chord
@@ -563,13 +566,13 @@ any of the following options:
 	(default: 0)
 
 	*oneshot_timeout:* If non-zero, timeout a oneshot layer
-	activation after the supplied number of milliseconds. 
+	activation after the supplied number of milliseconds.
 	(default: 0)
 
 	*disable_modifier_guard:* By default, keyd will inject additional
 	control keypresses where necessary in order to prevent programs from
 	seeing additional modifier taps (E.g alt in firefox). If set, this
-	option disables that behaviour. 
+	option disables that behaviour.
 	(default: 0)
 
 	*overload_tap_timeout:* If non-zero, ignore the tap behaviour of an
@@ -621,9 +624,9 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *layer(<layer>)*
 	Activate the given layer for the duration of the keypress.
 
-*oneshot(<layer>)* 
+*oneshot(<layer>)*
 
-	If tapped, activate the supplied layer for the duration of the next keypress. 
+	If tapped, activate the supplied layer for the duration of the next keypress.
 
 *swap(<layer>)*
 	Swap the currently active layer with the supplied one. If the current
@@ -660,10 +663,10 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	Permanently toggle the state of the given layer.
 
 *layerm(<layer>, <macro>)*
-	Identical to *layer*, but executes the supplies macro before the layer change.
+	Identical to *layer*, but executes the supplied macro before the layer change.
 
 *oneshotm(<layer>, <macro>)*
-	Identical to *oneshot*, but executes the supplies macro before the layer change.
+	Identical to *oneshot*, but executes the supplied macro before the layer change.
 
 *swapm(<layer>, <macro>)*
 	Identical to *swap*, but accepts a macro to be executed immediately
@@ -674,7 +677,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	toggling the layer.
 
 *clearm(<macro>)*
-	Identical to *clear*, but executes the supplies macro before clearing layers.
+	Identical to *clear*, but executes the supplied macro before clearing layers.
 
 ## Key overloading
 
@@ -684,7 +687,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *overloadt(<layer>, <action>, <timeout>)*
 	Identical to overload, but only activates the layer if the bound key is
 	held for \<timeout\> milliseconds. This is mainly useful for overloading keys
-	which are commonly struck in sequence (e.g letter keys). 
+	which are commonly struck in sequence (e.g letter keys).
 
 	Note that this will add a visual delay when typing, since overlapping
 	keys will be queued until the timeout expires or the bound key is
@@ -693,6 +696,37 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *overloadt2(<layer>, <action>, <timeout>)*
 	Identical to overloadt, but additionally resolves as a hold in the
 	event of an intervening key tap.
+
+*overloadi(<action 1>, <action 2>, <idle timeout>)*
+	Activate <action 1> if the last non-action (i.e symbol) key was struck less
+	than <timeout> milliseconds ago, otherwise activate <action 2>.
+
+	This can be used in combination with other overload timeouts and is particularly
+	useful for overloading letter keys (often called 'homerow mods').
+
+	For example:
+
+```
+	a = overloadi(a, overloadt2(control, a, 200), 150)
+```
+
+	will produce _a_ if and only if:
+
+		- _a_ is struck within 150ms of another non-action key.
+		- _a_ is struck more than 150ms after the last non-action key but held for less than 200ms
+		  and there are no intervening key taps.
+
+	This reduces the visual latency by immediately resolving the key as a letter when
+	typed midword, but also facilitates its use as a layer trigger if it is held for a long 
+	enough period with no intervening symbols.
+
+	Since this is a common usecase, a macro called *lettermod* (defined below) has been
+	defined to facilitate such definitions.
+
+*lettermod(<layer>, <key>, <idle timeout>, <hold timeout>)*
+	An alias for:
+
+		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If the key is held in isolation for more than _<timeout> ms_, activate the second
@@ -924,6 +958,11 @@ Disables the esc and end keys.
 	esc = noop
 	end = noop
 ```
+
+# ENVIRONMENT VARIABLES
+
+*KEYD_DEBUG*
+	Debug log level. _0_,_1_,_2_ can be specified (default: 0).
 
 # AUTHOR
 

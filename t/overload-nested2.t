@@ -9,5 +9,3 @@ meta up
 control up
 \ down
 \ up
-control down
-control up
