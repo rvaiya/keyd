@@ -773,39 +773,28 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 
 		if (!strcmp(s, "*")) {
 			config->wildcard = 1;
+		} else if (strstr(s, "m:") == s) {
+			assert(config->nr_ids < ARRAY_SIZE(config->ids));
+			config->ids[config->nr_ids].flags = ID_MOUSE;
+
+			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
+		} else if (strstr(s, "k:") == s) {
+			assert(config->nr_ids < ARRAY_SIZE(config->ids));
+			config->ids[config->nr_ids].flags = ID_KEYBOARD;
+
+			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
+		} else if (strstr(s, "-") == s) {
+			assert(config->nr_ids < ARRAY_SIZE(config->ids));
+			config->ids[config->nr_ids].flags = ID_EXCLUDED;
+
+			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+1);
+		} else if (strlen(s) < sizeof(config->ids[config->nr_ids].id)-1) {
+			assert(config->nr_ids < ARRAY_SIZE(config->ids));
+			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
+
+			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s);
 		} else {
-			if (sscanf(s, "m:%hx:%hx", &vendor, &product) == 2) {
-				assert(config->nr_ids < ARRAY_SIZE(config->ids));
-				config->ids[config->nr_ids].product = product;
-				config->ids[config->nr_ids].vendor = vendor;
-				config->ids[config->nr_ids].flags = ID_MOUSE;
-
-				config->nr_ids++;
-			} else if (sscanf(s, "k:%hx:%hx", &vendor, &product) == 2) {
-				assert(config->nr_ids < ARRAY_SIZE(config->ids));
-				config->ids[config->nr_ids].product = product;
-				config->ids[config->nr_ids].vendor = vendor;
-				config->ids[config->nr_ids].flags = ID_KEYBOARD;
-
-				config->nr_ids++;
-			} else if (sscanf(s, "-%hx:%hx", &vendor, &product) == 2) {
-				assert(config->nr_ids < ARRAY_SIZE(config->ids));
-				config->ids[config->nr_ids].product = product;
-				config->ids[config->nr_ids].vendor = vendor;
-				config->ids[config->nr_ids].flags = ID_EXCLUDED;
-
-				config->nr_ids++;
-			} else if (sscanf(s, "%hx:%hx", &vendor, &product) == 2) {
-				assert(config->nr_ids < ARRAY_SIZE(config->ids));
-				config->ids[config->nr_ids].product = product;
-				config->ids[config->nr_ids].vendor = vendor;
-				config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
-
-				config->nr_ids++;
-			}
-			else {
-				warn("%s is not a valid device id", s);
-			}
+			warn("%s is not a valid device id", s);
 		}
 	}
 }
@@ -958,12 +947,13 @@ int config_parse(struct config *config, const char *path)
 	return config_parse_string(config, content);
 }
 
-int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags)
+int config_check_match(struct config *config, const char *id, uint8_t flags)
 {
 	size_t i;
 
 	for (i = 0; i < config->nr_ids; i++) {
-		if (config->ids[i].product == product && config->ids[i].vendor == vendor) {
+		//Prefix match to allow matching <product>:<vendor> for backward compatibility.
+		if (strstr(id, config->ids[i].id) == id) {
 			if (config->ids[i].flags & ID_EXCLUDED) {
 				return 0;
 			} else if (config->ids[i].flags & flags) {

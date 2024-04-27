@@ -41,7 +41,7 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-static uint8_t resolve_device_capabilities(int fd)
+static uint8_t resolve_device_capabilities(int fd, int *num_keys, uint8_t *relmask, uint8_t *absmask)
 {
 	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
 					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
@@ -50,9 +50,8 @@ static uint8_t resolve_device_capabilities(int fd)
 					1<<KEY_E | 1<<KEY_R | 1<<KEY_T |
 					1<<KEY_Y;
 
+	size_t i;
 	uint32_t mask[BTN_LEFT/32+1] = {0};
-	uint8_t has_rel;
-	uint8_t has_abs;
 	uint8_t capabilities = 0;
 	int has_brightness_key;
 
@@ -61,20 +60,24 @@ static uint8_t resolve_device_capabilities(int fd)
 		return 0;
 	}
 
-	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), &has_rel) < 0) {
+	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), relmask) < 0) {
 		perror("ioctl: ev_rel");
 		return 0;
 	}
 
-	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), &has_abs) < 0) {
+	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), absmask) < 0) {
 		perror("ioctl: ev_abs");
 		return 0;
 	}
 
-	if (has_rel || has_abs)
+	*num_keys = 0;
+	for (i = 0; i < sizeof(mask)/sizeof(mask[0]); i++)
+		*num_keys += __builtin_popcount(mask[i]);
+
+	if (*relmask || *absmask)
 		capabilities |= CAP_MOUSE;
 
-	if (has_abs)
+	if (*absmask)
 		capabilities |= CAP_MOUSE_ABS;
 
 	/*
@@ -99,6 +102,9 @@ static int device_init(const char *path, struct device *dev)
 {
 	int fd;
 	int capabilities;
+	int num_keys;
+	uint8_t relmask;
+	uint8_t absmask;
 	struct input_absinfo absinfo;
 
 	if ((fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC, 0600)) < 0) {
@@ -106,7 +112,7 @@ static int device_init(const char *path, struct device *dev)
 		return -1;
 	}
 
-	capabilities = resolve_device_capabilities(fd);
+	capabilities = resolve_device_capabilities(fd, &num_keys, &relmask, &absmask);
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
 		keyd_log("ERROR: could not fetch device name of %s\n", dev->path);
@@ -144,10 +150,18 @@ static int device_init(const char *path, struct device *dev)
 		strncpy(dev->path, path, sizeof(dev->path)-1);
 		dev->path[sizeof(dev->path)-1] = 0;
 
+		/*
+		 * Attempt to generate a reproducible unique identifier for each device.
+		 * The product and vendor ids are insufficient to identify some devices since
+		 * they can create multiple device nodes with different capabilities. Thus
+		 * we factor in the capabilities of the resultant evdev node to
+		 * further distinguish between input devices. These should be
+		 * regarded as opaque identifiers by the user.
+		 */
+		snprintf(dev->id, sizeof dev->id, "%04x:%04x:%04x%02x%02x", info.vendor, info.product, num_keys, absmask, relmask);
+
 		dev->fd = fd;
 		dev->capabilities = capabilities;
-		dev->vendor_id = info.vendor;
-		dev->product_id = info.product;
 		dev->data = NULL;
 		dev->grabbed = 0;
 

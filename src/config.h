@@ -120,8 +120,7 @@ struct config {
 
 	uint8_t wildcard;
 	struct {
-		uint16_t product;
-		uint16_t vendor;
+		char id[64];
 		uint8_t flags;
 	} ids[64];
 
@@ -152,6 +151,6 @@ int config_parse(struct config *config, const char *path);
 int config_add_entry(struct config *config, const char *exp);
 int config_get_layer_index(const struct config *config, const char *name);
 
-int config_check_match(struct config *config, uint16_t vendor, uint16_t product, uint8_t flags);
+int config_check_match(struct config *config, const char *id, uint8_t flags);
 
 #endif

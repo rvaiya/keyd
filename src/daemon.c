@@ -182,16 +182,14 @@ static void load_configs()
 	closedir(dh);
 }
 
-static struct config_ent *lookup_config_ent(uint16_t vendor,
-					    uint16_t product,
-					    uint8_t flags)
+static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 {
 	struct config_ent *ent = configs;
 	struct config_ent *match = NULL;
 	int rank = 0;
 
 	while (ent) {
-		int r = config_check_match(&ent->config, vendor, product, flags);
+		int r = config_check_match(&ent->config, id, flags);
 
 		if (r > rank) {
 			match = ent;
@@ -221,24 +219,21 @@ static void manage_device(struct device *dev)
 	if (dev->capabilities & (CAP_MOUSE|CAP_MOUSE_ABS))
 		flags |= ID_MOUSE;
 
-	if ((ent = lookup_config_ent(dev->vendor_id, dev->product_id, flags))) {
+	if ((ent = lookup_config_ent(dev->id, flags))) {
 		if (device_grab(dev)) {
 			keyd_log("DEVICE: y{WARNING} Failed to grab %s\n", dev->path);
 			dev->data = NULL;
 			return;
 		}
 
-		keyd_log("DEVICE: g{match}    %04hx:%04hx  %s\t(%s)\n",
-			  dev->vendor_id, dev->product_id,
-			  ent->config.path,
-			  dev->name);
+		keyd_log("DEVICE: g{match}    %s  %s\t(%s)\n",
+			  dev->id, ent->config.path, dev->name);
 
 		dev->data = ent->kbd;
 	} else {
 		dev->data = NULL;
 		device_ungrab(dev);
-		keyd_log("DEVICE: r{ignoring} %04hx:%04hx  (%s)\n", 
-			  dev->vendor_id, dev->product_id, dev->name);
+		keyd_log("DEVICE: r{ignoring} %s  (%s)\n", dev->id, dev->name);
 	}
 }
 
@@ -523,10 +518,7 @@ static int event_handler(struct event *ev)
 		manage_device(ev->dev);
 		break;
 	case EV_DEV_REMOVE:
-		keyd_log("DEVICE: r{removed}\t%04hx:%04hx %s\n",
-			  ev->dev->vendor_id,
-			  ev->dev->product_id,
-			  ev->dev->name);
+		keyd_log("DEVICE: r{removed}\t%s %s\n", ev->dev->id, ev->dev->name);
 
 		break;
 	case EV_FD_ACTIVITY:

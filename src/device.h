@@ -23,10 +23,9 @@ struct device {
 
 	uint8_t grabbed;
 	uint8_t capabilities;
-	uint16_t product_id;
-	uint16_t vendor_id;
 	uint8_t is_virtual;
 
+	char id[64];
 	char name[64];
 	char path[256];
 

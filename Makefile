@@ -38,7 +38,7 @@ all:
 	sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
-	CFLAGS="-g -Wunused" $(MAKE)
+	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
 	-mkdir data
 	./scripts/generate_xcompose
