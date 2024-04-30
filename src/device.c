@@ -41,7 +41,7 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-static uint8_t resolve_device_capabilities(int fd, int *num_keys, uint8_t *relmask, uint8_t *absmask)
+static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *relmask, uint8_t *absmask)
 {
 	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
 					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
@@ -98,11 +98,31 @@ static uint8_t resolve_device_capabilities(int fd, int *num_keys, uint8_t *relma
 	return capabilities;
 }
 
+uint32_t generate_uid(uint32_t num_keys, uint8_t absmask, uint8_t relmask, const char *name)
+{
+	uint32_t hash = 5183;
+
+	//djb2 hash
+	hash = hash*33 + (uint8_t)(num_keys >> 24);
+	hash = hash*33 + (uint8_t)(num_keys >> 16);
+	hash = hash*33 + (uint8_t)(num_keys >> 8);
+	hash = hash*33 + (uint8_t)(num_keys);
+	hash = hash*33 + absmask;
+	hash = hash*33 + relmask;
+
+	while (*name) {
+		hash = hash*33 + *name;
+		name++;
+	}
+
+	return hash;
+}
+
 static int device_init(const char *path, struct device *dev)
 {
 	int fd;
 	int capabilities;
-	int num_keys;
+	uint32_t num_keys;
 	uint8_t relmask;
 	uint8_t absmask;
 	struct input_absinfo absinfo;
@@ -154,11 +174,11 @@ static int device_init(const char *path, struct device *dev)
 		 * Attempt to generate a reproducible unique identifier for each device.
 		 * The product and vendor ids are insufficient to identify some devices since
 		 * they can create multiple device nodes with different capabilities. Thus
-		 * we factor in the capabilities of the resultant evdev node to
-		 * further distinguish between input devices. These should be
-		 * regarded as opaque identifiers by the user.
+		 * we factor in the device name and capabilities of the resultant evdev node
+		 * to further distinguish between input devices. These should be regarded as
+		 * opaque identifiers by the user.
 		 */
-		snprintf(dev->id, sizeof dev->id, "%04x:%04x:%04x%02x%02x", info.vendor, info.product, num_keys, absmask, relmask);
+		snprintf(dev->id, sizeof dev->id, "%04x:%04x:%08x", info.vendor, info.product, generate_uid(num_keys, absmask, relmask, dev->name));
 
 		dev->fd = fd;
 		dev->capabilities = capabilities;
