@@ -103,7 +103,7 @@ For example:
 ```
 
 
-Will match all devices which *do not*(2) have the id _0123:4567_, while:
+Will match all keyboards which *do not*(2) have the id _0123:4567_, while:
 
 ```
 	[ids]
@@ -131,6 +131,12 @@ same state. This is useful for linking separate input devices together
 Note 2: The wildcard will only match devices which keyd identifies as keyboards.
 keyd is also capable of *managing mice* (e.g to facilitate clearing
 of oneshot modifiers on click), but their ids must be explicitly listed.
+
+Note 3: *Mouse support is currently experimental*, and is mostly confined to
+traditional mice (e.g touchpads). Adding some mice to
+your ids section may break your pointer. *It may also be necessary
+to explicitly blacklist mice which are misidentified as keyboards
+(e.g if you find your moused misbehaving).*
 
 ## Layers
 
