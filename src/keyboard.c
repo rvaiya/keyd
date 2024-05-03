@@ -626,7 +626,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->overload_start_time = time;
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, -1, 0);
-		} else {
+		} else if (!kbd->pending_key.code) {
 			deactivate_layer(kbd, idx);
 			update_mods(kbd, -1, 0);
 
