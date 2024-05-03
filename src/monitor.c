@@ -32,7 +32,7 @@ static void cleanup()
 
 int event_handler(struct event *ev)
 {
-	static long last_time;
+	static long last_time = 0;
 
 	switch (ev->type) {
 	const char *name;
@@ -50,7 +50,7 @@ int event_handler(struct event *ev)
 		case DEV_KEY:
 			name = keycode_table[ev->devev->code].name;
 
-			if (time_flag)
+			if (time_flag && last_time)
 				keyd_log("r{+%ld} ms\t", ev->timestamp - last_time);
 
 			keyd_log("%s\t%s\t%s %s\n",
