@@ -473,7 +473,7 @@ def normalize_class(s):
      return re.sub('[^A-Za-z0-9]+', '-', s).strip('-').lower()
 
 def normalize_title(s):
-    return re.sub('[\W_]+', '-', s).strip('-').lower()
+    return re.sub(r'[\W_]+', '-', s).strip('-').lower()
 
 last_mtime = os.path.getmtime(CONFIG_PATH)
 def on_window_change(cls, title):
