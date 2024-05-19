@@ -553,11 +553,24 @@ any of the following options:
 	*macro_repeat_timeout:* The time separating successive executions of a macro.
 	(default: 50)
 
-	*layer_indicator:* If set, this will turn the capslock light on whenever a layer is active.
+	*layer_indicator:* If set, this will turn the *indicator_led* light on whenever a layer is active.
 	Note: Some wayland compositors will aggressively toggle LED state rendering this option
 	unusable.
 
 	(default: 0)
+
+	*indicator_led:* If *layer_indicator* is set, this will determine what LED to use.
+    This option will accept ONLY these values, if anything else is passed this will default
+    to 1 (i.e. capslock)
+
+    0 = Numlock
+    1 = Capslock
+    2 = Scrolllock
+
+    Note: if you pass a string to this option the activated LED will be Numlock due to
+    how atoi() works
+
+	(default: 1)
 
 	*macro_sequence_timeout:* If set, this will add a timeout (*in
 	microseconds*) between each emitted key in a macro sequence. This is

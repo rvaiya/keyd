@@ -755,6 +755,17 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->macro_repeat_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "layer_indicator"))
 			config->layer_indicator = atoi(ent->val);
+		else if (!strcmp(ent->key, "indicator_led")) {
+			switch (atoi(ent->val)) {
+				case 0:
+				case 1:
+				case 2:
+					config->indicator_led = atoi(ent->val);
+					break;
+				default:
+					config->indicator_led = 1;
+			}
+		}
 		else if (!strcmp(ent->key, "overload_tap_timeout"))
 			config->overload_tap_timeout = atoi(ent->val);
 		else
@@ -933,6 +944,7 @@ static void config_init(struct config *config)
 
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;
+    config->indicator_led = 1;
 }
 
 int config_parse(struct config *config, const char *path)

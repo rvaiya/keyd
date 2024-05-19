@@ -143,6 +143,7 @@ struct config {
 	long chord_hold_timeout;
 
 	uint8_t layer_indicator;
+	uint8_t indicator_led;
 	uint8_t disable_modifier_guard;
 	char default_layout[MAX_LAYER_NAME_LEN];
 };

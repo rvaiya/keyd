@@ -110,7 +110,7 @@ static void on_layer_change(const struct keyboard *kbd, const struct layer *laye
 
 		for (i = 0; i < device_table_sz; i++)
 			if (device_table[i].data == kbd)
-				device_set_led(&device_table[i], 1, active_layers);
+				device_set_led(&device_table[i], kbd->config.indicator_led, active_layers);
 	}
 
 	if (!nr_listeners)
