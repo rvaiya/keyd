@@ -560,15 +560,18 @@ any of the following options:
 	(default: 0)
 
 	*indicator_led:* If *layer_indicator* is set, this will determine what LED to use.
-    This option will accept ONLY these values, if anything else is passed this will default
-    to 1 (i.e. capslock)
+	This option will accept ONLY these values, if anything else is passed this will default
+	to 1 (i.e. capslock)
+	
+	0 = Numlock
 
-    0 = Numlock
-    1 = Capslock
-    2 = Scrolllock
+	1 = Capslock
 
-    Note: if you pass a string to this option the activated LED will be Numlock due to
-    how atoi() works
+	2 = Scrolllock
+
+	
+	Note: if you pass a string to this option the activated LED will be Numlock due to
+	how atoi() works
 
 	(default: 1)
 
