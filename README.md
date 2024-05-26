@@ -255,11 +255,12 @@ context switch making the `alt` (`cmd`) key replicate common `ctrl` combinations
     *
 
     [main]
+    
+    # Cmd
+    [alt]
 
-    [alt] # Cmd
-
-    # Cut
-    x = C-x # (alt+x -> ctrl+x)
+    # Cut (alt+x -> ctrl+x)
+    x = C-x
     # Copy
     c = C-c
     # Paste
