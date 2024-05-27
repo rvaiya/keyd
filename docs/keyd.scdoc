@@ -112,7 +112,8 @@ Will match all keyboards which *do not*(2) have the id _0123:4567_, while:
 ```
 
 will exclusively match any devices which do. Device ids can be obtained from
-the monitor command (see _COMMANDS_).
+the monitor command (see _COMMANDS_). Note that a device id may only be
+listed in a single config file.
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
