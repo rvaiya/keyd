@@ -238,18 +238,49 @@ class Wlroots():
 
     def run(self):
         windows = {}
+        active_window = None
+
         while True:
             (obj, event, payload) = self.wl.recv_msg()
             if obj == 4 and event == 0:
-                windows[struct.unpack('I', payload)[0]] = {}
+                # zwlr_foreign_toplevel_manager_v1::toplevel event
+                windows[struct.unpack('I', payload)[0]] = {'title': '', 'appid': ''}
+                continue
 
-            if obj in windows:
-                if event == 0:
-                    windows[obj]['title'] = self.wl.read_string(payload)
-                if event == 1:
-                    windows[obj]['appid'] = self.wl.read_string(payload)
-                if event == 4 and payload[0] > 0 and payload[4] == 2:
-                    self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
+            if obj not in windows:
+                continue
+
+            if event == 0:
+                # zwlr_foreign_toplevel_handle_v1::title event
+                windows[obj]['title'] = self.wl.read_string(payload)
+            elif event == 1:
+                # zwlr_foreign_toplevel_handle_v1::app_id event
+                windows[obj]['appid'] = self.wl.read_string(payload)
+            elif event == 4:
+                # zwlr_foreign_toplevel_handle_v1::state event
+                if active_window == windows[obj]:
+                    active_window = None
+                window_is_active = False
+
+                array_size = struct.unpack('I', payload[0:4])[0]
+                for i in range(0, array_size, 4):
+                    start_offset = i + 4
+                    end_offset = start_offset + 4
+                    state = struct.unpack('I', payload[start_offset:end_offset])[0]
+                    # zwlr_foreign_toplevel_handle_v1::state enum -> activated
+                    if state == 2:
+                        window_is_active = True
+
+                if window_is_active:
+                    active_window = windows[obj]
+            elif event == 5 and active_window == windows[obj]:
+                # zwlr_foreign_toplevel_handle_v1::done event
+                self.on_window_change(active_window['appid'], active_window['title'])
+            elif event == 6:
+                # zwlr_foreign_toplevel_handle_v1::closed event
+                closed_window = windows.pop(obj)
+                if closed_window == active_window:
+                    active_window = None
 
 class XMonitor():
     def __init__(self, on_window_change):
