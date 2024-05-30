@@ -167,7 +167,7 @@ members, no personal responsibility is taken for them.
 
 ### Arch
 
-[AUR](https://aur.archlinux.org/packages/keyd-git/) package maintained by [@eNV25](https://github.com/eNV25).
+[Arch Linux](https://archlinux.org/packages/extra/x86_64/keyd/) package maintained by Arch packagers.
 
 ### Debian
 
