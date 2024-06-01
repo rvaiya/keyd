@@ -66,8 +66,13 @@ def parse_config(path):
     for line in open(path):
         line = line.strip()
 
-        if line.startswith('[') and line.endswith(']'):
-            a = line[1:-1].split('|')
+        if (line.startswith('[') or line.startswith('!')) and line.endswith(']'):
+            if line.startswith('!'):
+                is_invert = True
+                a = line[2:-1].split('|')
+            else:
+                is_invert = False
+                a = line[1:-1].split('|')
 
             if len(a) < 2:
                 cls = a[0]
@@ -77,7 +82,7 @@ def parse_config(path):
                 title = a[1]
 
             bindings = []
-            config.append((cls, title, bindings))
+            config.append((cls, title, is_invert, bindings))
         elif line == '':
             continue
         elif line.startswith('#'):
@@ -462,11 +467,15 @@ lock()
 
 def lookup_bindings(cls, title):
     bindings = []
-    for cexp, texp, b in config:
-        if fnmatch(cls, cexp) and fnmatch(title, texp):
-            dbg(f'\tMatched {cexp}|{texp}')
+    for cexp, texp, is_invert, b in config:
+        if fnmatch(cls, cexp) and fnmatch(title, texp) and not is_invert:
+            dbg(f'\tMatched {cexp}|{texp} with no inverse')
+            bindings.extend(b)
+        elif not (fnmatch(cls, cexp) and fnmatch(title, texp)) and is_invert:
+            dbg(f'\tMatched {cexp}|{texp} by inversion')
             bindings.extend(b)
 
+    dbg(f"\tSetting keybinds: {b}")
     return bindings
 
 def normalize_class(s):

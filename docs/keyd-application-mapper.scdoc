@@ -38,6 +38,9 @@ to be matched, and may optionally contain unix style wildcards (\*). For example
 _[gnome|\*find\*]_ will match any window with a class of _gnome_ and a title
 containing the substring _find_.
 
+An optional ! can be added ahead of the filter brackets to invert the match. This
+matches everything that is not both the class expression and the given title.
+
 E.G:
 
 ```
@@ -46,6 +49,9 @@ E.G:
 	alt.] = C-tab
 	alt.[ = C-S-tab
 	alt.t = C-S-t
+
+	![kitty]
+	alt.[ = escape
 
 	[st-*]
 
@@ -60,7 +66,7 @@ E.G:
 ```
 
 Will remap _A-1_ to the the string 'Inside st' when a window with a class
-that begins with 'st-' (e.g st-256color) is active. 
+that begins with 'st-' (e.g st-256color) is active.
 
 Window class and title names can be obtained by inspecting the log output while the
 daemon is running (e.g _tail\ -f\ ~/.config/keyd/app.log_). A reload may be triggered
@@ -72,12 +78,12 @@ At the moment X, Sway and Gnome are supported.
 
 Installation is a simple matter of running the command _keyd-application-mapper -d_
 somewhere in your display server initialization logic (e.g _~/.xinitrc_ or
-_~/.xsession_). If you are running Gnome, 
+_~/.xsession_). If you are running Gnome,
 running _keyd-application-mapper_ for the first time will install an extension
 which manages the script lifecycle.
 
 In order for this to work, keyd must be running and the user must have access
-to */var/run/keyd.socket* (i.e be a member of the *keyd* group). 
+to */var/run/keyd.socket* (i.e be a member of the *keyd* group).
 
 # ENVIRONMENT VARIABLES
 
