@@ -1,3 +1,15 @@
+# v2.5.0
+
+ - Allow 64 character layer names
+ - New device id format which allows devices with identical product/vendor id pairs to be distinguished (backward compatible)
+ - Add KDE/plasma5 support to `keyd-application-mapper`
+ - Gnome v45/v46 application remapping support
+ - Increased the maximum number of descriptors to allow for more advanced configs
+ - Added `setlayout()` to facilitate dynamically set layouts
+ - `toggle()` now actiavtes the layer on key down instead of key up
+ - Improved support for exotic keys
+ - Various minor bug fixes
+
 # v2.4.3
 
 ## Summary (non exhaustive)
