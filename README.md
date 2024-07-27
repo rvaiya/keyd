@@ -37,7 +37,7 @@ Some of the more interesting ones include:
 - Key overloading (different behaviour on tap/hold).
 - Keyboard specific configuration.
 - Instantaneous remapping (no more flashing :)).
-- A client-server model that facilitates scripting and display server agnostic application remapping. (Currently ships with support for X, sway, and gnome).
+- A client-server model that facilitates scripting and display server agnostic application remapping. (Currently ships with support for X, sway, and gnome (wayland)).
 - System wide config (works in a VT).
 - First class support for modifier overloading.
 - Unicode support.
