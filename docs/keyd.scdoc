@@ -168,6 +168,8 @@ causing _hjkl_ to function as the corresponding arrow keys.
 Unlike most other remapping tools, keyd provides first class support for
 modifiers. A layer name may optionally end with a ':' followed by a
 set of modifiers to emulate in the absence of an explicit mapping.
+*Layer names may consist of a maximum of 32 characters* (including
+all modifiers).
 
 These layers play nicely with other modifiers and preserve existing stacking
 semantics.
