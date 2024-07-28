@@ -34,8 +34,6 @@ endif
 all:
 	-mkdir bin
 	cp scripts/keyd-application-mapper bin/
-	sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service
-	sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
@@ -49,7 +47,9 @@ man:
 		scdoc < "$$f" | gzip > "$$target"; \
 	done
 install:
+
 	@if [ -e /run/systemd/system ]; then \
+		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
@@ -57,6 +57,7 @@ install:
 	fi
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
+		sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service; \
 		install -Dm644 src/vkbd/usb-gadget.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service; \
 		install -Dm755 src/vkbd/usb-gadget.sh $(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh; \
 	fi
