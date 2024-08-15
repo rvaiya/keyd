@@ -251,6 +251,28 @@ class Wlroots():
                 if event == 4 and payload[0] > 0 and payload[4] == 2:
                     self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
 
+class Cosmic():
+    def __init__(self, on_window_change):
+        self.wl = Wayland('zcosmic_toplevel_info_v1')
+        self.on_window_change = on_window_change
+
+    def init(self):
+        pass
+
+    def run(self):
+        windows = {}
+        while True:
+            (obj, event, payload) = self.wl.recv_msg()
+            if obj not in windows:
+                windows[obj]={}
+
+            if event == 2:
+                windows[obj]['title'] = self.wl.read_string(payload)
+            if event == 3:
+                windows[obj]['appid'] = self.wl.read_string(payload)
+            if event == 8  and payload[0] > 0 and payload[4] == 2:
+                self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
+
 class XMonitor():
     def __init__(self, on_window_change):
         assert_env('DISPLAY')
@@ -413,6 +435,7 @@ def get_monitor(on_window_change):
     monitors = [
         ('kde', KDE),
         ('wlroots', Wlroots),
+        ('cosmic', Cosmic),
         ('Gnome', GnomeMonitor),
         ('X', XMonitor),
     ]
