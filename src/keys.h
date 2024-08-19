@@ -242,8 +242,6 @@ struct modifier {
 #define KEYD_SEARCH            217
 #define KEYD_CONNECT           218
 #define KEYD_FINANCE           219
-#define KEYD_SPORT             220
-#define KEYD_SHOP              221
 #define KEYD_VOICECOMMAND      222
 #define KEYD_CANCEL            223
 #define KEYD_BRIGHTNESSDOWN    224
@@ -285,6 +283,8 @@ struct modifier {
 #define  KEYD_MOUSE_1          		252
 #define  KEYD_MOUSE_2          		253
 #define  KEYD_MOUSE_BACK       		178
+#define  KEYD_SCROLL_UP             220
+#define  KEYD_SCROLL_DOWN           221
 #define  KEYD_FN               		254
 #define  KEYD_MOUSE_FORWARD    		255
 
