@@ -501,8 +501,13 @@ static int event_handler(struct event *ev)
 				 * Treat scroll events as mouse buttons so oneshot and the like get
 				 * cleared.
 				 */
+
+				kev.code = ev->devev->x == 0 ? ((int)ev->devev->y > 0 ? KEYD_SCROLL_UP : KEYD_SCROLL_DOWN): KEYD_EXTERNAL_MOUSE_BUTTON;
+				const struct descriptor *mapping = active_kbd? get_active_layer_mapping(active_kbd, kev.code): NULL;
 				if (active_kbd) {
-					kev.code = ev->devev->x == 0 ? ((int)ev->devev->y > 0 ? KEYD_SCROLL_UP : KEYD_SCROLL_DOWN): KEYD_EXTERNAL_MOUSE_BUTTON;
+				    if (mapping == NULL){
+					    kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
+				    }
 					kev.pressed = 1;
 					kev.timestamp = ev->timestamp;
 
@@ -511,7 +516,6 @@ static int event_handler(struct event *ev)
 					kev.pressed = 0;
 					timeout = kbd_process_events(ev->dev->data, &kev, 1);
 				}
-				const struct descriptor *mapping = active_kbd? get_active_layer_mapping(active_kbd, kev.code): NULL;
                 if (mapping == NULL) {
 				    vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
                 }
