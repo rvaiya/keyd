@@ -44,7 +44,7 @@ Some of the more interesting ones include:
 
 ### keyd is for people who:
 
- - Would like to experiment with custom [layers](https://beta.docs.qmk.fm/using-qmk/software-features/feature_layers) (i.e custom shift keys)
+ - Would like to experiment with custom [layers](https://docs.qmk.fm/feature_layers) (i.e custom shift keys)
    and oneshot modifiers.
  - Want to have multiple keyboards with different layouts on the same machine.
  - Want to be able to remap `C-1` without breaking modifier semantics.
