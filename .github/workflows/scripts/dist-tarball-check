@@ -1,0 +1,59 @@
+#!/bin/sh
+
+pecho() { printf %s\\n "$*"; }
+log() { pecho "$@"; }
+warning() { log "::warning::$@"; }
+error() { log "::error::$@"; }
+fatal() { error "$@"; exit 1; }
+try() { "$@" || fatal "'$@' failed"; }
+
+dist_tarball=$(ls keyd-*.tar.gz) \
+    || fatal "'make dist' must be run before this test"
+
+tmpdir=$(try mktemp -d) || exit 1
+
+log "Copying contents of Git repository..."
+try git archive --format=tar --prefix=git-repo/ HEAD \
+    | try tar -C "${tmpdir}" -xv || exit 1
+(
+    try cd "${tmpdir}"/git-repo
+    # Delete files checked into Git that shouldn't be in the distribution
+    # tarball.
+    try rm -rf \
+        .gitattributes \
+        .github \
+        .gitignore \
+        ;
+) || exit 1
+
+log "Extracting distribution tarball..."
+try tar -C "${tmpdir}" -xvzf "${dist_tarball}"
+try mv "${tmpdir}/${dist_tarball%.tar.gz}" "${tmpdir}"/dist-tarball
+(
+    try cd "${tmpdir}"/dist-tarball
+    # Delete generated files
+    try rm -rf \
+        .dist-version \
+        Makefile.in \
+        aclocal.m4 \
+        autoconfig.h.in \
+        build-aux/compile \
+        build-aux/depcomp \
+        build-aux/install-sh \
+        build-aux/missing \
+        build-aux/test-driver \
+        configure \
+        ;
+) || exit 1
+
+log "Comparing Git repository with distribution tarball..."
+cd "${tmpdir}"
+diff -qNr git-repo dist-tarball >/dev/null || {
+    error "Unexpected diff between the repo and the distribution tarball."
+    error "You may need to add a file to EXTRA_DIST in Makefile.am."
+    error "Diff output:"
+    diff -uNr git-repo dist-tarball \
+        | while IFS= read -r line; do error "${line}"; done
+    exit 1
+}
+log "No difference"

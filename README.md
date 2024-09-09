@@ -146,6 +146,12 @@ If you wish to help maintain this PPA, please contact
   1. Download the desired tarball:
        * Releases can be found on the [releases
          page](https://github.com/rvaiya/keyd/releases).
+       * The current revision of the `master` branch (work-in-progress
+         development version) can be found at
+         <https://nightly.link/rvaiya/keyd/workflows/ci/master/distribution-tarball>.
+         Note that the distribution tarball is inside a zip file [due to an
+         unfortunate GitHub
+         limitation](https://github.com/actions/upload-artifact/issues/426).
 
   2. Extract the tarball and `cd` to the source code directory:
 

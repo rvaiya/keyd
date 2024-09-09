@@ -1,0 +1,63 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-debian-like:
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ubuntu:latest
+          - ubuntu:22.04
+          - debian:testing
+          - debian:stable
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: install dependencies
+        run: |
+          apt-get update &&
+          apt-get install -y --no-install-recommends \
+              automake \
+              build-essential \
+              ca-certificates \
+              git \
+              pkg-config \
+              python3 \
+              scdoc \
+              &&
+          {
+              # /usr/share/pkgconfig/systemd.pc was moved from the systemd
+              # package to a new systemd-dev package in systemd 253-2 (Debian 13
+              # (trixie) and later, Ubuntu 23.10 (mantic) and later).
+              apt-get install -y --no-install-recommends systemd-dev ||
+              apt-get install -y --no-install-recommends systemd
+          }
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - uses: actions/checkout@v4
+        with:
+          # Fetch all commits and tags so that build-aux/git-version-gen can
+          # discover the version number.
+          fetch-depth: 0
+      # https://github.com/actions/checkout/issues/1169
+      - name: fix git permissions
+        run: git config --system --add safe.directory $(pwd)
+      - name: autogen
+        run: ./autogen
+      - name: configure
+        run: ./configure
+      - name: check
+        run: make VERBOSE=1 AM_COLOR_TESTS=always check
+      - name: distcheck
+        run: make VERBOSE=1 AM_COLOR_TESTS=always distcheck
+      - name: distribution tarball is complete
+        run: ./.github/workflows/scripts/dist-tarball-check
+      - if: ${{ matrix.image == 'debian:testing' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-tarball
+          path: keyd-*.tar.gz
