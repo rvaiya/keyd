@@ -53,7 +53,7 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	size_t i;
 	uint32_t mask[BTN_LEFT/32+1] = {0};
 	uint8_t capabilities = 0;
-	int has_brightness_key;
+	int has_brightness_key, has_volume_key;
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
 		perror("ioctl: ev_key");
@@ -92,7 +92,19 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	 */
 	has_brightness_key = mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32));
 
-	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_brightness_key)
+	/*
+	 * If the device can emit KEY_VOLUMEUP we treat it as a keyboard.
+	 * 
+	 * This is to accomodate for example laptops that have dedicated volume
+	 * up/down buttons separate from the regular keyboard.
+	 * 
+	 * NOTE: This will subsume anything that can emit a volume key and may
+	 * produce false positives which need to be explcitly excluded by the user
+	 * if they use the wildcard id.
+	 */
+	has_volume_key = mask[KEY_VOLUMEUP/32] & (1 << (KEY_VOLUMEUP % 32));
+
+	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_brightness_key || has_volume_key)
 		capabilities |= CAP_KEYBOARD;
 
 	return capabilities;
