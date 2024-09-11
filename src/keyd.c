@@ -126,6 +126,80 @@ static void read_input(int argc, char *argv[], char *buf, size_t *psz)
 	*psz = sz;
 }
 
+static int check_config(int argc, char *argv[])
+{
+	char err_message[128];
+	char opt;
+	char* config_path = CONFIG_DIR;
+	while ((opt = getopt(argc, argv, "c:")) != -1){
+		switch (opt){
+			case 'c':
+				config_path = optarg;
+				break;
+			default:
+				return 1;
+		}
+	}
+	struct config dummy;
+	if(access(config_path, F_OK)){
+		snprintf(err_message, sizeof err_message, "no config found at \"%s\"", config_path);
+		perror(err_message);
+		return 1;
+	}
+	if(access(config_path, R_OK)){
+		snprintf(err_message, sizeof err_message, "config at \"%s\" can not be read", config_path);
+		perror(err_message);
+		return 1;
+	}
+	struct stat inode;
+	stat(config_path, &inode);
+	if (inode.st_mode & S_IFREG)
+	{
+		if(config_parse(&dummy, config_path)){
+			snprintf(err_message, sizeof err_message, "failed to parse config at \"%s\"\n", config_path);
+			perror(err_message);
+			return 1;
+		}
+		printf("config at \"%s\" successfully parsed\n", config_path);
+		return 0;
+	} else if (inode.st_mode & S_IFDIR){
+		DIR *dh;
+		struct dirent *dirent;
+
+		if (!(dh = opendir(CONFIG_DIR))) {
+			snprintf(err_message, sizeof err_message, "failed to open directory \"%s\"", config_path);
+			perror(err_message);
+			exit(-1);
+		}
+
+
+		while ((dirent = readdir(dh))) {
+			char path[1024];
+			int len;
+
+			if (dirent->d_type == DT_DIR)
+				continue;
+
+			len = snprintf(path, sizeof path, "%s/%s", CONFIG_DIR, dirent->d_name);
+
+			if (len >= 5 && !strcmp(path + len - 5, ".conf")) {
+				keyd_log("CONFIG: parsing b{%s}\n", path);
+
+				if (!config_parse(&dummy, path)) {
+					continue;
+				} else {
+					keyd_log("failed to parse config at \"%s\": %s\n", config_path, errstr);
+				}
+
+			}
+		}
+
+		closedir(dh);
+	}
+	return 0;
+
+}
+
 static int cmd_do(int argc, char *argv[])
 {
 	char buf[MAX_IPC_MESSAGE_SIZE];
@@ -205,6 +279,7 @@ struct {
 
 	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
 	{"monitor", "-m", "--monitor", monitor},
+	{"check", "", "", check_config},
 	{"bind", "-e", "--expression", add_bindings},
 	{"input", "", "", input},
 	{"do", "", "", cmd_do},
