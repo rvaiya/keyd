@@ -119,6 +119,7 @@ struct config {
 	char aliases[256][32];
 
 	uint8_t wildcard;
+	uint8_t wildcard_mouse;
 	struct {
 		char id[64];
 		uint8_t flags;

@@ -773,6 +773,8 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 
 		if (!strcmp(s, "*")) {
 			config->wildcard = 1;
+		} else if (!strcmp(s, "m:*")) {
+			config->wildcard_mouse = 1;
 		} else if (strstr(s, "m:") == s) {
 			assert(config->nr_ids < ARRAY_SIZE(config->ids));
 			config->ids[config->nr_ids].flags = ID_MOUSE;
@@ -962,6 +964,9 @@ int config_check_match(struct config *config, const char *id, uint8_t flags)
 		}
 	}
 
+	/* Only the `m:*` wildcard should match mice, not the default `*` wildcard. */
+	if (flags == ID_MOUSE)
+		return config->wildcard_mouse ? 1 : 0;
 	return config->wildcard ? 1 : 0;
 }
 

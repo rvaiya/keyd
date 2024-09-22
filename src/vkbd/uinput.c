@@ -225,13 +225,13 @@ static void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 	pthread_mutex_unlock(&mtx);
 }
 
-struct vkbd *vkbd_init(const char *name)
+struct vkbd *vkbd_init(const char *kbd_name, const char *ptr_name)
 {
 	pthread_t tid;
 
 	struct vkbd *vkbd = calloc(1, sizeof vkbd);
-	vkbd->fd = create_virtual_keyboard(name);
-	vkbd->pfd = create_virtual_pointer("keyd virtual pointer");
+	vkbd->fd = create_virtual_keyboard(kbd_name);
+	vkbd->pfd = create_virtual_pointer(ptr_name);
 
 	return vkbd;
 }
