@@ -1,0 +1,8 @@
+#!/sbin/openrc-run
+
+name="keyd"
+description="key remapping daemon"
+command="keyd"
+command_background=true
+command_user=root:root
+pidfile="/run/keyd.pid"

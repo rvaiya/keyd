@@ -49,12 +49,23 @@ man:
 install:
 
 	@if [ -e /run/systemd/system ]; then \
-		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
+		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.systemd.in > keyd.service; \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
 	else \
-		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
+		echo "NOTE: systemd not found."; \
 	fi
+
+	@if [ -e /run/openrc ]; then \
+		cp keyd.openrc.in keyd.rc; \
+		chmod +x keyd.rc; \
+		mv keyd.rc /etc/init.d/keyd; \
+	else \
+		echo "NOTE: openrc not found."; \
+		echo "NOTE: you will need to add keyd to your init proccess manually."; \
+	fi
+
+		
 
 	@if [ "$(VKBD)" = "usb-gadget" ]; then \
 		sed -e 's#@PREFIX@#$(PREFIX)#' src/vkbd/usb-gadget.service.in > src/vkbd/usb-gadget.service; \
@@ -82,6 +93,7 @@ install:
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		/etc/init.d/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
