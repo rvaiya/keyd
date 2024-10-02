@@ -1,0 +1,38 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: keyd-license
+DocumentNamespace: http://spdx.org/spdxdocs/keyd-license-12345678
+Creator: Person: D.A.Pelasgus <demetrius@pelasgus.xyz>
+Creator: Tool: SPDX-Generator-1.0
+Created: 2024-10-02T12:00:00Z
+
+##### Package Information #####
+PackageName: keyd
+SPDXID: SPDXRef-Package-keyd
+PackageVersion: 1.0
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: © 2020 Raheman Vaiya <r.vaiya@gmail.com>
+
+##### License Information #####
+LicenseID: MIT
+LicenseName: MIT/X Consortium License
+ExtractedText: 
+"Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE."
