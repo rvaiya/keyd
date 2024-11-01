@@ -82,7 +82,7 @@ between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), an
 
 # Quickstart
 
-1. Install and start keyd (e.g `sudo systemctl enable keyd`)
+1. Install and start keyd (e.g `sudo systemctl enable keyd --now`)
 
 2. Put the following in `/etc/keyd/default.conf`:
 
