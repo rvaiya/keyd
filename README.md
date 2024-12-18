@@ -70,10 +70,14 @@ Some of the more interesting ones include:
 
 # Installation
 
-*Note:* master serves as the development branch, things may occasionally break
-between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), and should be considered stable.
-
 ## From Source
+
+> [!NOTE]
+> The default branch (`master`) is the development branch; it contains the
+> latest work-in-progress code.  Things may occasionally break between releases.
+> Stable releases are [tagged](https://github.com/rvaiya/keyd/tags) and
+> announced on the [releases page](https://github.com/rvaiya/keyd/releases);
+> these versions are known to work.
 
     git clone https://github.com/rvaiya/keyd
     cd keyd
