@@ -199,11 +199,7 @@ static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 		ent = ent->next;
 	}
 
-	/* The wildcard should not match mice. */
-	if (rank == 1 && (flags == ID_MOUSE))
-		return NULL;
-	else
-		return match;
+	return match;
 }
 
 static void manage_device(struct device *dev)
@@ -545,7 +541,7 @@ int run_daemon(int argc, char *argv[])
 	if (ipcfd < 0)
 		die("failed to create %s (another instance already running?)", SOCKET_PATH);
 
-	vkbd = vkbd_init(VKBD_NAME);
+	vkbd = vkbd_init(VKBD_NAME, VPTR_NAME);
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
