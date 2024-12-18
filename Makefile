@@ -32,13 +32,13 @@ else
 endif
 
 all:
-	-mkdir bin
+	mkdir -p bin
 	cp scripts/keyd-application-mapper bin/
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
-	-mkdir data
+	mkdir -p data
 	./scripts/generate_xcompose
 man:
 	for f in docs/*.scdoc; do \
@@ -91,14 +91,14 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
 clean:
-	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
+	rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
 		./$$f; \
 	done
 test-io:
-	-mkdir bin
+	mkdir -p bin
 	$(CC) \
 	-DDATA_DIR= \
 	-o bin/test-io \
