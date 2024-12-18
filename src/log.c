@@ -75,6 +75,7 @@ void die(const char *fmt, ...) {
 	va_start(ap, fmt);
 	vfprintf(stderr, colorize(fmt), ap);
 	va_end(ap);
+	fprintf(stderr, "\n");
 
 	exit(-1);
 }
