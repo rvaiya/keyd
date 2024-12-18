@@ -526,7 +526,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			update_mods(kbd, -1, 0);
 		}
 
-		if (!mods)
+		if (!mods || mods == MOD_SHIFT)
 			kbd->last_simple_key_time = time;
 
 		break;
