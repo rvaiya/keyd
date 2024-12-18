@@ -161,9 +161,9 @@ See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
 
 ## Packages
 
-Third party packages for the some distributions also exist. If you wish to add
-yours to the list please file a PR. These are kindly maintained by community
-members, no personal responsibility is taken for them.
+Binary packages for some distributions exist.  These are kindly maintained by
+community members; the keyd developers do not take responsibility for them.  If
+you wish to add yours below, please open a PR.
 
 ### Alpine Linux
 
