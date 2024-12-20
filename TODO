@@ -1,6 +1,6 @@
 streamline test logic
 organize tests
-cleanup manpage
+cleanup man page
 [idea] tmux like layer timeouts
 improved mouse support (integrate moused?)
 multi-user support (remove keyd group)
