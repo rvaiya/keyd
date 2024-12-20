@@ -182,6 +182,22 @@ static void load_configs()
 	closedir(dh);
 }
 
+const struct descriptor *get_active_layer_mapping(struct keyboard *kbd, uint8_t code) {
+    int i;
+    struct descriptor *mapping = NULL;
+
+    for (i = kbd->config.nr_layers - 1; i >= 0; i--) {
+        if (kbd->layer_state[i].active) {
+            mapping = &kbd->config.layers[i].keymap[code];
+            if (mapping->op != 0) {
+                return mapping;
+            }
+        }
+    }
+
+    return NULL;
+}
+
 static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 {
 	struct config_ent *ent = configs;
@@ -485,8 +501,13 @@ static int event_handler(struct event *ev)
 				 * Treat scroll events as mouse buttons so oneshot and the like get
 				 * cleared.
 				 */
+
+				kev.code = ev->devev->x == 0 ? ((int)ev->devev->y > 0 ? KEYD_SCROLL_UP : KEYD_SCROLL_DOWN): KEYD_EXTERNAL_MOUSE_BUTTON;
+				const struct descriptor *mapping = active_kbd? get_active_layer_mapping(active_kbd, kev.code): NULL;
 				if (active_kbd) {
-					kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
+				    if (mapping == NULL){
+					    kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
+				    }
 					kev.pressed = 1;
 					kev.timestamp = ev->timestamp;
 
@@ -495,8 +516,10 @@ static int event_handler(struct event *ev)
 					kev.pressed = 0;
 					timeout = kbd_process_events(ev->dev->data, &kev, 1);
 				}
+                if (mapping == NULL) {
+				    vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
+                }
 
-				vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
 				break;
 			}
 		} else if (ev->dev->is_virtual && ev->devev->type == DEV_LED) {
