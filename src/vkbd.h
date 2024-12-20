@@ -10,7 +10,7 @@
 
 struct vkbd;
 
-struct vkbd *vkbd_init(const char *name);
+struct vkbd *vkbd_init(const char *kbd_name, const char *ptr_name);
 
 void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y);
 void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y);

@@ -86,6 +86,7 @@ or
 	[ids]
 
 	*
+	m:*
 	-<id 1>
 	-<id 2>
 	...
@@ -129,9 +130,9 @@ Note: All keyboards defined within a given config file will share the
 same state. This is useful for linking separate input devices together
 (e.g foot pedals).
 
-Note 2: The wildcard will only match devices which keyd identifies as keyboards.
+Note 2: The `*` wildcard will only match devices which keyd identifies as keyboards.
 keyd is also capable of *managing mice* (e.g to facilitate clearing
-of oneshot modifiers on click), but their ids must be explicitly listed.
+of oneshot modifiers on click). To match all mice, use `m:*`.
 
 Note 3: *Mouse support is currently experimental*, and is mostly confined to
 traditional mice (e.g touchpads). Adding some mice to
