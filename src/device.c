@@ -491,7 +491,8 @@ struct device_event *device_read_event(struct device *dev)
 				 && ev.code <= BTN_TOOL_QUADTAP);
 			else {
 				keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
-				return NULL;
+				/* passthrough the code unchanged; we won't be able to remap it
+				   but we can still send the input. */
 			}
 		}
 
