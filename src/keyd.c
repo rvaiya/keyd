@@ -64,7 +64,7 @@ static int list_keys(int argc, char *argv[])
 {
 	size_t i;
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < KEY_MAX; i++) {
 		const char *altname = keycode_table[i].alt_name;
 		const char *shiftedname = keycode_table[i].shifted_name;
 		const char *name = keycode_table[i].name;

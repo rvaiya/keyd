@@ -18,20 +18,20 @@
 struct keyboard;
 
 struct cache_entry {
-	uint8_t code;
+	uint16_t code;
 	struct descriptor d;
 	int dl;
 	int layer;
 };
 
 struct key_event {
-	uint8_t code;
+	uint16_t code;
 	uint8_t pressed;
 	int timestamp;
 };
 
 struct output {
-	void (*send_key) (uint8_t code, uint8_t state);
+	void (*send_key) (uint16_t code, uint8_t state);
 	void (*on_layer_change) (const struct keyboard *kbd, const struct layer *layer, uint8_t active);
 };
 
@@ -47,8 +47,8 @@ struct keyboard {
 	 */
 	struct cache_entry cache[CACHE_SIZE];
 
-	uint8_t last_pressed_output_code;
-	uint8_t last_pressed_code;
+	uint16_t last_pressed_output_code;
+	uint16_t last_pressed_code;
 
 	uint8_t oneshot_latch;
 
@@ -56,7 +56,6 @@ struct keyboard {
 
 	struct macro *active_macro;
 	int active_macro_layer;
-	int overload_last_layer_code;
 
 	long macro_timeout;
 	long oneshot_timeout;
@@ -83,7 +82,7 @@ struct keyboard {
 		const struct chord *match;
 		int match_layer;
 
-		uint8_t start_code;
+		uint16_t start_code;
 		long last_code_time;
 
 		enum {
@@ -95,7 +94,7 @@ struct keyboard {
 	} chord;
 
 	struct {
-		uint8_t code;
+		uint16_t code;
 		uint8_t dl;
 		long expire;
 		long tap_expiry;
@@ -122,7 +121,7 @@ struct keyboard {
 		uint8_t oneshot_depth;
 	} layer_state[MAX_LAYERS];
 
-	uint8_t keystate[256];
+	uint8_t keystate[KEY_MAX];
 
 	struct {
 		int x;

@@ -149,7 +149,7 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 	fprintf(stderr, "usb-gadget: mouse support is not implemented\n");
 }
 
-void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
+void vkbd_send_key(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	if (update_modifier_state(code, state) < 0)
 		update_key_state(code, state);

@@ -35,7 +35,7 @@ static uint8_t lookup_code(const char *name)
 	return 0;
 }
 
-static void send_key(uint8_t code, uint8_t pressed)
+static void send_key(uint16_t code, uint8_t pressed)
 {
 	output[noutput].code = code;
 	output[noutput].pressed = pressed;
@@ -170,7 +170,7 @@ static int parse_events(char *s, struct key_event in[MAX_EVENTS], size_t *nin,
 		if (len >= 2 && line[len - 1] == 's' && line[len - 2] == 'm') {
 			time += atoi(line);
 		} else {
-			uint8_t code;
+			uint16_t code;
 			char *k = strtok(line, " ");
 			char *v = strtok(NULL, " \n");
 

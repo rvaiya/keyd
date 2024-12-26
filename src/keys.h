@@ -288,12 +288,14 @@ struct modifier {
 #define  KEYD_FN               		254
 #define  KEYD_MOUSE_FORWARD    		255
 
+/* input-event-codes.h; this is the same on both Linux and FreeBSD. */
+#define KEY_MAX 0x2ff
 #define KEY_NAME(code) (keycode_table[code].name ? keycode_table[code].name : "UNKNOWN")
 
 int parse_modset(const char *s, uint8_t *mods);
-int parse_key_sequence(const char *s, uint8_t *code, uint8_t *mods);
+int parse_key_sequence(const char *s, uint16_t *code, uint8_t *mods);
 
 extern const struct modifier modifiers[MAX_MOD];
-extern const struct keycode_table_ent keycode_table[256];
+extern const struct keycode_table_ent keycode_table[KEY_MAX];
 
 #endif

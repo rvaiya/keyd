@@ -21,7 +21,8 @@ int macro_parse(char *s, struct macro *macro)
 
 	macro->sz = 0;
 	for (tok = strtok(s, " "); tok; tok = strtok(NULL, " ")) {
-		uint8_t code, mods;
+		uint16_t code;
+		uint8_t mods;
 		size_t len = strlen(tok);
 
 		if (!parse_key_sequence(tok, &code, &mods)) {
@@ -55,7 +56,7 @@ int macro_parse(char *s, struct macro *macro)
 				int xcode;
 
 				if (chrsz == 1 && codepoint < 128) {
-					for (i = 0; i < 256; i++) {
+					for (i = 0; i < KEY_MAX; i++) {
 						const char *name = keycode_table[i].name;
 						const char *shiftname = keycode_table[i].shifted_name;
 
@@ -82,7 +83,7 @@ int macro_parse(char *s, struct macro *macro)
 	#undef ADD_ENTRY
 }
 
-void macro_execute(void (*output)(uint8_t, uint8_t),
+void macro_execute(void (*output)(uint16_t, uint8_t),
 		   const struct macro *macro, size_t timeout)
 {
 	size_t i;
@@ -95,7 +96,7 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			size_t j;
 			uint16_t idx;
 			uint8_t codes[4];
-			uint8_t code, mods;
+			uint16_t code, mods;
 
 		case MACRO_HOLD:
 			if (hold_start == -1)
@@ -132,7 +133,7 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			mods = ent->data >> 8;
 
 			for (j = 0; j < ARRAY_SIZE(modifiers); j++) {
-				uint8_t code = modifiers[j].key;
+				uint16_t code = modifiers[j].key;
 				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)
@@ -146,7 +147,7 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			output(code, 0);
 
 			for (j = 0; j < ARRAY_SIZE(modifiers); j++) {
-				uint8_t code = modifiers[j].key;
+				uint16_t code = modifiers[j].key;
 				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)

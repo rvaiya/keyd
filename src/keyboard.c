@@ -6,7 +6,7 @@
 
 #include "keyd.h"
 
-static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long time);
+static long process_event(struct keyboard *kbd, uint16_t code, int pressed, long time);
 
 /*
  * Here be tiny dragons.
@@ -19,7 +19,7 @@ static long get_time()
 	return time++;
 }
 
-static int cache_set(struct keyboard *kbd, uint8_t code, struct cache_entry *ent)
+static int cache_set(struct keyboard *kbd, uint16_t code, struct cache_entry *ent)
 {
 	size_t i;
 	int slot = -1;
@@ -45,7 +45,7 @@ static int cache_set(struct keyboard *kbd, uint8_t code, struct cache_entry *ent
 	return 0;
 }
 
-static struct cache_entry *cache_get(struct keyboard *kbd, uint8_t code)
+static struct cache_entry *cache_get(struct keyboard *kbd, uint16_t code)
 {
 	size_t i;
 
@@ -60,7 +60,7 @@ static void reset_keystate(struct keyboard *kbd)
 {
 	size_t i;
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < KEY_MAX; i++) {
 		if (kbd->keystate[i]) {
 			kbd->output.send_key(i, 0);
 			kbd->keystate[i] = 0;
@@ -69,7 +69,7 @@ static void reset_keystate(struct keyboard *kbd)
 
 }
 
-static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
+static void send_key(struct keyboard *kbd, uint16_t code, uint8_t pressed)
 {
 	if (code == KEYD_NOOP || code == KEYD_EXTERNAL_MOUSE_BUTTON)
 		return;
@@ -83,7 +83,7 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	}
 }
 
-static void clear_mod(struct keyboard *kbd, uint8_t code)
+static void clear_mod(struct keyboard *kbd, uint16_t code)
 {
 	/*
 	 * Some modifiers have a special meaning when used in
@@ -114,7 +114,7 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 
 	for (i = 0; i < ARRAY_SIZE(modifiers); i++) {
 		uint8_t mask = modifiers[i].mask;
-		uint8_t code = modifiers[i].key;
+		uint16_t code = modifiers[i].key;
 
 		if (mask & mods) {
 			if (!kbd->keystate[code])
@@ -161,7 +161,7 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 {
 	/* Minimize redundant modifier strokes for simple key sequences. */
 	if (macro->sz == 1 && macro->entries[0].type == MACRO_KEYSEQUENCE) {
-		uint8_t code = macro->entries[0].data;
+		uint16_t code = macro->entries[0].data;
 		uint8_t mods = macro->entries[0].data >> 8;
 
 		update_mods(kbd, dl, mods);
@@ -173,7 +173,7 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 	}
 }
 
-static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
+static void lookup_descriptor(struct keyboard *kbd, uint16_t code,
 			      struct descriptor *d, int *dl)
 {
 	size_t max;
@@ -255,7 +255,7 @@ static void deactivate_layer(struct keyboard *kbd, int idx)
  * corresponding deactivation call.
  */
 
-static void activate_layer(struct keyboard *kbd, uint8_t code, int idx)
+static void activate_layer(struct keyboard *kbd, uint16_t code, int idx)
 {
 	dbg("Activating layer %s", kbd->config.layers[idx].name);
 	struct cache_entry *ce;
@@ -304,7 +304,7 @@ static int chord_event_match(struct chord *chord, struct key_event *events, size
 		return n == chord->sz ? 2 : 1;
 }
 
-static void enqueue_chord_event(struct keyboard *kbd, uint8_t code, uint8_t pressed, long time)
+static void enqueue_chord_event(struct keyboard *kbd, uint16_t code, uint8_t pressed, long time)
 {
 	if (!code)
 		return;
@@ -475,7 +475,7 @@ static long calculate_main_loop_timeout(struct keyboard *kbd, long time)
 	return timeout ? timeout - time : 0;
 }
 
-static long process_descriptor(struct keyboard *kbd, uint8_t code,
+static long process_descriptor(struct keyboard *kbd, uint16_t code,
 			       const struct descriptor *d, int dl,
 			       int pressed, long time)
 {
@@ -502,7 +502,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		struct macro *macro;
 		struct descriptor *action;
 		uint8_t mods;
-		uint8_t new_code;
+		uint16_t new_code;
 
 	case OP_KEYSEQUENCE:
 		new_code = d->args[0].code;
@@ -759,7 +759,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				update_mods(kbd, -1, 0);
 			} else {
 				for (i = 0; i < CACHE_SIZE; i++) {
-					uint8_t code = kbd->cache[i].code;
+					uint16_t code = kbd->cache[i].code;
 					int layer = kbd->cache[i].layer;
 					int type = kbd->config.layers[layer].type;
 
@@ -786,7 +786,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (macro &&
 			    macro->sz == 1 &&
 			    macro->entries[0].type == MACRO_KEYSEQUENCE) {
-				uint8_t code = macro->entries[0].data;
+				uint16_t code = macro->entries[0].data;
 
 				send_key(kbd, code, 0);
 				update_mods(kbd, -1, 0);
@@ -851,7 +851,7 @@ static int resolve_chord(struct keyboard *kbd)
 
 	if (chord) {
 		size_t i;
-		uint8_t code = 0;
+		uint16_t code = 0;
 
 		for (i = 0; i < ARRAY_SIZE(kbd->active_chords); i++) {
 			struct active_chord *ac = &kbd->active_chords[i];
@@ -886,7 +886,7 @@ static int abort_chord(struct keyboard *kbd)
 }
 
 static int handle_chord(struct keyboard *kbd,
-			uint8_t code, int pressed, long time)
+			uint16_t code, int pressed, long time)
 {
 	size_t i;
 	const long interkey_timeout = kbd->config.chord_interkey_timeout;
@@ -895,7 +895,7 @@ static int handle_chord(struct keyboard *kbd,
 	if (code && !pressed) {
 		for (i = 0; i < ARRAY_SIZE(kbd->active_chords); i++) {
 			struct active_chord *ac = &kbd->active_chords[i];
-			uint8_t chord_code = KEYD_CHORD_1 + i;
+			uint16_t chord_code = KEYD_CHORD_1 + i;
 
 			if (ac->active) {
 				size_t i;
@@ -1026,7 +1026,7 @@ static int handle_chord(struct keyboard *kbd,
 	return 0;
 }
 
-int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long time)
+int handle_pending_key(struct keyboard *kbd, uint16_t code, int pressed, long time)
 {
 	if (!kbd->pending_key.code)
 		return 0;
@@ -1089,7 +1089,7 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
 		struct key_event queue[ARRAY_SIZE(kbd->pending_key.queue)];
 		size_t queue_sz = kbd->pending_key.queue_sz;
 
-		uint8_t code = kbd->pending_key.code;
+		uint16_t code = kbd->pending_key.code;
 		int dl = kbd->pending_key.dl;
 
 		memcpy(queue, kbd->pending_key.queue, sizeof kbd->pending_key.queue);
@@ -1119,7 +1119,7 @@ int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long tim
  * of process_event must take place. A return value of 0 permits the
  * main loop to call at liberty.
  */
-static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long time)
+static long process_event(struct keyboard *kbd, uint16_t code, int pressed, long time)
 {
 	int dl = -1;
 	struct descriptor d;

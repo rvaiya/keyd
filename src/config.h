@@ -54,7 +54,7 @@ enum op {
 };
 
 union descriptor_arg {
-	uint8_t code;
+	uint16_t code;
 	uint8_t mods;
 	int16_t idx;
 	uint16_t sz;
@@ -70,7 +70,7 @@ struct descriptor {
 };
 
 struct chord {
-	uint8_t keys[8];
+	uint16_t keys[8];
 	size_t sz;
 
 	struct descriptor d;
@@ -94,7 +94,7 @@ struct layer {
 	} type;
 
 	uint8_t mods;
-	struct descriptor keymap[256];
+	struct descriptor keymap[KEY_MAX];
 
 	struct chord chords[64];
 	size_t nr_chords;

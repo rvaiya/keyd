@@ -37,7 +37,7 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 	printf("absolute mouse movement: x: %d, y: %d\n", x, y);
 }
 
-void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
+void vkbd_send_key(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	printf("key: %s, state: %d\n", KEY_NAME(code), state);
 }

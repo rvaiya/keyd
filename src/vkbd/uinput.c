@@ -64,7 +64,7 @@ static int create_virtual_keyboard(const char *name)
 		exit(-1);
 	}
 
-	for (code = 0; code < 256; code++) {
+	for (code = 0; code < KEY_MAX; code++) {
 		if (keycode_table[code].name) {
 			if (ioctl(fd, UI_SET_KEYBIT, code)) {
 				perror("ioctl set_keybit");
@@ -157,7 +157,7 @@ static int create_virtual_pointer(const char *name)
 	return fd;
 }
 
-static void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
+static void write_key_event(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 	struct input_event ev;
@@ -331,7 +331,7 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 	xwrite(vkbd->pfd, &ev, sizeof(ev));
 }
 
-void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
+void vkbd_send_key(const struct vkbd *vkbd, uint16_t code, int state)
 {
 	dbg("output %s %s", KEY_NAME(code), state == 1 ? "down" : "up");
 

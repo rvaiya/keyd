@@ -52,7 +52,7 @@ struct device_event {
 		DEV_REMOVED,
 	} type;
 
-	uint8_t code;
+	uint16_t code;
 	uint8_t pressed;
 	uint32_t x;
 	uint32_t y;

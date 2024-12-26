@@ -187,7 +187,7 @@ static uint8_t lookup_keycode(const char *name)
 {
 	size_t i;
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < KEY_MAX; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
 
 		if (ent->name &&
@@ -200,7 +200,7 @@ static uint8_t lookup_keycode(const char *name)
 	return 0;
 }
 
-static struct descriptor *layer_lookup_chord(struct layer *layer, uint8_t *keys, size_t n)
+static struct descriptor *layer_lookup_chord(struct layer *layer, uint16_t *keys, size_t n)
 {
 	size_t i;
 
@@ -241,11 +241,11 @@ static int set_layer_entry(const struct config *config,
 		//TODO: Handle aliases
 		char *tok;
 		struct descriptor *ld;
-		uint8_t keys[ARRAY_SIZE(layer->chords[0].keys)];
+		uint16_t keys[ARRAY_SIZE(layer->chords[0].keys)];
 		size_t n = 0;
 
 		for (tok = strtok(key, "+"); tok; tok = strtok(NULL, "+")) {
-			uint8_t code = lookup_keycode(tok);
+			uint16_t code = lookup_keycode(tok);
 			if (!code) {
 				err("%s is not a valid key", tok);
 				return -1;
@@ -285,7 +285,7 @@ static int set_layer_entry(const struct config *config,
 		}
 
 		if (!found) {
-			uint8_t code;
+			uint16_t code;
 
 			if (!(code = lookup_keycode(key))) {
 				err("%s is not a valid key or alias", key);
@@ -481,7 +481,8 @@ exit:
 
 int parse_macro_expression(const char *s, struct macro *macro)
 {
-	uint8_t code, mods;
+	uint16_t code;
+	uint8_t mods;
 
 	#define ADD_ENTRY(t, d) do { \
 		if (macro->sz >= ARRAY_SIZE(macro->entries)) { \
@@ -543,7 +544,8 @@ static int parse_descriptor(char *s,
 	char *fn = NULL;
 	char *args[5];
 	size_t nargs = 0;
-	uint8_t code, mods;
+	uint16_t code;
+	uint8_t mods;
 	int ret;
 	struct macro macro;
 	struct command cmd;
@@ -804,7 +806,7 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 	size_t i;
 
 	for (i = 0; i < section->nr_entries; i++) {
-		uint8_t code;
+		uint16_t code;
 		struct ini_entry *ent = &section->entries[i];
 		const char *name = ent->val;
 
@@ -1025,4 +1027,3 @@ int config_add_entry(struct config *config, const char *exp)
 
 	return set_layer_entry(config, layer, keyname, &d);
 }
-

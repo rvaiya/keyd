@@ -19,7 +19,7 @@
 #define HID_RIGHTSUPER 0x80
 #define HID_SUPER 0x8
 
-static const uint8_t hid_table[256] = {
+static const uint8_t hid_table[KEY_MAX] = {
 	[KEYD_ESC] = 0x29,
 	[KEYD_1] = 0x1e,
 	[KEYD_2] = 0x1f,

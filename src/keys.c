@@ -15,7 +15,7 @@ const struct modifier modifiers[MAX_MOD] = {
 	{MOD_CTRL, KEYD_LEFTCTRL},
 };
 
-const struct keycode_table_ent keycode_table[256] = {
+const struct keycode_table_ent keycode_table[KEY_MAX] = {
 	[KEYD_ESC] = { "esc", "escape", NULL },
 	[KEYD_1] = { "1", NULL, "!" },
 	[KEYD_2] = { "2", NULL, "@" },
@@ -343,7 +343,7 @@ int parse_modset(const char *s, uint8_t *mods)
 	return 0;
 }
 
-int parse_key_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
+int parse_key_sequence(const char *s, uint16_t *codep, uint8_t *modsp)
 {
 	const char *c = s;
 	size_t i;
@@ -378,7 +378,7 @@ int parse_key_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
 		c += 2;
 	}
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < KEY_MAX; i++) {
 		const struct keycode_table_ent *ent = &keycode_table[i];
 
 		if (ent->name) {
