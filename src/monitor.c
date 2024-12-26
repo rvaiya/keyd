@@ -48,7 +48,7 @@ int event_handler(struct event *ev)
 	case EV_DEV_EVENT:
 		switch (ev->devev->type) {
 		case DEV_KEY:
-			name = keycode_table[ev->devev->code].name;
+			name = KEY_NAME(ev->devev->code);
 
 			if (time_flag && last_time)
 				keyd_log("r{+%ld} ms\t", ev->timestamp - last_time);

@@ -39,7 +39,7 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 
 void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 {
-	printf("key: %s, state: %d\n", keycode_table[code].name, state);
+	printf("key: %s, state: %d\n", KEY_NAME(code), state);
 }
 
 void free_vkbd(struct vkbd *vkbd)
