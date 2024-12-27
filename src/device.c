@@ -467,31 +467,31 @@ struct device_event *device_read_event(struct device *dev)
 			return NULL;
 
 		if (ev.code >= 256) {
-			if (ev.code == BTN_LEFT)
-				ev.code = KEYD_LEFT_MOUSE;
-			else if (ev.code == BTN_MIDDLE)
-				ev.code = KEYD_MIDDLE_MOUSE;
-			else if (ev.code == BTN_RIGHT)
-				ev.code = KEYD_RIGHT_MOUSE;
-			else if (ev.code == BTN_SIDE)
-				ev.code = KEYD_MOUSE_1;
-			else if (ev.code == BTN_EXTRA)
-				ev.code = KEYD_MOUSE_2;
-			else if (ev.code == BTN_BACK)
-				ev.code = KEYD_MOUSE_BACK;
-			else if (ev.code == BTN_FORWARD)
-				ev.code = KEYD_MOUSE_FORWARD;
-			else if (ev.code == KEY_FN)
-				ev.code = KEYD_FN;
-			else if (ev.code == KEY_ZOOM)
-				ev.code = KEYD_ZOOM;
-			else if (ev.code == KEY_VOICECOMMAND)
-				ev.code = KEYD_VOICECOMMAND;
-			else if (ev.code >= BTN_DIGI
-				 && ev.code <= BTN_TOOL_QUADTAP);
-			else {
-				keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
-				return NULL;
+			switch (ev.code) {
+				case BTN_LEFT:           ev.code = KEYD_LEFT_MOUSE; break;
+				case BTN_MIDDLE:         ev.code = KEYD_MIDDLE_MOUSE; break;
+				case BTN_RIGHT:          ev.code = KEYD_RIGHT_MOUSE; break;
+				case BTN_SIDE:           ev.code = KEYD_MOUSE_1; break;
+				case BTN_EXTRA:          ev.code = KEYD_MOUSE_2; break;
+				case BTN_BACK:           ev.code = KEYD_MOUSE_BACK; break;
+				case BTN_FORWARD:        ev.code = KEYD_MOUSE_FORWARD; break;
+				case KEY_FN:             ev.code = KEYD_FN; break;
+				case KEY_ZOOM:           ev.code = KEYD_ZOOM; break;
+				case KEY_VOICECOMMAND:   ev.code = KEYD_VOICECOMMAND; break;
+				case KEY_EDITOR:         ev.code = KEYD_F13; break;
+				case KEY_SPREADSHEET:    ev.code = KEYD_F14; break;
+				case KEY_GRAPHICSEDITOR: ev.code = KEYD_F15; break;
+				case KEY_PRESENTATION:   ev.code = KEYD_F16; break;
+				case KEY_DATABASE:       ev.code = KEYD_F17; break;
+				case KEY_NEWS:           ev.code = KEYD_F18; break;
+				case KEY_VOICEMAIL:      ev.code = KEYD_F19; break;
+				case KEY_ADDRESSBOOK:    ev.code = KEYD_F20; break;
+				case KEY_MESSENGER:      ev.code = KEYD_F21; break;
+				default:
+					if (!(ev.code >= BTN_DIGI && ev.code <= BTN_TOOL_QUADTAP)) {
+						keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
+						return NULL;
+					}
 			}
 		}
 
