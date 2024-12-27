@@ -79,15 +79,29 @@ static void add_listener(int con)
 
 		for (i = 0; i < config->nr_layers; i++) {
 			if (active_kbd->layer_state[i].active) {
+				ssize_t ret;
 				struct layer *layer = &config->layers[i];
 
-				write(con, layer->type == LT_LAYOUT ? "/" : "+", 1);
-				write(con, layer->name, strlen(layer->name));
-				write(con, "\n", 1);
+				ret = write(con, layer->type == LT_LAYOUT ? "/" : "+", 1);
+				if (ret < 0)
+					goto fail;
+
+				ret = write(con, layer->name, strlen(layer->name));
+				if (ret < 0)
+					goto fail;
+
+				ret = write(con, "\n", 1);
+				if (ret < 0)
+					goto fail;
 			}
 		}
 	}
+
 	listeners[nr_listeners++] = con;
+	return;
+fail:
+	close(con);
+	return;
 }
 
 static void on_layer_change(const struct keyboard *kbd, const struct layer *layer, uint8_t state)
