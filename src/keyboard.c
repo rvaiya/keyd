@@ -432,9 +432,9 @@ static void clear(struct keyboard *kbd)
 static void setlayout(struct keyboard *kbd, uint8_t idx)
 {
 	clear(kbd);
-	/* Only only layout may be active at a time */
+	/* Only only layout may be active at a time, with the exception of main. */
 	size_t i;
-	for (i = 0; i < kbd->config.nr_layers; i++) {
+	for (i = 1; i < kbd->config.nr_layers; i++) {
 		struct layer *layer = &kbd->config.layers[i];
 
 		if (layer->type == LT_LAYOUT)

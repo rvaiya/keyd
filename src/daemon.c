@@ -76,23 +76,30 @@ static void add_listener(int con)
 	if (active_kbd) {
 		size_t i;
 		struct config *config = &active_kbd->config;
+		struct layer *layout = &config->layers[0];
 
-		for (i = 0; i < config->nr_layers; i++) {
+		for (i = 1; i < config->nr_layers; i++)
+			if (active_kbd->layer_state[i].active) {
+				struct layer *layer = &config->layers[i];
+
+				if (layer->type == LT_LAYOUT) {
+					layout = layer;
+					break;
+				}
+			}
+
+		dprintf(con, "/%s\n", layout->name);
+
+		for (i = 1; i < config->nr_layers; i++) {
 			if (active_kbd->layer_state[i].active) {
 				ssize_t ret;
 				struct layer *layer = &config->layers[i];
 
-				ret = write(con, layer->type == LT_LAYOUT ? "/" : "+", 1);
-				if (ret < 0)
-					goto fail;
-
-				ret = write(con, layer->name, strlen(layer->name));
-				if (ret < 0)
-					goto fail;
-
-				ret = write(con, "\n", 1);
-				if (ret < 0)
-					goto fail;
+				if (layer->type != LT_LAYOUT) {
+					ret = dprintf(con, "+%s\n", layer->name);
+					if (ret < 0)
+						goto fail;
+				}
 			}
 		}
 	}

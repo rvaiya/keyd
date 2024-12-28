@@ -910,7 +910,7 @@ static void config_init(struct config *config)
 	"leftcontrol = control\n"
 	"rightcontrol = control\n"
 
-	"[main]\n"
+	"[main:layout]\n"
 
 	"shift = layer(shift)\n"
 	"alt = layer(alt)\n"
