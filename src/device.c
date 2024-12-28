@@ -135,6 +135,8 @@ static int device_init(const char *path, struct device *dev)
 
 	capabilities = resolve_device_capabilities(fd, &num_keys, &relmask, &absmask);
 
+	dbg2("probing %s", path);
+
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
 		keyd_log("ERROR: could not fetch device name of %s\n", dev->path);
 		return -1;
@@ -233,6 +235,8 @@ int device_scan(struct device devices[MAX_DEVICES])
 			pthread_create(&w->tid, NULL, device_scan_worker, w);
 		}
 	}
+
+	dbg2("scan complete");
 
 	ndevs = 0;
 	for(i = 0; i < n; i++) {
