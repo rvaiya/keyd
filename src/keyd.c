@@ -177,12 +177,28 @@ static int layer_listen(int argc, char *argv[])
 
 	while (1) {
 		char buf[512];
-		ssize_t sz = read(con, buf, sizeof buf);
+		ssize_t sz;
 
-		if (sz <= 0)
+		struct pollfd pfds[] = {
+			{1, POLLERR, 0},
+			{con, POLLIN, 0},
+		};
+
+		if (poll(pfds, 2, -1) < 0) {
+			perror("poll");
+			exit(-1);
+		}
+
+		if (pfds[0].revents)
 			return -1;
 
-		xwrite(1, buf, sz);
+		if (pfds[1].revents) {
+			sz = read(con, buf, sizeof buf);
+			if (sz <= 0)
+				return -1;
+
+			xwrite(1, buf, sz);
+		}
 	}
 }
 
