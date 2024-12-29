@@ -245,6 +245,36 @@ control (when held) and remaps all modifiers to 'oneshot' keys. Thus to produce
 the letter A you can now simply tap shift and then a instead of having to hold
 it. Finally it remaps insert to S-insert (paste on X11).
 
+# Sample macOS config
+
+Do you roll macOS by day, and linux by night? Here's a great way to aid in the
+context switch making the `alt` (`cmd`) key replicate common `ctrl` combinations like *cut*, *copy*, and *paste*:
+    
+    # Map common macOS keybinds to work in linux
+    [ids]
+    *
+
+    [main]
+    
+    # Cmd
+    [alt]
+
+    # Cut (alt+x -> ctrl+x)
+    x = C-x
+    # Copy
+    c = C-c
+    # Paste
+    v = C-v
+
+    # Select All
+    a = C-a
+    # Find
+    f = C-f
+    # Replace
+    r = C-r
+    # Undo
+    z = C-z
+
 # FAQS
 
 ## What about xmodmap/setxkbmap/*?
