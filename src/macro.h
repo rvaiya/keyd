@@ -21,7 +21,7 @@ struct macro_entry {
  * timeouts
  */
 struct macro {
-	struct macro_entry entries[64];
+	struct macro_entry entries[256];
 
 	uint32_t sz;
 };
