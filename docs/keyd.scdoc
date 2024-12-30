@@ -674,6 +674,10 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *layerm(<layer>, <macro>)*
 	Identical to *layer*, but executes the supplied macro before the layer change.
 
+*layerm2(<layer>, <macro 1>, <macro 2>)*
+	Identical to *layer*, but executes the supplied <macro 1> before the layer 
+	change and <macro 2> after the layer change.
+
 *oneshotm(<layer>, <macro>)*
 	Identical to *oneshot*, but executes the supplied macro before the layer change.
 
