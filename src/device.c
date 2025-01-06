@@ -477,20 +477,18 @@ struct device_event *device_read_event(struct device *dev)
                                  * Shifted function keys, some laptops (e.g thinkpads) will map
                                  * these to exotic media keys instead.
                                  */
-				case KEY_FN_F1:                ev.code = KEYD_F13; break;
-				case KEY_FN_F2:                ev.code = KEYD_F14; break;
-				case KEY_FN_F3:                ev.code = KEYD_F15; break;
-				case KEY_FN_F4:                ev.code = KEYD_F16; break;
-				case KEY_FN_F5:                ev.code = KEYD_F17; break;
-				case KEY_FN_F6:                ev.code = KEYD_F18; break;
-				case KEY_FN_F7:                ev.code = KEYD_F19; break;
-				case KEY_FN_F8:                ev.code = KEYD_F20; break;
-				case KEY_FN_F9:                ev.code = KEYD_F21; break;
-				case KEY_FN_F10:               ev.code = KEYD_F22; break;
-				case KEY_FN_F11:               ev.code = KEYD_F23; break;
-				case KEY_FN_F12:               ev.code = KEYD_F24; break;
-
-				/* fn + f<n> keys on some thinkpads */
+				case KEY_FN_F1:  ev.code = KEYD_F13; break;
+				case KEY_FN_F2:  ev.code = KEYD_F14; break;
+				case KEY_FN_F3:  ev.code = KEYD_F15; break;
+				case KEY_FN_F4:  ev.code = KEYD_F16; break;
+				case KEY_FN_F5:  ev.code = KEYD_F17; break;
+				case KEY_FN_F6:  ev.code = KEYD_F18; break;
+				case KEY_FN_F7:  ev.code = KEYD_F19; break;
+				case KEY_FN_F8:  ev.code = KEYD_F20; break;
+				case KEY_FN_F9:  ev.code = KEYD_F21; break;
+				case KEY_FN_F10: ev.code = KEYD_F22; break;
+				case KEY_FN_F11: ev.code = KEYD_F23; break;
+				case KEY_FN_F12: ev.code = KEYD_F24; break;
 
 				/* Thinkpad fn shifted f9-f11 */
 				case KEY_NOTIFICATION_CENTER:  ev.code = KEYD_F21; break;
@@ -522,13 +520,24 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_VOICECOMMAND:   ev.code = KEYD_VOICECOMMAND; break;
 
 				/* Mouse buttons */
-				case BTN_LEFT:           ev.code = KEYD_LEFT_MOUSE; break;
-				case BTN_MIDDLE:         ev.code = KEYD_MIDDLE_MOUSE; break;
-				case BTN_RIGHT:          ev.code = KEYD_RIGHT_MOUSE; break;
-				case BTN_SIDE:           ev.code = KEYD_MOUSE_1; break;
-				case BTN_EXTRA:          ev.code = KEYD_MOUSE_2; break;
-				case BTN_BACK:           ev.code = KEYD_MOUSE_BACK; break;
-				case BTN_FORWARD:        ev.code = KEYD_MOUSE_FORWARD; break;
+				case BTN_LEFT:    ev.code = KEYD_LEFT_MOUSE; break;
+				case BTN_MIDDLE:  ev.code = KEYD_MIDDLE_MOUSE; break;
+				case BTN_RIGHT:   ev.code = KEYD_RIGHT_MOUSE; break;
+				case BTN_SIDE:    ev.code = KEYD_MOUSE_1; break;
+				case BTN_EXTRA:   ev.code = KEYD_MOUSE_2; break;
+				case BTN_BACK:    ev.code = KEYD_MOUSE_BACK; break;
+				case BTN_FORWARD: ev.code = KEYD_MOUSE_FORWARD; break;
+
+				case BTN_0:       ev.code = KEYD_F13; break;
+				case BTN_1:       ev.code = KEYD_F14; break;
+				case BTN_2:       ev.code = KEYD_F15; break;
+				case BTN_3:       ev.code = KEYD_F16; break;
+				case BTN_4:       ev.code = KEYD_F17; break;
+				case BTN_5:       ev.code = KEYD_F18; break;
+				case BTN_6:       ev.code = KEYD_F19; break;
+				case BTN_7:       ev.code = KEYD_F20; break;
+				case BTN_8:       ev.code = KEYD_F21; break;
+				case BTN_9:       ev.code = KEYD_F22; break;
 
 				default:
 					if (!(ev.code >= BTN_DIGI && ev.code <= BTN_TOOL_QUADTAP)) {
