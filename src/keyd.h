@@ -37,6 +37,8 @@
 	#include <linux/input.h>
 #endif
 
+#include "ext/evdev-input-codes.h"
+
 #include "config.h"
 #include "macro.h"
 #include "device.h"

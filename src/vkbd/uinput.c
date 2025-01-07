@@ -18,7 +18,7 @@
 	#include <dev/evdev/input-event-codes.h>
 #else
 	#include <linux/uinput.h>
-	#include <linux/input-event-codes.h>
+	#include <linux/input.h>
 #endif
 
 #define REPEAT_INTERVAL 40
