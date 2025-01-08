@@ -49,7 +49,28 @@ static void clear_vkbd()
 static void send_key(uint8_t code, uint8_t state)
 {
 	keystate[code] = state;
-	vkbd_send_key(vkbd, code, state);
+
+	switch (code) {
+		case KEYD_SCROLL_DOWN:
+			if (state)
+				vkbd_mouse_scroll(vkbd, 0, -1);
+			break;
+		case KEYD_SCROLL_UP:
+			if (state)
+				vkbd_mouse_scroll(vkbd, 0, 1);
+			break;
+		case KEYD_SCROLL_RIGHT:
+			if (state)
+				vkbd_mouse_scroll(vkbd, 1, 0);
+			break;
+		case KEYD_SCROLL_LEFT:
+			if (state)
+				vkbd_mouse_scroll(vkbd, -1, 0);
+			break;
+		default:
+			vkbd_send_key(vkbd, code, state);
+			break;
+	}
 }
 
 static void add_listener(int con)
@@ -439,6 +460,20 @@ static void handle_client(int con)
 	}
 }
 
+static long process_keypress(struct keyboard *kbd, uint8_t code, int timestamp)
+{
+	struct key_event kev = {
+		.code = code,
+		.pressed = 1,
+		.timestamp = timestamp
+	};
+
+	kbd_process_events(kbd, &kev, 1);
+
+	kev.pressed = 0;
+	return kbd_process_events(kbd, &kev, 1);
+}
+
 static int event_handler(struct event *ev)
 {
 	static int last_time = 0;
@@ -499,27 +534,28 @@ static int event_handler(struct event *ev)
 			case DEV_MOUSE_MOVE_ABS:
 				vkbd_mouse_move_abs(vkbd, ev->devev->x, ev->devev->y);
 				break;
+			case DEV_MOUSE_SCROLL:
+				if (active_kbd) {
+					if (ev->devev->x > 0)
+						for (i = 0;i < (size_t)ev->devev->x; i++)
+							timeout = process_keypress(active_kbd, KEYD_SCROLL_RIGHT, ev->timestamp);
+					if (ev->devev->x < 0)
+						for (i = 0;i < (size_t)-1*ev->devev->x; i++)
+							timeout = process_keypress(active_kbd, KEYD_SCROLL_LEFT, ev->timestamp);
+					if (ev->devev->y > 0)
+						for (i = 0;i < (size_t)ev->devev->y; i++)
+							timeout = process_keypress(active_kbd, KEYD_SCROLL_UP, ev->timestamp);
+					if (ev->devev->y < 0)
+						for (i = 0;i < (size_t)-1*ev->devev->y; i++)
+							timeout = process_keypress(active_kbd, KEYD_SCROLL_DOWN, ev->timestamp);
+				}
+				break;
 			default:
 				break;
-			case DEV_MOUSE_SCROLL:
-				/*
-				 * Treat scroll events as mouse buttons so oneshot and the like get
-				 * cleared.
-				 */
-				if (active_kbd) {
-					kev.code = KEYD_EXTERNAL_MOUSE_BUTTON;
-					kev.pressed = 1;
-					kev.timestamp = ev->timestamp;
-
-					kbd_process_events(ev->dev->data, &kev, 1);
-
-					kev.pressed = 0;
-					timeout = kbd_process_events(ev->dev->data, &kev, 1);
-				}
-
-				vkbd_mouse_scroll(vkbd, ev->devev->x, ev->devev->y);
-				break;
 			}
+		} else if (!ev->dev->is_virtual && ev->dev->capabilities & CAP_MOUSE) {
+			if (active_kbd && (ev->devev->type == DEV_KEY || ev->devev->type == DEV_MOUSE_SCROLL))
+				timeout = process_keypress(active_kbd, KEYD_EXTERNAL_MOUSE_BUTTON, ev->timestamp);
 		} else if (ev->dev->is_virtual && ev->devev->type == DEV_LED) {
 			size_t i;
 

@@ -54,8 +54,9 @@ struct device_event {
 
 	uint8_t code;
 	uint8_t pressed;
-	uint32_t x;
-	uint32_t y;
+
+	int32_t x;
+	int32_t y;
 };
 
 

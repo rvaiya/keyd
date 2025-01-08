@@ -176,8 +176,8 @@ struct modifier {
 #define KEYD_SENDFILE          145
 #define KEYD_DELETEFILE        146
 #define KEYD_XFER              147
-#define KEYD_PROG1             148
-#define KEYD_PROG2             149
+#define KEYD_SCROLL_DOWN       148
+#define KEYD_SCROLL_UP         149
 #define KEYD_WWW               150
 #define KEYD_MSDOS             151
 #define KEYD_COFFEE            152
@@ -224,8 +224,8 @@ struct modifier {
 #define KEYD_F24               194
 #define KEYD_PLAYCD            200
 #define KEYD_PAUSECD           201
-#define KEYD_PROG3             202
-#define KEYD_PROG4             203
+#define KEYD_SCROLL_LEFT       202
+#define KEYD_SCROLL_RIGHT      203
 #define KEYD_DASHBOARD         204
 #define KEYD_SUSPEND           205
 #define KEYD_CLOSE             206

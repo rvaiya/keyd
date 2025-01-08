@@ -186,7 +186,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->data = NULL;
 		dev->grabbed = 0;
 
-		dev->is_virtual = !strcmp(dev->name, VKBD_NAME);
+		dev->is_virtual = info.vendor == 0x0FAC;
 		return 0;
 	} else {
 		close(fd);
@@ -489,6 +489,11 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_FN_F10: ev.code = KEYD_F22; break;
 				case KEY_FN_F11: ev.code = KEYD_F23; break;
 				case KEY_FN_F12: ev.code = KEYD_F24; break;
+
+				case KEY_PROG1: ev.code = KEYD_F21; break;
+				case KEY_PROG2: ev.code = KEYD_F22; break;
+				case KEY_PROG3: ev.code = KEYD_F23; break;
+				case KEY_PROG4: ev.code = KEYD_F24; break;
 
 				/* Thinkpad fn shifted f9-f11 */
 				case KEY_NOTIFICATION_CENTER:  ev.code = KEYD_F21; break;
