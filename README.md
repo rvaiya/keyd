@@ -266,6 +266,30 @@ it. Finally it remaps insert to S-insert (paste on X11).
 
 # FAQS
 
+## Why is my trackpad is interfering with input after enabling keyd?
+
+libinput, a higher level input component used by most wayland and X11 setups,
+includes a feature called 'disable-while-typing' that disables the trackpad
+when typing.
+
+In order to achieve this, it needs to distinguish between internal and external
+keyboards, which it does by hard coding a rules for specific hardware
+('quirks'). Since keyd creates a virtual device which subsumes both external
+and integrated keyboards, you will need to instruct libinput to regard the keyd
+virtual device as internal.
+
+This can be achieved by adding the following to `/etc/libinput/local-overrides.quirks` (which may need to be created):
+
+```
+[Serial Keyboards]
+
+MatchUdevType=keyboard
+MatchName=keyd*keyboard
+AttrKeyboardIntegration=internal
+```
+
+Credit to @mark-herbert42 and @canadaduane for the original solution.
+
 ## What about xmodmap/setxkbmap/*?
 
 xmodmap and friends are display server level tools with limited functionality.
