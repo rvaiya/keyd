@@ -532,6 +532,7 @@ struct device_event *device_read_event(struct device *dev)
 				case BTN_EXTRA:   ev.code = KEYD_MOUSE_2; break;
 				case BTN_BACK:    ev.code = KEYD_MOUSE_BACK; break;
 				case BTN_FORWARD: ev.code = KEYD_MOUSE_FORWARD; break;
+				case BTN_TASK:    ev.code = KEYD_F18; break;
 
 				case BTN_0:       ev.code = KEYD_F13; break;
 				case BTN_1:       ev.code = KEYD_F14; break;
