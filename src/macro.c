@@ -82,11 +82,12 @@ int macro_parse(char *s, struct macro *macro)
 	#undef ADD_ENTRY
 }
 
-void macro_execute(void (*output)(uint8_t, uint8_t),
+long macro_execute(void (*output)(uint8_t, uint8_t),
 		   const struct macro *macro, size_t timeout)
 {
 	size_t i;
 	int hold_start = -1;
+	long time = 0;
 
 	for (i = 0; i < macro->sz; i++) {
 		const struct macro_entry *ent = &macro->entries[i];
@@ -157,10 +158,15 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			break;
 		case MACRO_TIMEOUT:
 			usleep(ent->data * 1E3);
+			time += ent->data;
 			break;
 		}
 
-		if (timeout)
+		if (timeout) {
 			usleep(timeout);
+			time += timeout/1E3;
+		}
 	}
+
+	return time;
 }

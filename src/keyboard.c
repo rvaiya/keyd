@@ -157,8 +157,10 @@ static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mo
 	set_mods(kbd, mods);
 }
 
-static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
+static long execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
 {
+	long time = 0;
+
 	/* Minimize redundant modifier strokes for simple key sequences. */
 	if (macro->sz == 1 && macro->entries[0].type == MACRO_KEYSEQUENCE) {
 		uint8_t code = macro->entries[0].data;
@@ -169,8 +171,10 @@ static void execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 		send_key(kbd, code, 0);
 	} else {
 		update_mods(kbd, dl, 0);
-		macro_execute(kbd->output.send_key, macro, kbd->config.macro_sequence_timeout);
+		time = macro_execute(kbd->output.send_key, macro, kbd->config.macro_sequence_timeout);
 	}
+
+	return time;
 }
 
 static void lookup_descriptor(struct keyboard *kbd, uint8_t code,
@@ -673,6 +677,8 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_MACRO2:
 	case OP_MACRO:
 		if (pressed) {
+			long execution_time;
+
 			if (d->op == OP_MACRO2) {
 				macro = &kbd->config.macros[d->args[2].idx];
 
@@ -687,11 +693,11 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			clear_oneshot(kbd);
 
-			execute_macro(kbd, dl, macro);
+			execution_time = execute_macro(kbd, dl, macro);
 			kbd->active_macro = macro;
 			kbd->active_macro_layer = dl;
 
-			kbd->macro_timeout = time + timeout;
+			kbd->macro_timeout = execution_time + time + timeout;
 			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 
@@ -1140,8 +1146,9 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 			kbd->active_macro = NULL;
 			update_mods(kbd, -1, 0);
 		} else if (time >= kbd->macro_timeout) {
-			execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
-			kbd->macro_timeout = time+kbd->macro_repeat_interval;
+			long execution_time = execute_macro(kbd, kbd->active_macro_layer, kbd->active_macro);
+
+			kbd->macro_timeout = execution_time + time + kbd->macro_repeat_interval;
 			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 	}

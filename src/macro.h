@@ -27,7 +27,7 @@ struct macro {
 };
 
 
-void macro_execute(void (*output)(uint8_t, uint8_t),
+long macro_execute(void (*output)(uint8_t, uint8_t),
 		   const struct macro *macro,
 		   size_t timeout);
 
