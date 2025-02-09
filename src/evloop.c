@@ -90,24 +90,26 @@ int evloop(int (*event_handler) (struct event *ev))
 		for (i = 0; i < device_table_sz; i++) {
 			if (pfds[i+1].revents) {
 				struct device_event *devev;
+				struct device *dev = &device_table[i];
 
-				while ((devev = device_read_event(&device_table[i]))) {
+				while ((devev = device_read_event(dev))) {
 					if (devev->type == DEV_REMOVED) {
 						ev.type = EV_DEV_REMOVE;
-						ev.dev = &device_table[i];
+						ev.dev = dev;
 
 						timeout = event_handler(&ev);
 
-						device_table[i].fd = -1;
+						dev->fd = -1;
 						removed = 1;
 						break;
 					} else {
 						//Handle device event
-						panic_check(devev->code, devev->pressed);
+						if (!dev->is_virtual)
+							panic_check(devev->code, devev->pressed);
 
 						ev.type = EV_DEV_EVENT;
 						ev.devev = devev;
-						ev.dev = &device_table[i];
+						ev.dev = dev;
 
 						timeout = event_handler(&ev);
 					}
