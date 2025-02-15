@@ -6,7 +6,17 @@ keyd-application-mapper - remap keys when window focus changes
 
 # SYNOPSIS
 
-*keyd-application-mapper* [*-d*]
+*keyd-application-mapper* [*-d*|*--daemonize*] [*-v*|*--verbose*]
+
+# OPTIONS
+
+*-v, --verbose*
+	Write verbose output. This includes printing the window focus events detected.
+	You can use this output to determine what a window's class and title is for the
+	purpose of setting mappings for that window in the config file.
+
+*-d, --daemonize*
+	Daemonize, write output to _~/.config/keyd/app.log_ instead of stdout.
 
 # DESCRIPTION
 
@@ -28,8 +38,10 @@ The config file has the following form:
 
 Where _<filter>_ has one of the following forms:
 
+```
 	\[<class exp>\]              # Match by window class
 	\[<class exp>|<title exp>\]  # Match by class and title
+```
 
 and each _<expression>_ is a valid argument to _keyd bind_ (see *Bindings*).
 
@@ -62,9 +74,10 @@ E.G:
 Will remap _A-1_ to the the string 'Inside st' when a window with a class
 that begins with 'st-' (e.g st-256color) is active. 
 
-Window class and title names can be obtained by inspecting the log output while the
-daemon is running (e.g _tail\ -f\ ~/.config/keyd/app.log_). A reload may be triggered
-by sending the script a USR1 signal.
+Window class and title names can be obtained by inspecting the output if the program
+was started with the _-v, --verbose_ option. If the program was daemonized, you can
+read the log file output by e.g. _tail\ -f\ ~/.config/keyd/app.log_.
+A reload may be triggered by sending the script a USR1 signal.
 
 At the moment X, Sway and Gnome are supported.
 
