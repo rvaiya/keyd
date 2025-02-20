@@ -240,8 +240,12 @@ class Wlroots():
         windows = {}
         active_window = None
 
-        while True:
-            (obj, event, payload) = self.wl.recv_msg()
+        for msg in new_interruptible_generator(self.wl.sock, self.wl.recv_msg):
+            if msg == None:
+                self.on_window_change(active_window['appid'], active_window['title'])
+                continue
+
+            (obj, event, payload) = msg
             if obj == 4 and event == 0:
                 # zwlr_foreign_toplevel_manager_v1::toplevel event
                 windows[struct.unpack('I', payload)[0]] = {'title': '', 'appid': ''}
