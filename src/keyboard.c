@@ -571,19 +571,16 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			uint8_t layer = d->args[0].idx;
 			struct descriptor *action = &kbd->config.descriptors[d->args[1].idx];
 
-			kbd->pending_key.code = code;
-			kbd->pending_key.behaviour =
-				d->op == OP_OVERLOAD_TIMEOUT_TAP ?
-					PK_UNINTERRUPTIBLE_TAP_ACTION2 :
-					PK_UNINTERRUPTIBLE;
+			kbd->pending_overload.code = code;
+			kbd->pending_overload.resolve_on_interrupt = d->op == OP_OVERLOAD_TIMEOUT_TAP;
 
-			kbd->pending_key.dl = dl;
-			kbd->pending_key.action1 = *action;
-			kbd->pending_key.action2.op = OP_LAYER;
-			kbd->pending_key.action2.args[0].idx = layer;
-			kbd->pending_key.expire = time+d->args[2].timeout;
+			kbd->pending_overload.dl = dl;
+			kbd->pending_overload.action1 = *action;
+			kbd->pending_overload.action2.op = OP_LAYER;
+			kbd->pending_overload.action2.args[0].idx = layer;
+			kbd->pending_overload.expiration = time + d->args[2].timeout;
 
-			schedule_timeout(kbd, kbd->pending_key.expire);
+			schedule_timeout(kbd, kbd->pending_overload.expiration);
 		}
 
 		break;
@@ -720,18 +717,23 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_TIMEOUT:
+		struct pending_timeout *pt = &kbd->pending_timeout;
+
 		if (pressed) {
-			kbd->pending_key.action1 = kbd->config.descriptors[d->args[0].idx];
-			kbd->pending_key.action2 = kbd->config.descriptors[d->args[2].idx];
+			pt->code = code;
+			pt->dl = dl;
 
-			kbd->pending_key.code = code;
-			kbd->pending_key.dl = dl;
-			kbd->pending_key.expire = time + d->args[1].timeout;
-			kbd->pending_key.behaviour = PK_INTERRUPT_ACTION1;
+			pt->action1 = kbd->config.descriptors[d->args[0].idx];
+			pt->expiration = time + d->args[1].timeout;
+			pt->action2 = kbd->config.descriptors[d->args[2].idx];
 
-			schedule_timeout(kbd, kbd->pending_key.expire);
+			pt->activation_time = time;
+			pt->spontaneous = 0;
+
+			schedule_timeout(kbd, pt->expiration);
+		} else if (time == kbd->pending_timeout.activation_time) {
+			pt->spontaneous = 1;
 		}
-
 		break;
 	case OP_COMMAND:
 		if (pressed) {
@@ -1032,77 +1034,92 @@ static int handle_chord(struct keyboard *kbd,
 	return 0;
 }
 
-int handle_pending_key(struct keyboard *kbd, uint8_t code, int pressed, long time)
+int handle_pending_timeout(struct keyboard *kbd, uint8_t event_code, int pressed, long time)
 {
-	if (!kbd->pending_key.code)
+	struct pending_timeout pt = kbd->pending_timeout;
+
+	if (!pt.code || (!pressed && pt.code == event_code && time == pt.activation_time))
 		return 0;
 
-	struct descriptor action = {0};
+	if (pt.spontaneous) {
+		if ((time >= pt.expiration) || event_code) {
+			struct descriptor action = time >= pt.expiration ? pt.action2 : pt.action1;
+			kbd->pending_timeout.code = 0;
+
+			process_descriptor(kbd, pt.code, &action, pt.dl, 1, time);
+			process_descriptor(kbd, pt.code, &action, pt.dl, 0, time);
+		}
+	} else if (time >= pt.expiration || (event_code && (pressed || event_code == pt.code))) {
+		struct descriptor action = time >= pt.expiration ? pt.action2 : pt.action1;
+		kbd->pending_timeout.code = 0;
+
+		cache_set(kbd, pt.code, &(struct cache_entry){
+			.code = pt.code,
+			.dl = pt.dl,
+			.d = action,
+		});
+		process_descriptor(kbd, pt.code, &action, pt.dl, 1, time);
+	}
+
+	return 0;
+}
+
+int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, long time)
+{
+	struct descriptor action;
+
+	if (!kbd->pending_overload.code)
+		return 0;
 
 	if (code) {
 		struct key_event *ev;
 
-		assert(kbd->pending_key.queue_sz < ARRAY_SIZE(kbd->pending_key.queue));
+		assert(kbd->pending_overload.queue_sz < ARRAY_SIZE(kbd->pending_overload.queue));
 
 		if (!pressed) {
 			size_t i;
 			int found = 0;
 
-			for (i = 0; i < kbd->pending_key.queue_sz; i++)
-				if (kbd->pending_key.queue[i].code == code)
+			for (i = 0; i < kbd->pending_overload.queue_sz; i++)
+				if (kbd->pending_overload.queue[i].code == code)
 					found = 1;
 
 			/* Propagate key up events for keys which were struck before the pending key. */
-			if (!found && code != kbd->pending_key.code)
+			if (!found && code != kbd->pending_overload.code)
 				return 0;
 		}
 
-		ev = &kbd->pending_key.queue[kbd->pending_key.queue_sz];
+		ev = &kbd->pending_overload.queue[kbd->pending_overload.queue_sz];
 		ev->code = code;
 		ev->pressed = pressed;
 		ev->timestamp = time;
 
-		kbd->pending_key.queue_sz++;
+		kbd->pending_overload.queue_sz++;
 	}
 
 
-	if (time >= kbd->pending_key.expire) {
-		action = kbd->pending_key.action2;
-	} else if (code == kbd->pending_key.code) {
-		if (kbd->pending_key.tap_expiry && time >= kbd->pending_key.tap_expiry) {
-			action.op = OP_KEYSEQUENCE;
-			action.args[0].code = KEYD_NOOP;
-		} else {
-			action = kbd->pending_key.action1;
-		}
-	} else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION1) {
-		action = kbd->pending_key.action1;
-	} else if (code && pressed && kbd->pending_key.behaviour == PK_INTERRUPT_ACTION2) {
-		action = kbd->pending_key.action2;
-	} else if (kbd->pending_key.behaviour == PK_UNINTERRUPTIBLE_TAP_ACTION2 && !pressed) {
-		size_t i;
-
-		for (i = 0; i < kbd->pending_key.queue_sz; i++)
-			if (kbd->pending_key.queue[i].code == code) {
-				action = kbd->pending_key.action2;
-				break;
-			}
-	}
+	if (time >= kbd->pending_overload.expiration)
+		action = kbd->pending_overload.action2;
+	else if (code == kbd->pending_overload.code)
+		action = kbd->pending_overload.action1;
+	else if (kbd->pending_overload.resolve_on_interrupt && !pressed)
+		action = kbd->pending_overload.action2;
+	else
+		action.op = 0;
 
 	if (action.op) {
 		/* Create a copy of the queue on the stack to
 		   allow for recursive pending key processing. */
-		struct key_event queue[ARRAY_SIZE(kbd->pending_key.queue)];
-		size_t queue_sz = kbd->pending_key.queue_sz;
+		struct key_event queue[ARRAY_SIZE(kbd->pending_overload.queue)];
+		size_t queue_sz = kbd->pending_overload.queue_sz;
 
-		uint8_t code = kbd->pending_key.code;
-		int dl = kbd->pending_key.dl;
+		uint8_t code = kbd->pending_overload.code;
+		int dl = kbd->pending_overload.dl;
 
-		memcpy(queue, kbd->pending_key.queue, sizeof kbd->pending_key.queue);
+		memcpy(queue, kbd->pending_overload.queue, sizeof kbd->pending_overload.queue);
 
-		kbd->pending_key.code = 0;
-		kbd->pending_key.queue_sz = 0;
-		kbd->pending_key.tap_expiry = 0;
+		kbd->pending_overload.code = 0;
+		kbd->pending_overload.queue_sz = 0;
 
 		cache_set(kbd, code, &(struct cache_entry) {
 			.d = action,
@@ -1133,7 +1150,10 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
 	if (handle_chord(kbd, code, pressed, time))
 		goto exit;
 
-	if (handle_pending_key(kbd, code, pressed, time))
+	if (handle_pending_timeout(kbd, code, pressed, time))
+		goto exit;
+
+	if (handle_pending_overload(kbd, code, pressed, time))
 		goto exit;
 
 	if (kbd->oneshot_timeout && time >= kbd->oneshot_timeout) {

@@ -738,16 +738,20 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
-	If the key is held in isolation for more than _<timeout> ms_, activate the second
-	action, if the key is held for less than _<timeout> ms_ or another key is struck
-	before <timeout> ms expires, execute the first action.
+	If no key events occur within _<timeout> ms_, execute <action1>, otherwise
+	execute <action1>.
 
 	E.g.
 
 	timeout(a, 500, layer(control))
 
-	Will cause the assigned key to behave as _control_ if it is held for more than
-	500 ms.
+	Will cause the assigned key to behave as control if it is held for more than
+	500 ms without any keys being struck in the interval.
+
+	*NOTE:* This is an older option with numerous subtle implications. It is
+	mainly intended to be used in combination with other actions to achieve
+	things which are not otherwise possible. Most users will want to use
+	one of overload functions for simple tap/hold behaviour.
 
 *macro2(<timeout>, <repeat timeout>, <macro>)*
 	Creates a macro with the given timeout and repeat timeout. If a timeout value of 0 is used,
