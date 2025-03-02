@@ -174,6 +174,7 @@ static long execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 		time = macro_execute(kbd->output.send_key, macro, kbd->config.macro_sequence_timeout);
 	}
 
+	update_mods(kbd, -1, 0);
 	return time;
 }
 
