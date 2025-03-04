@@ -187,6 +187,10 @@ bug](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1060023)).
 
 [COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
 
+### Gentoo
+
+[GURU](https://gitweb.gentoo.org/repo/proj/guru.git/tree/app-misc/keyd) package maintained by [jack@pngu.org](mailto:jack@pngu.org)
+
 ### openSUSE
 [opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
 
