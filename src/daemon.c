@@ -73,6 +73,11 @@ static void send_key(uint8_t code, uint8_t state)
 	}
 }
 
+static void send_key_macro_wrapper(void *ctx, uint8_t code, uint8_t state)
+{
+	send_key(code, state);
+}
+
 static void add_listener(int con)
 {
 	struct timeval tv;
@@ -415,7 +420,7 @@ static void handle_client(int con)
 			return;
 		}
 
-		macro_execute(send_key, &macro, msg.timeout);
+		macro_execute(send_key_macro_wrapper, NULL, &macro, msg.timeout);
 		send_success(con);
 
 		break;

@@ -83,6 +83,11 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 	}
 }
 
+static void send_key_macro_wrapper(void *kbd, uint8_t code, uint8_t pressed)
+{
+	send_key(kbd, code, pressed);
+}
+
 static void clear_mod(struct keyboard *kbd, uint8_t code)
 {
 	/*
@@ -171,7 +176,7 @@ static long execute_macro(struct keyboard *kbd, int dl, const struct macro *macr
 		send_key(kbd, code, 0);
 	} else {
 		update_mods(kbd, dl, 0);
-		time = macro_execute(kbd->output.send_key, macro, kbd->config.macro_sequence_timeout);
+		time = macro_execute(send_key_macro_wrapper, kbd, macro, kbd->config.macro_sequence_timeout);
 	}
 
 	update_mods(kbd, -1, 0);
