@@ -730,6 +730,17 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_TOGGLEKEY:
+		new_code = d->args[0].code;
+
+		if (pressed) {
+			if (kbd->keystate[new_code]) {
+				send_key(kbd, new_code, 0);
+			} else {
+				send_key(kbd, new_code, 1);
+			}
+		}
+		break;
 	case OP_TIMEOUT:
 		struct pending_timeout *pt = &kbd->pending_timeout;
 

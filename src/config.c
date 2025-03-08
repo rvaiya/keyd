@@ -74,12 +74,14 @@ static struct {
 		ARG_TIMEOUT,
 		ARG_SENSITIVITY,
 		ARG_DESCRIPTOR,
+		ARG_KEYCODE,
 	} args[MAX_DESCRIPTOR_ARGS];
 } actions[] =  {
 	{ "swap", 	NULL,	OP_SWAP,	{ ARG_LAYER } },
 	{ "clear", 	NULL,	OP_CLEAR,	{} },
 	{ "oneshot", 	NULL,	OP_ONESHOT,	{ ARG_LAYER } },
 	{ "toggle", 	NULL,	OP_TOGGLE,	{ ARG_LAYER } },
+	{ "togglekey", 	NULL,	OP_TOGGLEKEY,	{ ARG_KEYCODE } },
 
 	{ "clearm", 	NULL,	OP_CLEARM,	{ ARG_MACRO } },
 	{ "swapm", 	NULL,	OP_SWAPM,	{ ARG_LAYER, ARG_MACRO } },
@@ -753,6 +755,13 @@ static int parse_descriptor(char *s,
 						arg->idx = config->nr_macros;
 						config->nr_macros++;
 
+						break;
+					case ARG_KEYCODE:
+						arg->code = lookup_keycode(argstr);
+						if (arg->code == 0) {
+							err("%s is not a valid keycode", argstr);
+							return -1;
+						}
 						break;
 					default:
 						assert(0);
