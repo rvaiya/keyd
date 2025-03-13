@@ -49,6 +49,8 @@ enum op {
 	OP_TIMEOUT,
 
 /* Experimental */
+	OP_SCROLL_TOGGLE_ON,
+	OP_SCROLL_TOGGLE_OFF,
 	OP_SCROLL_TOGGLE,
 	OP_SCROLL,
 };

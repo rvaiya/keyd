@@ -547,6 +547,14 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		else
 			kbd->scroll.active = 0;
 		break;
+	case OP_SCROLL_TOGGLE_ON:
+		kbd->scroll.sensitivity = d->args[0].sensitivity;
+		kbd->scroll.active = 1;
+		break;
+	case OP_SCROLL_TOGGLE_OFF:
+		if (pressed)
+			kbd->scroll.active = 0;
+		break;
 	case OP_SCROLL_TOGGLE:
 		kbd->scroll.sensitivity = d->args[0].sensitivity;
 		if (pressed)

@@ -69,6 +69,8 @@ static struct {
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
 
 	/* Experimental */
+	{ "scrollon", 	NULL,	OP_SCROLL_TOGGLE_ON,		{ARG_SENSITIVITY} },
+	{ "scrolloff", 	NULL,	OP_SCROLL_TOGGLE_OFF,		{} },
 	{ "scrollt", 	NULL,	OP_SCROLL_TOGGLE,		{ARG_SENSITIVITY} },
 	{ "scroll", 	NULL,	OP_SCROLL,			{ARG_SENSITIVITY} },
 
