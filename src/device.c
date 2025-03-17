@@ -495,6 +495,9 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_PROG3: ev.code = KEYD_F23; break;
 				case KEY_PROG4: ev.code = KEYD_F24; break;
 
+				case KEY_TOUCHPAD_TOGGLE: ev.code = KEYD_F21; break;
+				case KEY_FAVORITES: ev.code = KEYD_BOOKMARKS; break;
+
 				/* Thinkpad fn shifted f9-f11 */
 				case KEY_NOTIFICATION_CENTER:  ev.code = KEYD_F21; break;
 				case KEY_PICKUP_PHONE:         ev.code = KEYD_F22; break;
