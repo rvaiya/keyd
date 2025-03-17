@@ -14,7 +14,7 @@ using kernel level input primitives (evdev, uinput).
 
 The config format has undergone several iterations since the first
 release. For those migrating their configs from v1 it is best
-to reread the man page. 
+to reread the [man page](https://raw.githubusercontent.com/rvaiya/keyd/refs/heads/master/docs/keyd.scdoc) (`man keyd`).
 
 See also: [changelog](docs/CHANGELOG.md).
 
