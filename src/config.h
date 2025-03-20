@@ -23,6 +23,7 @@
 #define ID_EXCLUDED	1
 #define ID_MOUSE	2
 #define ID_KEYBOARD	4
+#define ID_TRACKPAD	8
 
 enum op {
 	OP_KEYSEQUENCE = 1,

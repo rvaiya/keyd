@@ -246,11 +246,15 @@ static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 		ent = ent->next;
 	}
 
-	/* The wildcard should not match mice. */
-	if (rank == 1 && (flags == ID_MOUSE))
+	/* The wildcard should not match mice or trackpads. */
+	if (rank == 1 && ((flags == ID_MOUSE) || (flags & ID_TRACKPAD))) {
 		return NULL;
-	else
+	} else {
+		if (flags & ID_TRACKPAD)
+			keyd_log("y{WARNING}: %s appears to be a trackpad, which is current unsupported. Mouse movement is likely to break(YMMV)\n", id);
+
 		return match;
+	}
 }
 
 static void manage_device(struct device *dev)
@@ -263,7 +267,9 @@ static void manage_device(struct device *dev)
 
 	if (dev->capabilities & CAP_KEYBOARD)
 		flags |= ID_KEYBOARD;
-	if (dev->capabilities & (CAP_MOUSE|CAP_MOUSE_ABS))
+	if (dev->capabilities & CAP_MOUSE_ABS)
+		flags |= ID_TRACKPAD;
+	if (dev->capabilities & CAP_MOUSE)
 		flags |= ID_MOUSE;
 
 	if ((ent = lookup_config_ent(dev->id, flags))) {
