@@ -80,6 +80,11 @@ void die(const char *fmt, ...) {
 	exit(-1);
 }
 
+void _vkeyd_log(const char *fmt, va_list ap)
+{
+	vprintf(colorize(fmt), ap);
+}
+
 void _keyd_log(int level, const char *fmt, ...)
 {
 	if (level > log_level)
@@ -87,6 +92,6 @@ void _keyd_log(int level, const char *fmt, ...)
 
 	va_list ap;
 	va_start(ap, fmt);
-	vprintf(colorize(fmt), ap);
+	_vkeyd_log(fmt, ap);
 	va_end(ap);
 }
