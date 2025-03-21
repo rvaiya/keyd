@@ -35,6 +35,9 @@ struct device {
 	uint32_t _minx;
 	uint32_t _miny;
 
+	uint32_t _pending_rel_x;
+	uint32_t _pending_rel_y;
+
 	/* Reserved for the user. */
 	void *data;
 };
