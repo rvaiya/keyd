@@ -104,7 +104,7 @@ int evloop(int (*event_handler) (struct event *ev))
 						break;
 					} else {
 						//Handle device event
-						if (!dev->is_virtual)
+						if (!dev->is_virtual && devev->type != DEV_LED)
 							panic_check(devev->code, devev->pressed);
 
 						ev.type = EV_DEV_EVENT;
