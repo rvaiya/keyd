@@ -209,7 +209,7 @@ static void load_configs()
 
 			keyd_log("CONFIG: parsing b{%s}\n", path);
 
-			if (!config_parse(&ent->config, path)) {
+			if (config_parse(&ent->config, path) >= 0) {
 				struct output output = {
 					.send_key = send_key,
 					.on_layer_change = on_layer_change,

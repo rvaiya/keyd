@@ -43,16 +43,19 @@ struct srcmap {
 static size_t current_line = 0;
 static const char *current_file = NULL;
 
+static size_t nr_warnings = 0;
+
 static void config_warn(const char *fmt, ...)
 {
 	va_list ap;
 	char buf[1024];
 
 	if (current_file)
-		snprintf(buf, sizeof buf, "\ty{WARNING:}b{%s}:r{%zd}: %s\n", current_file, current_line + 1, fmt);
+		snprintf(buf, sizeof buf, "\ty{WARNING:} b{%s}:r{%zd}: %s\n", current_file, current_line + 1, fmt);
 	else
-		snprintf(buf, sizeof buf, "\ty{WARNING:}%s\n", fmt);
+		snprintf(buf, sizeof buf, "\ty{WARNING:} %s\n", fmt);
 
+	nr_warnings++;
 	va_start(ap, fmt);
 	_vkeyd_log(buf, ap);
 	va_end(ap);
@@ -861,6 +864,7 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 	}
 }
 
+// Returns 0 on success, or else the number of warnings issued.
 static int do_parse(struct config *config, char *content, const struct srcmap *srcmap)
 {
 	size_t i;
@@ -868,10 +872,11 @@ static int do_parse(struct config *config, char *content, const struct srcmap *s
 
 	current_file = NULL;
 	current_line = 0;
+	nr_warnings = 0;
 
 	if (!(ini = ini_parse_string(content, NULL))) {
 		config_warn("Invalid config file (missing [ids] section)");
-		return -1;
+		return 1;
 	}
 
 	/* First pass: create all layers based on section headers.  */
@@ -927,11 +932,12 @@ static int do_parse(struct config *config, char *content, const struct srcmap *s
 		}
 	}
 
-	return 0;
+	return nr_warnings;
 }
 
 static void config_init(struct config *config)
 {
+	size_t nw;
 	size_t i;
 
 	memset(config, 0, sizeof *config);
@@ -965,7 +971,8 @@ static void config_init(struct config *config)
 	"[alt:A]\n"
 	"[altgr:G]\n";
 
-	do_parse(config, default_config, NULL);
+	nw = do_parse(config, default_config, NULL);
+	assert(nw == 0);
 
 	/* In ms */
 	config->chord_interkey_timeout = 50;
@@ -976,6 +983,12 @@ static void config_init(struct config *config)
 	config->macro_repeat_timeout = 50;
 }
 
+/*
+ * Returns:
+ * 	0 on success (no warning)
+ * 	n > 0 on partial success (where n is the number of issued warnings)
+ * 	< 0 on complete failure
+ */
 int config_parse(struct config *config, const char *path)
 {
 	char *content;

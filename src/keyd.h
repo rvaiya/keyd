@@ -87,6 +87,7 @@ struct ipc_message {
 	size_t sz;
 };
 
+int check(int argc, char *argv[]);
 int monitor(int argc, char *argv[]);
 int run_daemon(int argc, char *argv[]);
 

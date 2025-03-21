@@ -33,6 +33,10 @@ keyd(1)
 *do [-t <timeout>] [<exp>]*
 	Execute the supplied expression. See MACROS for the format of <exp>. If no arguments are given, the expression is read from STDIN. If supplied, <timeout> corresponds to the macro_sequence_timeout.
 
+*check [<config file>...]*
+	Validate the supplied config files. If no files are supplied, all files in the config directory are checked.
+	This exits with a non-zero return code if and only if any files fail validation.
+
 # OPTIONS
 
 *-v, --version*
