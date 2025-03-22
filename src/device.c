@@ -460,6 +460,8 @@ struct device_event *device_read_event(struct device *dev)
 
 			dev->_pending_rel_y = 0;
 			dev->_pending_rel_x = 0;
+		} else {
+			return NULL;
 		}
 		break;
 	case EV_ABS:
