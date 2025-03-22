@@ -579,10 +579,8 @@ struct device_event *device_read_event(struct device *dev)
 				case BTN_9:       ev.code = KEYD_F22; break;
 
 				default:
-					if (!(ev.code >= BTN_DIGI && ev.code <= BTN_TOOL_QUADTAP)) {
-						keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
-						return NULL;
-					}
+					keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
+					return NULL;
 			}
 		}
 
