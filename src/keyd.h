@@ -103,4 +103,6 @@ int ipc_connect();
 extern struct device device_table[MAX_DEVICES];
 extern size_t device_table_sz;
 
+void dbg_print_evdev_details(const char *path);
+
 #endif

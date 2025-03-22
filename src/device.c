@@ -51,7 +51,8 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 					1<<KEY_Y;
 
 	size_t i;
-	uint32_t mask[BTN_LEFT/32+1] = {0};
+	uint8_t keymask[(KEY_MAX+7)/8];
+
 	uint8_t capabilities = 0;
 	int has_media_keys = 0;
 	uint32_t media_keys[] = {
@@ -62,24 +63,24 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 		KEY_MICMUTE,
 	};
 
-	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
-		perror("ioctl: ev_key");
-		return 0;
-	}
-
-	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), relmask) < 0) {
-		perror("ioctl: ev_rel");
+	if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof keymask), keymask) < 0) {
+		perror("ioctl");
 		return 0;
 	}
 
 	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), absmask) < 0) {
-		perror("ioctl: ev_abs");
+		perror("ioctl");
+		return 0;
+	}
+
+	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), relmask) < 0) {
+		perror("ioctl");
 		return 0;
 	}
 
 	*num_keys = 0;
-	for (i = 0; i < sizeof(mask)/sizeof(mask[0]); i++)
-		*num_keys += __builtin_popcount(mask[i]);
+	for (i = 0; i < sizeof(keymask)/sizeof(keymask[0]); i++)
+		*num_keys += __builtin_popcount(keymask[i]);
 
 	if (*relmask || *absmask)
 		capabilities |= CAP_MOUSE;
@@ -98,13 +99,13 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	 * the wildcard id.
 	 */
 	for (i = 0; i < sizeof(media_keys) / sizeof(media_keys[0]); i++) {
-		if (mask[media_keys[i]/32] & (1 << (media_keys[i] % 32))) {
+		if ((keymask[media_keys[i]/8] >> (media_keys[i] % 8)) & 0x01) {
 			has_media_keys = 1;
 			break;
 		}
 	}
 
-	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_media_keys)
+	if (((keymask[0] & keyboard_mask) == keyboard_mask) || has_media_keys)
 		capabilities |= CAP_KEYBOARD;
 
 	return capabilities;
@@ -146,6 +147,8 @@ static int device_init(const char *path, struct device *dev)
 		return -1;
 	}
 
+	dbg_print_evdev_details(path);
+
 	capabilities = resolve_device_capabilities(fd, &num_keys, &relmask, &absmask);
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
@@ -171,7 +174,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->_maxy = absinfo.maximum;
 	}
 
-	dbg2("capabilities of %s (%s): %x", path, dev->name, capabilities);
+	dbg("capabilities of %s (%s): %x", path, dev->name, capabilities);
 
 	if (capabilities) {
 		struct input_id info;
