@@ -11,6 +11,7 @@
 #define CAP_MOUSE	0x1
 #define CAP_MOUSE_ABS	0x2
 #define CAP_KEYBOARD	0x4
+#define CAP_KEY		0x8 // Can emit keys, but is not necessarily a keyboard
 
 #define MAX_DEVICES	64
 

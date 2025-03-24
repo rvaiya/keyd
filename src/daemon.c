@@ -247,7 +247,7 @@ static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 	}
 
 	/* The wildcard should not match mice or trackpads. */
-	if (rank == 1 && ((flags == ID_MOUSE) || (flags & ID_TRACKPAD))) {
+	if (rank == 1 && !((flags & ID_KEYBOARD) && !(flags & ID_TRACKPAD))) {
 		return NULL;
 	} else {
 		if (flags & ID_TRACKPAD)
@@ -265,6 +265,8 @@ static void manage_device(struct device *dev)
 	if (dev->is_virtual)
 		return;
 
+	if (dev->capabilities & CAP_KEY)
+		flags |= ID_KEY;
 	if (dev->capabilities & CAP_KEYBOARD)
 		flags |= ID_KEYBOARD;
 	if (dev->capabilities & CAP_MOUSE_ABS)

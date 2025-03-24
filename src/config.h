@@ -24,6 +24,7 @@
 #define ID_MOUSE	2
 #define ID_KEYBOARD	4
 #define ID_TRACKPAD	8
+#define ID_KEY		16
 
 enum op {
 	OP_KEYSEQUENCE = 1,

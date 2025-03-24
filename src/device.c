@@ -105,6 +105,9 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 		}
 	}
 
+	if (*num_keys)
+		capabilities |= CAP_KEY;
+
 	if (((keymask[0] & keyboard_mask) == keyboard_mask) || has_media_keys)
 		capabilities |= CAP_KEYBOARD;
 
