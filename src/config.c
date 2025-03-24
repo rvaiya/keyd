@@ -812,7 +812,7 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
 		} else if (strstr(s, "k:") == s) {
 			assert(config->nr_ids < ARRAY_SIZE(config->ids));
-			config->ids[config->nr_ids].flags = ID_KEYBOARD;
+			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_KEY;
 
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
 		} else if (strstr(s, "-") == s) {
@@ -822,7 +822,7 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+1);
 		} else if (strlen(s) < sizeof(config->ids[config->nr_ids].id)-1) {
 			assert(config->nr_ids < ARRAY_SIZE(config->ids));
-			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
+			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_KEY | ID_MOUSE;
 
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s);
 		} else {
