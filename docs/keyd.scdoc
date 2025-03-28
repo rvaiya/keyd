@@ -499,6 +499,7 @@ functionality between configs.
 
 Include paths are relative and must be placed in one of the following
 directories:
+
 	- /etc/keyd/
 	- /usr/share/keyd/
 
@@ -646,7 +647,8 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	layer is toggled, it is deactivated and the supplied layer is toggled
 	instead. Otherwise, the active layer is deactivated and the supplied
 	layer remains active for the duration of the depression of the
-	activating key.
+	activating key. The behaviour of this action is undefined for
+	composite layers.
 
 ```
 	[control]
