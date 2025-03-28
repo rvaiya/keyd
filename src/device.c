@@ -41,26 +41,33 @@
  * corresponding device should be considered invalid by the caller.
  */
 
+static int has_key(uint8_t *keymask, uint8_t keymask_len, uint8_t key)
+{
+	return (keymask[key / 8] >> (key % 8)) & 0x01;
+}
+
 static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *relmask, uint8_t *absmask)
 {
-	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
-					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
-					1<<KEY_7 | 1<<KEY_8 | 1<<KEY_9 |
-					1<<KEY_0 | 1<<KEY_Q | 1<<KEY_W |
-					1<<KEY_E | 1<<KEY_R | 1<<KEY_T |
-					1<<KEY_Y;
-
+	size_t num_media_keys = 0;
+	size_t num_keyboard_keys = 0;
 	size_t i;
 	uint8_t keymask[(KEY_MAX+7)/8];
 
 	uint8_t capabilities = 0;
 	int has_media_keys = 0;
-	uint32_t media_keys[] = {
+
+	const uint32_t media_keys[] = {
 		KEY_BRIGHTNESSUP,
 		KEY_VOLUMEUP,
 		KEY_TOUCHPAD_TOGGLE,
 		KEY_TOUCHPAD_OFF,
 		KEY_MICMUTE,
+	};
+	const uint32_t keyboard_keys[] = {
+		KEY_1, KEY_2, KEY_3, KEY_4,
+		KEY_5, KEY_6, KEY_7, KEY_8,
+		KEY_9, KEY_0, KEY_Q, KEY_W,
+		KEY_E, KEY_R, KEY_T, KEY_Y,
 	};
 
 	if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof keymask), keymask) < 0) {
@@ -79,7 +86,7 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	}
 
 	*num_keys = 0;
-	for (i = 0; i < sizeof(keymask)/sizeof(keymask[0]); i++)
+	for (i = 0; i < ARRAY_SIZE(keymask); i++)
 		*num_keys += __builtin_popcount(keymask[i]);
 
 	if (*relmask || *absmask)
@@ -98,17 +105,20 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	 * false positives which need to be explcitly excluded by the user if they use
 	 * the wildcard id.
 	 */
-	for (i = 0; i < sizeof(media_keys) / sizeof(media_keys[0]); i++) {
-		if ((keymask[media_keys[i]/8] >> (media_keys[i] % 8)) & 0x01) {
-			has_media_keys = 1;
-			break;
-		}
+	for (i = 0; i < ARRAY_SIZE(media_keys); i++) {
+		if (has_key(keymask, sizeof keymask, media_keys[i]))
+			num_media_keys++;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(keyboard_keys); i++) {
+		if (has_key(keymask, sizeof keymask, keyboard_keys[i]))
+			num_keyboard_keys++;
 	}
 
 	if (*num_keys)
 		capabilities |= CAP_KEY;
 
-	if (((keymask[0] & keyboard_mask) == keyboard_mask) || has_media_keys)
+	if (num_keyboard_keys == ARRAY_SIZE(keyboard_keys) || num_media_keys != 0)
 		capabilities |= CAP_KEYBOARD;
 
 	return capabilities;
