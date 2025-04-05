@@ -112,26 +112,34 @@ static struct {
 	{ "swap2", 	"swapm",	OP_SWAPM,			{ ARG_LAYER, ARG_MACRO } },
 };
 
+static int exists_and_is_relative(const char *parent_dir, const char *path)
+{
+	char p1[PATH_MAX];
+	char p2[PATH_MAX];
+
+	if (!realpath(parent_dir, p1))
+		return 0;
+
+	if (!realpath(path, p2))
+		return 0;
+
+	return !strncmp(p2, p1, strlen(p1));
+}
+
 static int resolve_include_path(const char *config_path, const char *include_path, char *resolved_path)
 {
-	char config_dir[PATH_MAX];
-	char tmp[PATH_MAX+1];
+	char config_dir[PATH_MAX-1];
 
-	snprintf(tmp, sizeof tmp, "%s", config_path);
-
-	if (!realpath(dirname(tmp), config_dir))
+	snprintf(config_dir, sizeof config_dir, "%s", config_path);
+	if (!dirname(config_dir))
 		return -1;
+	snprintf(resolved_path, PATH_MAX, "%s/%s", config_dir, include_path);
 
-	snprintf(tmp, sizeof tmp, "%s/%s", config_dir, include_path);
-	if (!realpath(tmp, resolved_path))
-		return -1;
+	if (exists_and_is_relative(config_dir, resolved_path))
+		return 0;
 
-	if (strncmp(resolved_path, config_dir, strlen(config_dir))) {
-		config_warn("%s must be inside the config directory\n", include_path);
-		return -1;
-	}
-
-	return 0;
+	snprintf(resolved_path, PATH_MAX, DATA_DIR"/%s", include_path);
+	return !exists_and_is_relative(DATA_DIR, resolved_path);
 }
 
 static char *read_config_file(const char *path, struct srcmap *srcmap)
