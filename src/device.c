@@ -496,7 +496,7 @@ struct device_event *device_read_event(struct device *dev)
 			break;
 		default:
 			dbg("Unrecognized EV_ABS code: %x", ev.code);
-			break;
+			return NULL;
 		}
 
 		break;
