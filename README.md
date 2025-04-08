@@ -189,7 +189,7 @@ bug](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1060023)).
 
 ### Gentoo
 
-[GURU](https://gitweb.gentoo.org/repo/proj/guru.git/tree/app-misc/keyd) package maintained by [jack@pngu.org](mailto:jack@pngu.org)
+[GURU](https://gitweb.gentoo.org/repo/proj/guru.git/tree/app-misc/keyd) package maintained by [jack@pngu.org](mailto:jack@pngu.org).
 
 ### openSUSE
 [opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
@@ -204,6 +204,12 @@ archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
 
 If you wish to help maintain this PPA, please contact
 [@rhansen](https://github.com/rhansen).
+
+### Void Linux
+
+[xbps](https://github.com/void-linux/void-packages/tree/master/srcpkgs/keyd) package maintained by [@Barbaross](https://gitlab.com/Barbaross).
+
+Easy install with `sudo xbps-install -Su keyd`.
 
 # Example 1
 
