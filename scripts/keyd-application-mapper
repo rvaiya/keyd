@@ -140,7 +140,7 @@ class KDE():
 
         bus = dbus.SessionBus()
 
-        kwin = bus.get_object('org.kde.KWin', '/Scripting')
+        kwin = KDE.get_kwin(bus)
 
         kwin.unloadScript(f.name)
         num = kwin.loadScript(f.name)
@@ -152,6 +152,20 @@ class KDE():
 
         script = bus.get_object('org.kde.KWin',  script_object)
         script.run()
+
+    @staticmethod
+    def get_kwin(bus):
+        import dbus
+        import time
+
+        last_err = None
+        for _ in range(5):
+            try:
+                return bus.get_object('org.kde.KWin', '/Scripting')
+            except dbus.exceptions.DBusException as e:
+                time.sleep(1)
+                last_err = e
+        if last_err is not None: raise last_err
 
     def run(self):
         import dbus.service
