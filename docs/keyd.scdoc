@@ -212,10 +212,10 @@ Where _<modifier_set>_ has the form:
 and each modifier is one of:
 
 	*C* - Control++
-*M* - Meta/Super++
-*A* - Alt++
-*S* - Shift++
-*G* - AltGr
+	*M* - Meta/Super++
+	*A* - Alt++
+	*S* - Shift++
+	*G* - AltGr
 
 Finally, each layer heading is followed by a set of bindings which take the form:
 
@@ -732,7 +732,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		  and there are no intervening key taps.
 
 	This reduces the visual latency by immediately resolving the key as a letter when
-	typed midword, but also facilitates its use as a layer trigger if it is held for a long 
+	typed midword, but also facilitates its use as a layer trigger if it is held for a long
 	enough period with no intervening symbols.
 
 	Since this is a common usecase, a macro called *lettermod* (defined below) has been
@@ -744,8 +744,8 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
-	If no key events occur within _<timeout> ms_, execute <action1>, otherwise
-	execute <action1>.
+	If no key events occur within _<timeout> ms_, execute <action 2>, otherwise
+	execute <action 1>.
 
 	E.g.
 
@@ -770,6 +770,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	macro2(400, 50, macro(Hello space World))
 	macro2(120, 80, left)
 ```
+
 *command(<shell command>)*
 	Execute the given shell command.
 
