@@ -73,6 +73,8 @@ install:
 	install -Dm644 data/keyd.compose -t $(DESTDIR)$(PREFIX)/share/keyd/
 	install -Dm644 data/sysusers.d $(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 	install -Dm755 scripts/dump-xkb-config scripts/generate_xcompose -t $(DESTDIR)$(PREFIX)/share/keyd/
+	install -Dm644 LICENSE -t $(DESTDIR)$(PREFIX)/share/licenses/keyd
+	install -Dm644 README.md -t $(DESTDIR)$(PREFIX)/share/doc/keyd
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
@@ -84,6 +86,8 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		$(DESTDIR)$(PREFIX)/share/licenses/keyd \
+		$(DESTDIR)$(PREFIX)/share/doc/keyd \
 		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
 	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
