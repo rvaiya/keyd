@@ -62,22 +62,15 @@ install:
 	fi
 
 	mkdir -p $(DESTDIR)$(CONFIG_DIR)
-	mkdir -p $(DESTDIR)$(PREFIX)/bin/
-	mkdir -p $(DESTDIR)$(PREFIX)/share/keyd/
-	mkdir -p $(DESTDIR)$(PREFIX)/share/keyd/layouts/
-	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1/
-	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/
-	mkdir -p $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
 
 	-groupadd keyd
-	install -m755 bin/* $(DESTDIR)$(PREFIX)/bin/
-	install -m644 docs/*.md $(DESTDIR)$(PREFIX)/share/doc/keyd/
-	install -m644 examples/* $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
-	install -m644 layouts/* $(DESTDIR)$(PREFIX)/share/keyd/layouts
+	install -Dm755 bin/* -t $(DESTDIR)$(PREFIX)/bin/
+	install -Dm644 docs/*.md -t $(DESTDIR)$(PREFIX)/share/doc/keyd/
+	install -Dm644 examples/* -t $(DESTDIR)$(PREFIX)/share/doc/keyd/examples/
+	install -Dm644 layouts/* -t $(DESTDIR)$(PREFIX)/share/keyd/layouts
 	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
-	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
-	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
-
+	install -Dm644 data/*.1.gz -t $(DESTDIR)$(PREFIX)/share/man/man1/
+	install -Dm644 data/keyd.compose -t $(DESTDIR)$(PREFIX)/share/keyd/
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
