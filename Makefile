@@ -71,6 +71,7 @@ install:
 	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
 	install -Dm644 data/*.1.gz -t $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -Dm644 data/keyd.compose -t $(DESTDIR)$(PREFIX)/share/keyd/
+	install -Dm644 data/sysusers.d $(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
@@ -81,7 +82,8 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/share/keyd/ \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
 	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
