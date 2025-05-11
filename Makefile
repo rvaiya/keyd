@@ -72,6 +72,7 @@ install:
 	install -Dm644 data/*.1.gz -t $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -Dm644 data/keyd.compose -t $(DESTDIR)$(PREFIX)/share/keyd/
 	install -Dm644 data/sysusers.d $(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
+	install -Dm755 scripts/dump-xkb-config scripts/generate_xcompose -t $(DESTDIR)$(PREFIX)/share/keyd/
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
