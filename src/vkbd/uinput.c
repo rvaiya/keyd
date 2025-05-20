@@ -210,8 +210,8 @@ static void write_key_event(const struct vkbd *vkbd, uint8_t code, int state)
 
 	ev.value = state;
 
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
+	ev.input_event_sec = 0;
+	ev.input_event_usec = 0;
 
 	xwrite(fd, &ev, sizeof(ev));
 
@@ -245,8 +245,8 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 		ev.code = REL_X;
 		ev.value = x;
 
-		ev.time.tv_sec = 0;
-		ev.time.tv_usec = 0;
+		ev.input_event_sec = 0;
+		ev.input_event_usec = 0;
 
 		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
@@ -256,8 +256,8 @@ void vkbd_mouse_move(const struct vkbd *vkbd, int x, int y)
 		ev.code = REL_Y;
 		ev.value = y;
 
-		ev.time.tv_sec = 0;
-		ev.time.tv_usec = 0;
+		ev.input_event_sec = 0;
+		ev.input_event_usec = 0;
 
 		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
@@ -277,8 +277,8 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 	ev.code = REL_WHEEL;
 	ev.value = y;
 
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
+	ev.input_event_sec = 0;
+	ev.input_event_usec = 0;
 
 	xwrite(vkbd->pfd, &ev, sizeof(ev));
 
@@ -286,8 +286,8 @@ void vkbd_mouse_scroll(const struct vkbd *vkbd, int x, int y)
 	ev.code = REL_HWHEEL;
 	ev.value = x;
 
-	ev.time.tv_sec = 0;
-	ev.time.tv_usec = 0;
+	ev.input_event_sec = 0;
+	ev.input_event_usec = 0;
 
 	xwrite(vkbd->pfd, &ev, sizeof(ev));
 
@@ -307,8 +307,8 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 		ev.code = ABS_X;
 		ev.value = x;
 
-		ev.time.tv_sec = 0;
-		ev.time.tv_usec = 0;
+		ev.input_event_sec = 0;
+		ev.input_event_usec = 0;
 
 		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
@@ -318,8 +318,8 @@ void vkbd_mouse_move_abs(const struct vkbd *vkbd, int x, int y)
 		ev.code = ABS_Y;
 		ev.value = y;
 
-		ev.time.tv_sec = 0;
-		ev.time.tv_usec = 0;
+		ev.input_event_sec = 0;
+		ev.input_event_usec = 0;
 
 		xwrite(vkbd->pfd, &ev, sizeof(ev));
 	}
