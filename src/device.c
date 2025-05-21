@@ -555,6 +555,14 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_TOUCHPAD_ON:          ev.code = KEYD_F18; break;
 				case KEY_VENDOR:               ev.code = KEYD_F19; break;
 
+
+				/* Menu keys found below LCD screens on some devices (i.e additional function keys) */
+				case KEY_KBD_LCD_MENU1:	       ev.code = KEYD_F20; break;
+				case KEY_KBD_LCD_MENU2:	       ev.code = KEYD_F21; break;
+				case KEY_KBD_LCD_MENU3:	       ev.code = KEYD_F22; break;
+				case KEY_KBD_LCD_MENU4:	       ev.code = KEYD_F23; break;
+				case KEY_KBD_LCD_MENU5:	       ev.code = KEYD_F24; break;
+
 				/* Misc keys found on various laptops */
 				case KEY_EDITOR:         ev.code = KEYD_F13; break;
 				case KEY_SPREADSHEET:    ev.code = KEYD_F14; break;
