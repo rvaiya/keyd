@@ -578,6 +578,9 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_ZOOM:           ev.code = KEYD_ZOOM; break;
 				case KEY_VOICECOMMAND:   ev.code = KEYD_VOICECOMMAND; break;
 
+				/* Copilot key on newer kernels */
+				case KEY_ACCESSIBILITY: ev.code = KEYD_F23; break;
+
 				/* Mouse buttons */
 				case BTN_LEFT:    ev.code = KEYD_LEFT_MOUSE; break;
 				case BTN_MIDDLE:  ev.code = KEYD_MIDDLE_MOUSE; break;
