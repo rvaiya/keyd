@@ -158,6 +158,8 @@ class KDE():
         import dbus
         import time
 
+        # Give KDE time to initialize the dbus service
+        # (allows use in autostart script)
         last_err = None
         for _ in range(5):
             try:
@@ -165,7 +167,9 @@ class KDE():
             except dbus.exceptions.DBusException as e:
                 time.sleep(1)
                 last_err = e
-        if last_err is not None: raise last_err
+
+        if last_err is not None:
+            raise last_err
 
     def run(self):
         import dbus.service
