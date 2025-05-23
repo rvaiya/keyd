@@ -27,6 +27,8 @@ CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
+KEYD_BIN = os.environ.get('KEYD_BIN', 'keyd')
+
 debug_flag = os.getenv('KEYD_DEBUG')
 
 def dbg(s):
@@ -575,7 +577,7 @@ def on_window_change(cls, title):
         print(f'Active window: {cls}|{title}')
 
     bindings = lookup_bindings(cls, title)
-    subprocess.run(['keyd', 'bind', 'reset', *bindings], stdout=subprocess.DEVNULL)
+    subprocess.run([KEYD_BIN, 'bind', 'reset', *bindings], stdout=subprocess.DEVNULL)
 
 
 mon = get_monitor(on_window_change)
