@@ -332,6 +332,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--verbose', default=False, action='store_true')
 parser.add_argument('-e', '--exit-on-fail', default=False, action='store_true')
 parser.add_argument('files', nargs=argparse.REMAINDER)
+parser.add_argument('--flaky-attempts', default=1, type=int, metavar='INT',
+                    help='number of times a failing test case will be tried before it is declared a failure (default: %(default)s)')
 args = parser.parse_args()
 
 
@@ -353,7 +355,12 @@ for file in args.files:
 
     tests.append((name, input, output))
 
-    if not run_test(name, input, output, args.verbose):
+    for attempt in range(1, args.flaky_attempts + 1):
+        if attempt > 1:
+            print(f'WARNING: Retrying failed test {file} (attempt {attempt} out of {args.flaky_attempts})...')
+        if run_test(name, input, output, args.verbose):
+            break
+    else:
         if args.exit_on_fail:
             exit(-1)
 
