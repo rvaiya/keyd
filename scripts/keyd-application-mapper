@@ -505,7 +505,9 @@ def get_monitor(on_window_change):
             m = mon(on_window_change)
             print(f'{name} detected')
             return m
-        except:
+        except Exception as e:
+            dbg(f'Could not init {name}, try next app environment.')
+            dbg(e)
             pass
 
     print('Could not detect app environment :(.')
