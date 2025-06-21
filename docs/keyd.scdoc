@@ -694,6 +694,10 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *clearm(<macro>)*
 	Identical to *clear*, but executes the supplied macro before clearing layers.
 
+*togglekey(<key>)*
+	Toggle whether the key is pressed. Effectively holds the key down until
+	togglekey is performed again.
+
 ## Key overloading
 
 *overload(<layer>, <action>)*
