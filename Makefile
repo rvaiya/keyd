@@ -5,7 +5,14 @@ VKBD=uinput
 PREFIX?=/usr/local
 
 CONFIG_DIR?=/etc/keyd
+
+ifneq (,$(wildcard /run/systemd/system))
+SOCKET_PATH=/run/keyd.socket
+else ifneq (,$(FORCE_SYSTEMD))
+SOCKET_PATH=/run/keyd.socket
+else
 SOCKET_PATH=/var/run/keyd.socket
+endif
 
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
@@ -52,6 +59,7 @@ install:
 		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
+		install -Dm644 keyd.socket $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.socket; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi

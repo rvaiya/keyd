@@ -1,0 +1,10 @@
+[Unit]
+Description=key remapping daemon socket
+
+[Socket]
+ListenStream=%t/keyd.socket
+SocketMode=0660
+SocketGroup=keyd
+
+[Install]
+WantedBy=sockets.target
