@@ -545,6 +545,7 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_NOTIFICATION_CENTER:  ev.code = KEYD_F21; break;
 				case KEY_PICKUP_PHONE:         ev.code = KEYD_F22; break;
 				case KEY_HANGUP_PHONE:         ev.code = KEYD_F23; break;
+				case KEY_LINK_PHONE:           ev.code = KEYD_F23; break;
 
 				/* Misc (think/idea)pad fn keys */
 				case KEY_FN_RIGHT_SHIFT:       ev.code = KEYD_F13; break;
