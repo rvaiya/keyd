@@ -1,0 +1,23 @@
+x down
+x up
+r down
+r up
+control down
+x down
+x up
+control up
+r down
+r up
+
+x down
+x up
+x down
+x up
+control down
+x down
+x up
+control up
+control down
+x down
+x up
+control up

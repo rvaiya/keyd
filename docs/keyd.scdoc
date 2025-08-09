@@ -694,6 +694,9 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *clearm(<macro>)*
 	Identical to *clear*, but executes the supplied macro before clearing layers.
 
+*repeat()*
+	Repeat the last key or macro sequence.
+
 ## Key overloading
 
 *overload(<layer>, <action>)*

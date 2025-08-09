@@ -131,7 +131,8 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 	}
 }
 
-static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mods)
+// Returns the resultant mod mask.
+static uint8_t update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mods)
 {
 	size_t i;
 	struct layer *excluded_layer = excluded_layer_idx == -1 ?
@@ -160,6 +161,8 @@ static void update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mo
 	}
 
 	set_mods(kbd, mods);
+
+	return mods;
 }
 
 static long execute_macro(struct keyboard *kbd, int dl, const struct macro *macro)
@@ -518,8 +521,9 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_KEYSEQUENCE:
 		new_code = d->args[0].code;
 		mods = d->args[1].mods;
-
 		if (pressed) {
+			uint8_t active_mods;
+
 			/*
 			 * Permit variations of the same key
 			 * to be actuated next to each other
@@ -528,7 +532,12 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->keystate[new_code])
 				send_key(kbd, new_code, 0);
 
-			update_mods(kbd, dl, mods);
+			active_mods = update_mods(kbd, dl, mods);
+
+			if (!kbd->repeat_in_progress) {
+				kbd->last_repeatable_action = *d;
+				kbd->last_repeatable_action.args[1].mods = active_mods;
+			}
 
 			send_key(kbd, new_code, 1);
 			clear_oneshot(kbd);
@@ -630,6 +639,15 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			execute_macro(kbd, dl, macro);
 		}
 		break;
+	case OP_REPEAT:
+		if(pressed) {
+			process_descriptor(kbd, code, &kbd->last_repeatable_action, dl, 1, time);
+			kbd->repeat_in_progress = 1;
+		} else {
+			process_descriptor(kbd, code, &kbd->last_repeatable_action, dl, 0, time);
+			kbd->repeat_in_progress = 0;
+		}
+		break;
 	case OP_CLEAR:
 		if(pressed)
 			clear(kbd);
@@ -713,6 +731,8 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			schedule_timeout(kbd, kbd->macro_timeout);
 		}
 
+		if (!kbd->repeat_in_progress)
+			kbd->last_repeatable_action = *d;
 		break;
 	case OP_TOGGLEM:
 	case OP_TOGGLE:

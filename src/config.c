@@ -99,6 +99,8 @@ static struct {
 	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
 
+	{ "repeat", 	NULL,	OP_REPEAT,	{} },
+
 	/* Experimental */
 	{ "scrollon", 	NULL,	OP_SCROLL_TOGGLE_ON,		{ARG_SENSITIVITY} },
 	{ "scrolloff", 	NULL,	OP_SCROLL_TOGGLE_OFF,		{} },

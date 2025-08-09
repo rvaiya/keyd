@@ -105,7 +105,7 @@ test:
 test-io:
 	-mkdir bin
 	$(CC) \
-	-DDATA_DIR= \
+	-DDATA_DIR=\"\" \
 	-o bin/test-io \
 		t/test-io.c \
 		src/keyboard.c \
