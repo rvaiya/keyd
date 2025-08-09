@@ -513,6 +513,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		struct descriptor *action;
 		uint8_t mods;
 		uint8_t new_code;
+		struct pending_timeout *pt;
 
 	case OP_KEYSEQUENCE:
 		new_code = d->args[0].code;
@@ -731,7 +732,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_TIMEOUT:
-		struct pending_timeout *pt = &kbd->pending_timeout;
+		pt = &kbd->pending_timeout;
 
 		if (pressed) {
 			pt->code = code;
