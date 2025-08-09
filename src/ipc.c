@@ -6,6 +6,8 @@
 
 #include "keyd.h"
 
+#include "sd-daemon.h"
+
 /* TODO (maybe): settle on an API and publish the protocol. */
 
 static void chgid()
@@ -46,6 +48,15 @@ int ipc_connect()
 
 int ipc_create_server()
 {
+	int n;
+	n = sd_listen_fds(0);
+	if (n > 1) {
+		fprintf(stderr, "Too many file descriptors received.\n");
+		exit(1);
+	} else if (n == 1) {
+		return SD_LISTEN_FDS_START + 0;
+	}
+
 	char lockpath[PATH_MAX];
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	int lfd;
