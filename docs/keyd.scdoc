@@ -828,13 +828,6 @@ Examples:
 
 By default expressions apply to the most recently active keyboard.
 
-# CAVEATS
-
-Due to X11's input device hot-plug behavior, settings applied using e.g.
-_setxkbmap_, _xset_ etc. are reset when the keyd daemon is (re)started.
-See _https://github.com/rvaiya/keyd/issues/183_ for details and suggested
-solutions.
-
 # EXAMPLES
 
 ## Example 1
@@ -929,8 +922,8 @@ _will thus produce A-tab instead of M-\\_.
 
 ```
 	# Uses the compose key functionality of the display server to generate
-	# international glyphs.  # For this to work 'setxkbmap -option
-	# compose:menu' must be run after keyd has started (see CAVEATS section).
+	# international glyphs.  # For this to work 'setxkbmap -option  compose:menu'
+	# must be run after keyd has started (see NOTES).
 
 	# A list of sequences can be found in /usr/share/X11/locale/en_US.UTF-8/Compose
 	# on most systems.
@@ -987,6 +980,12 @@ Disables the esc and end keys.
 	esc = noop
 	end = noop
 ```
+
+# NOTES
+
+Since keyd creates a virtual input device, settings applied using higher level
+input tools like _setxkbmap_, _xset_ may be lost when the daemon is
+(re)started. See _https://github.com/rvaiya/keyd/issues/183_ for details.
 
 # ENVIRONMENT VARIABLES
 
