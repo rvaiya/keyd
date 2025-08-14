@@ -157,7 +157,7 @@ See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
 
 ## Packages
 
-Third party packages for the some distributions also exist. If you wish to add
+Third-party packages exist for some distributions. If you wish to add
 yours to the list please file a PR. These are kindly maintained by community
 members, no personal responsibility is taken for them.
 
