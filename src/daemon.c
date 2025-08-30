@@ -609,6 +609,62 @@ static int event_handler(struct event *ev)
 	return timeout;
 }
 
+#define PLSRETRY " and try again\n"
+#define LOWMEMRISK ", creating a risk of unresponsiveness in conditions of memory starvation"
+
+static void attain_perseverance(void) {
+	errno = 0;
+	int new_nice = nice(-20);
+	if (errno || new_nice != -20) {
+		if (errno) perror("nice");
+		die("keyd has failed to reduce its nice value, creating a risk of "
+		    "unresponsiveness under high CPU load; please grant keyd the privileges "
+		    "necessary to increase its scheduling priority" PLSRETRY);
+	}
+
+	#ifdef _POSIX_PRIORITY_SCHEDULING
+		#define NICEONLY ", proceeding with only a reduced nice value; this may harm responsiveness\n"
+		int schedpol = sched_getscheduler(0);
+		#ifdef __linux__
+			schedpol &= ~SCHED_RESET_ON_FORK;
+		#endif
+		if (schedpol != SCHED_RR && schedpol != SCHED_FIFO) {
+			struct sched_param sp;
+			errno = 0;
+			for (sp.sched_priority = 25; sp.sched_priority; sp.sched_priority--) {
+				if (sched_setscheduler(0, SCHED_RR, &sp) != -1) break;
+			}
+			if (errno != 0) {
+				if (errno == EPERM) {
+					keyd_log("Permission denied while acquiring real-time scheduling" NICEONLY);
+				} else if (errno == EINVAL) {
+					keyd_log("Real-time scheduling is unsupported" NICEONLY);
+				} else {
+					keyd_log("Failed to enable real-time scheduling" NICEONLY);
+				}
+			}
+		}
+	#endif
+
+	struct rlimit lim = { RLIM_INFINITY, RLIM_INFINITY };
+	if (getrlimit(RLIMIT_MEMLOCK, &lim) == -1) perror("getrlimit(RLIMIT_MEMLOCK)");
+	lim.rlim_cur = lim.rlim_max;
+	if (setrlimit(RLIMIT_MEMLOCK, &lim) == -1) perror("setrlimit(RLIMIT_MEMLOCK)");
+
+	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+		int mla_errno = errno;
+		perror("mlockall");
+		if (mla_errno == EPERM) die(
+			"keyd was denied permission to lock its memory into being resident"
+			LOWMEMRISK "; please grant keyd the privileges necessary to lock "
+			"memory" PLSRETRY);
+		else die(
+			"keyd has failed to lock its memory into being resident" LOWMEMRISK
+			"; please ensure keyd is not being encumbered by resource limits"
+			PLSRETRY);
+	}
+}
+
 int run_daemon(int argc, char *argv[])
 {
 	ipcfd = ipc_create_server(SOCKET_PATH);
@@ -620,17 +676,13 @@ int run_daemon(int argc, char *argv[])
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
-	if (nice(-20) == -1) {
-		perror("nice");
-		exit(-1);
-	}
-
 	evloop_add_fd(ipcfd);
 
 	reload();
 
 	atexit(cleanup);
 
+	attain_perseverance();
 	keyd_log("Starting keyd "VERSION"\n");
 	evloop(event_handler);
 

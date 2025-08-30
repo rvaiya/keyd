@@ -25,11 +25,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/resource.h>
+#include <sys/mman.h>
 #include <termios.h>
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	#ifdef __linux__
+		#include <linux/sched.h>
+	#else
+		#include <sched.h>
+	#endif
+#endif
 
 #ifdef __FreeBSD__
 	#include <dev/evdev/input.h>
