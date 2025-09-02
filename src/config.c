@@ -86,6 +86,7 @@ static struct {
 	{ "togglem", 	NULL,	OP_TOGGLEM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "layerm", 	NULL,	OP_LAYERM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "oneshotm", 	NULL,	OP_ONESHOTM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "oneshotk", 	NULL,	OP_ONESHOTK,	{ ARG_LAYER, ARG_DESCRIPTOR } },
 
 	{ "layer", 	NULL,	OP_LAYER,	{ ARG_LAYER } },
 
