@@ -686,46 +686,13 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		idx = d->args[0].idx;
 		action = &kbd->config.descriptors[d->args[1].idx];
 
-		new_code = action->args[0].code;
-		mods = action->args[1].mods;
-
-		if (pressed) {
-			/*
-			 * Permit variations of the same key
-			 * to be actuated next to each other
-			 * E.G [/{
-			 */
-			if (kbd->keystate[new_code])
-				send_key(kbd, new_code, 0);
-
-			update_mods(kbd, dl, mods);
-
-			send_key(kbd, new_code, 1);
-			clear_oneshot(kbd);
-		} else {
-			send_key(kbd, new_code, 0);
-			update_mods(kbd, -1, 0);
-		}
-
-		if (!mods || mods == MOD_SHIFT)
-			kbd->last_simple_key_time = time;
+        process_descriptor(kbd, code, action, dl, pressed, time);
 
 		if (pressed) {
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, dl, 0);
-			kbd->oneshot_latch = 1;
-		} else {
-			if (kbd->oneshot_latch) {
-				kbd->layer_state[idx].oneshot_depth++;
-				if (kbd->config.oneshot_timeout) {
-					kbd->oneshot_timeout = time + kbd->config.oneshot_timeout;
-					schedule_timeout(kbd, kbd->oneshot_timeout);
-				}
-			} else {
-				deactivate_layer(kbd, idx);
-				update_mods(kbd, -1, 0);
-			}
-		}
+            kbd->layer_state[idx].oneshot_depth++;
+        }
 
 		break;
 	case OP_ONESHOTM:
