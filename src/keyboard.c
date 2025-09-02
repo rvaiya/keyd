@@ -690,8 +690,6 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		mods = action->args[1].mods;
 
 		if (pressed) {
-			uint8_t active_mods;
-
 			/*
 			 * Permit variations of the same key
 			 * to be actuated next to each other
@@ -700,12 +698,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			if (kbd->keystate[new_code])
 				send_key(kbd, new_code, 0);
 
-			active_mods = update_mods(kbd, dl, mods);
-
-			if (!kbd->repeat_in_progress) {
-				kbd->last_repeatable_action = *d;
-				kbd->last_repeatable_action.args[1].mods = active_mods;
-			}
+			update_mods(kbd, dl, mods);
 
 			send_key(kbd, new_code, 1);
 			clear_oneshot(kbd);
@@ -720,9 +713,18 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		if (pressed) {
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, dl, 0);
+			kbd->oneshot_latch = 1;
 		} else {
-            deactivate_layer(kbd, idx);
-            update_mods(kbd, -1, 0);
+			if (kbd->oneshot_latch) {
+				kbd->layer_state[idx].oneshot_depth++;
+				if (kbd->config.oneshot_timeout) {
+					kbd->oneshot_timeout = time + kbd->config.oneshot_timeout;
+					schedule_timeout(kbd, kbd->oneshot_timeout);
+				}
+			} else {
+				deactivate_layer(kbd, idx);
+				update_mods(kbd, -1, 0);
+			}
 		}
 
 		break;
