@@ -48,10 +48,12 @@ man:
 	done
 install:
 
-	@if [ -e /run/systemd/system ]; then \
+	@if [ -e /run/systemd/system -o "$(FORCE_SYSTEMD)" ]; then \
 		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
+		mkdir -p $(DESTDIR)$(PREFIX)/lib/sysusers.d/; \
+		install -m644 data/sysusers.d $(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
@@ -78,6 +80,7 @@ install:
 	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
 	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
+	install -m644 README.md $(DESTDIR)$(PREFIX)/share/doc/keyd
 
 uninstall:
 	-groupdel keyd
@@ -89,7 +92,9 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/share/keyd/ \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		$(DESTDIR)$(PREFIX)/share/doc/keyd \
+		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
 	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
@@ -100,7 +105,7 @@ test:
 test-io:
 	-mkdir bin
 	$(CC) \
-	-DDATA_DIR= \
+	-DDATA_DIR=\"\" \
 	-o bin/test-io \
 		t/test-io.c \
 		src/keyboard.c \

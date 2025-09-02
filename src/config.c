@@ -100,6 +100,8 @@ static struct {
 	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
 
+	{ "repeat", 	NULL,	OP_REPEAT,	{} },
+
 	/* Experimental */
 	{ "scrollon", 	NULL,	OP_SCROLL_TOGGLE_ON,		{ARG_SENSITIVITY} },
 	{ "scrolloff", 	NULL,	OP_SCROLL_TOGGLE_OFF,		{} },
@@ -129,12 +131,20 @@ static int exists_and_is_relative(const char *parent_dir, const char *path)
 
 static int resolve_include_path(const char *config_path, const char *include_path, char *resolved_path)
 {
+	size_t len;
+	size_t ret;
 	char config_dir[PATH_MAX-1];
 
 	snprintf(config_dir, sizeof config_dir, "%s", config_path);
 	if (!dirname(config_dir))
 		return -1;
-	snprintf(resolved_path, PATH_MAX, "%s/%s", config_dir, include_path);
+
+	assert(strlen(config_dir) + strlen(include_path) + 2 < PATH_MAX);
+
+	len = strlen(config_dir);
+	strcpy(resolved_path, config_dir);
+	resolved_path[len] = '/';
+	strcpy(resolved_path + len + 1, include_path);
 
 	if (exists_and_is_relative(config_dir, resolved_path))
 		return 0;
@@ -143,15 +153,49 @@ static int resolve_include_path(const char *config_path, const char *include_pat
 	return !exists_and_is_relative(DATA_DIR, resolved_path);
 }
 
+static void append_line(char *buf, size_t buf_sz, size_t *off, const char *line)
+{
+	size_t len = strlen(line);
+	assert(*off + len + 2 < buf_sz);
+
+	memcpy(buf + *off, line, len);
+	buf[*off + len] = '\n';
+	buf[*off + len + 1] = 0;
+
+	*off += len + 1;
+}
+
+static const char *read_line(FILE *fh)
+{
+	static char line[4096];
+	size_t n = 0;
+	int c;
+
+	while (1) {
+		c = fgetc(fh);
+		if (c == -1 || c == '\n')
+			break;
+
+		assert(n < (sizeof(line)-1));
+		line[n++] = c;
+	}
+
+	if (n == 0 && c == -1)
+		return NULL;
+
+	line[n] = 0;
+	return line;
+}
+
 static char *read_config_file(const char *path, struct srcmap *srcmap)
 {
 	FILE *fh;
-	char *line;
+	const char *line;
 
 	const char include_prefix[] = "include ";
 	const size_t include_prefix_len = sizeof(include_prefix) - 1;
 
-	size_t output_sz = 0;
+	size_t off = 0;
 	static char output[MAX_FILE_SIZE];
 
 	size_t config_line_num = 0;
@@ -163,10 +207,7 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 	srcmap->num_paths = 1;
 	snprintf(srcmap->paths[0], sizeof srcmap->paths[0], "%s", path);
 
-	while ((line = fgets(output + output_sz, sizeof(output) - output_sz, fh))) {
-		size_t len = strlen(line);
-		assert(line[len-1] == '\n');
-
+	while ((line = read_line(fh))) {
 		current_line = config_line_num;
 		current_file = path;
 
@@ -175,7 +216,6 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 
 			assert(srcmap->num_paths < ARRAY_SIZE(srcmap->paths));
 
-			line[--len] = 0;
 			include_path = srcmap->paths[srcmap->num_paths];
 			if (!resolve_include_path(path, line + include_prefix_len, include_path)) {
 				FILE *fh;
@@ -187,11 +227,8 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 				}
 
 				srcmap->num_paths++;
-				while ((line = fgets(output + output_sz, sizeof(output) - output_sz, fh))) {
-					size_t len = strlen(line);
-					assert(line[len-1] == '\n');
-
-					output_sz += len;
+				while ((line = read_line(fh))) {
+					append_line(output, sizeof output, &off, line);
 
 					assert(output_line_num < ARRAY_SIZE(srcmap->entries));
 					srcmap->entries[output_line_num].path = include_path;
@@ -205,7 +242,7 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 				config_warn("failed to resolve include path %s", line + include_prefix_len);
 			}
 		} else {
-			output_sz += len;
+			append_line(output, sizeof output, &off, line);
 
 			assert(output_line_num < ARRAY_SIZE(srcmap->entries));
 			srcmap->entries[output_line_num].line = config_line_num;
@@ -215,8 +252,6 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 		}
 
 		config_line_num++;
-
-		assert(output_sz < sizeof(output));
 	}
 
 	fclose(fh);

@@ -1,7 +1,7 @@
 {
 	"name": "keyd",
 	"description": "Used by keyd to obtain active window information.",
-	"uuid": "keyd",
+	"uuid": "keyd@keyd.rvaiya.github.com",
 	"shell-version": [ "45", "46", "47", "48" ]
 }
 

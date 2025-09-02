@@ -450,6 +450,7 @@
 #undef KEY_NOTIFICATION_CENTER
 #undef KEY_PICKUP_PHONE
 #undef KEY_HANGUP_PHONE
+#undef KEY_LINK_PHONE
 #undef KEY_DEL_EOL
 #undef KEY_DEL_EOS
 #undef KEY_INS_LINE
@@ -1229,6 +1230,7 @@
 #define KEY_IMAGES		0x1ba	
 #define KEY_NOTIFICATION_CENTER	0x1bc	
 #define KEY_PICKUP_PHONE	0x1bd	
+#define KEY_LINK_PHONE		0x1bf
 #define KEY_HANGUP_PHONE	0x1be	
 #define KEY_DEL_EOL		0x1c0
 #define KEY_DEL_EOS		0x1c1
