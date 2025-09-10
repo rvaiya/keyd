@@ -84,8 +84,7 @@ install:
 
 uninstall:
 	-groupdel keyd
-	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd \
+	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
@@ -93,7 +92,6 @@ uninstall:
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/share/doc/keyd \
 		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
 	rm -rf bin keyd.service src/vkbd/usb-gadget.service
