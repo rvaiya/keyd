@@ -171,17 +171,11 @@ members, no personal responsibility is taken for them.
 
 ### Debian
 
-Experimental `keyd` and `keyd-application-mapper` packages can be found in the
-CI build artifacts of the [work-in-progress Debian package
-repository](https://salsa.debian.org/rhansen/keyd):
+A keyd package is available in Debian 13 ("trixie") and later.  To install:
 
-  * [amd64 (64-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build)
-  * [i386 (32-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build%20i386)
-
-Any Debian Developer who is willing to review the debianization effort and
-sponsor its upload is encouraged to contact
-[@rhansen](https://github.com/rhansen) (also see the [Debian ITP
-bug](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1060023)).
+```shell
+sudo apt install keyd
+```
 
 ### Fedora
 
@@ -198,12 +192,15 @@ Easy install with `sudo zypper in keyd`.
 
 ### Ubuntu
 
-Experimental `keyd` and `keyd-application-mapper` packages can be found in the
-[`ppa:keyd-team/ppa`
-archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
+A keyd package is available in Ubuntu 25.04 ("plucky") and later.  To install:
 
-If you wish to help maintain this PPA, please contact
-[@rhansen](https://github.com/rhansen).
+```shell
+sudo apt install keyd
+```
+
+In addition, the latest Debian package backported to various Ubuntu releases can
+be found in the [`ppa:keyd-team/ppa`
+archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
 
 ### Void Linux
 
