@@ -534,10 +534,8 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			active_mods = update_mods(kbd, dl, mods);
 
-			if (!kbd->repeat_in_progress) {
-				kbd->last_repeatable_action = *d;
-				kbd->last_repeatable_action.args[1].mods = active_mods;
-			}
+			kbd->last_repeatable_action = *d;
+			kbd->last_repeatable_action.args[1].mods = active_mods;
 
 			send_key(kbd, new_code, 1);
 			clear_oneshot(kbd);
@@ -642,10 +640,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 	case OP_REPEAT:
 		if(pressed) {
 			process_descriptor(kbd, code, &kbd->last_repeatable_action, dl, 1, time);
-			kbd->repeat_in_progress = 1;
-		} else {
-			process_descriptor(kbd, code, &kbd->last_repeatable_action, dl, 0, time);
-			kbd->repeat_in_progress = 0;
+
+			for (i = 0; i < CACHE_SIZE; i++)
+				if (kbd->cache[i].code == code)
+					kbd->cache[i].d = kbd->last_repeatable_action;
 		}
 		break;
 	case OP_CLEAR:
@@ -729,10 +727,10 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 			kbd->macro_timeout = execution_time + time + timeout;
 			schedule_timeout(kbd, kbd->macro_timeout);
+
+			kbd->last_repeatable_action = *d;
 		}
 
-		if (!kbd->repeat_in_progress)
-			kbd->last_repeatable_action = *d;
 		break;
 	case OP_TOGGLEM:
 	case OP_TOGGLE:

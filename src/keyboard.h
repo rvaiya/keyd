@@ -129,7 +129,6 @@ struct keyboard {
 	} layer_state[MAX_LAYERS];
 
 	struct descriptor last_repeatable_action;
-	uint8_t repeat_in_progress;
 
 	uint8_t keystate[256];
 
