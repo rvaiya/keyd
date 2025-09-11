@@ -41,9 +41,11 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-static int has_key(uint8_t *keymask, uint8_t keymask_len, uint8_t key)
+#define LONG_BITS (sizeof(long) * 8)
+
+static int has_key(uint64_t *keymask, uint64_t keymask_len, uint64_t key)
 {
-	return (keymask[key / 8] >> (key % 8)) & 0x01;
+	return !!(keymask[key / LONG_BITS] & (1ULL << (key % LONG_BITS)));
 }
 
 static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *relmask, uint8_t *absmask)
@@ -51,7 +53,7 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 	size_t num_media_keys = 0;
 	size_t num_keyboard_keys = 0;
 	size_t i;
-	uint8_t keymask[(KEY_MAX+7)/8];
+	uint64_t keymask[(KEY_MAX+7)/64];
 
 	uint8_t capabilities = 0;
 	int has_media_keys = 0;
@@ -87,7 +89,7 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 
 	*num_keys = 0;
 	for (i = 0; i < ARRAY_SIZE(keymask); i++)
-		*num_keys += __builtin_popcount(keymask[i]);
+		*num_keys += __builtin_popcountll(keymask[i]);
 
 	if (*relmask || *absmask)
 		capabilities |= CAP_MOUSE;
