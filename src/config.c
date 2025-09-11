@@ -73,6 +73,7 @@ static struct {
 		ARG_LAYOUT,
 		ARG_TIMEOUT,
 		ARG_SENSITIVITY,
+		ARG_KEYSEQUENCE_DESCRIPTOR,
 		ARG_DESCRIPTOR,
 	} args[MAX_DESCRIPTOR_ARGS];
 } actions[] =  {
@@ -86,6 +87,7 @@ static struct {
 	{ "togglem", 	NULL,	OP_TOGGLEM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "layerm", 	NULL,	OP_LAYERM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "oneshotm", 	NULL,	OP_ONESHOTM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "oneshotk", 	NULL,	OP_ONESHOTK,	{ ARG_LAYER, ARG_KEYSEQUENCE_DESCRIPTOR } },
 
 	{ "layer", 	NULL,	OP_LAYER,	{ ARG_LAYER } },
 
@@ -757,12 +759,18 @@ static int parse_descriptor(char *s,
 						}
 
 						break;
+					case ARG_KEYSEQUENCE_DESCRIPTOR:
 					case ARG_DESCRIPTOR:
 						if (parse_descriptor(argstr, &desc, config))
 							return -1;
 
 						if (config->nr_descriptors >= ARRAY_SIZE(config->descriptors)) {
 							err("maximum descriptors exceeded");
+							return -1;
+						}
+
+						if (type == ARG_KEYSEQUENCE_DESCRIPTOR && desc.op != OP_KEYSEQUENCE) {
+							err("%s is not a valid keysequence", argstr);
 							return -1;
 						}
 

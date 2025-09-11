@@ -681,14 +681,21 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 
 		break;
 	case OP_ONESHOTM:
+	case OP_ONESHOTK:
 	case OP_ONESHOT:
 		idx = d->args[0].idx;
 
 		if (pressed) {
+			if (d->op == OP_ONESHOTK)
+				process_descriptor(kbd, code, &kbd->config.descriptors[d->args[1].idx], dl, 1, time);
+
 			activate_layer(kbd, code, idx);
 			update_mods(kbd, dl, 0);
 			kbd->oneshot_latch = 1;
 		} else {
+			if (d->op == OP_ONESHOTK)
+				process_descriptor(kbd, code, &kbd->config.descriptors[d->args[1].idx], dl, 0, time);
+
 			if (kbd->oneshot_latch) {
 				kbd->layer_state[idx].oneshot_depth++;
 				if (kbd->config.oneshot_timeout) {
