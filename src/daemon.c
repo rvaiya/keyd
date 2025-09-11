@@ -611,7 +611,7 @@ static int event_handler(struct event *ev)
 
 int run_daemon(int argc, char *argv[])
 {
-	ipcfd = ipc_create_server(SOCKET_PATH);
+	ipcfd = ipc_create_server();
 	if (ipcfd < 0)
 		die("failed to create %s (another instance already running?)", SOCKET_PATH);
 
