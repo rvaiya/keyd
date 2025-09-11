@@ -203,7 +203,7 @@ static int layer_listen(int argc, char *argv[])
 	}
 }
 
-static int reload()
+static int reload(int argc, char *argv[])
 {
 	ipc_exec(IPC_RELOAD, NULL, 0, 0);
 
