@@ -634,7 +634,7 @@ int run_daemon(int argc, char *argv[])
 	}
 
 	if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
-		perror("sched_setscheduler");
+		perror("mlockall");
 		exit(-1);
 	}
 
