@@ -12,6 +12,7 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-L/usr/local/lib \
 	-Wall \
 	-Wextra \
+	-Wstrict-prototypes \
 	-Wno-unused \
 	-std=c11 \
 	-DSOCKET_PATH=\"$(SOCKET_PATH)\" \

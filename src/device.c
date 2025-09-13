@@ -281,7 +281,7 @@ int device_scan(struct device devices[MAX_DEVICES])
  * would involve bookkeeping state for each fd, but this is
  * unnecessary for our use.
  */
-int devmon_create()
+int devmon_create(void)
 {
 	static int init = 0;
 	assert(!init);

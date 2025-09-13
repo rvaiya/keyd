@@ -99,8 +99,8 @@ int evloop(int (*event_handler) (struct event *ev));
 void xwrite(int fd, const void *buf, size_t sz);
 void xread(int fd, void *buf, size_t sz);
 
-int ipc_create_server();
-int ipc_connect();
+int ipc_create_server(void);
+int ipc_connect(void);
 
 extern struct device device_table[MAX_DEVICES];
 extern size_t device_table_sz;

@@ -12,7 +12,7 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long 
  * Here be tiny dragons.
  */
 
-static long get_time()
+static long get_time(void)
 {
 	/* Close enough :/. Using a syscall is unnecessary. */
 	static long time = 1;

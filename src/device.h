@@ -70,7 +70,7 @@ int device_scan(struct device devices[MAX_DEVICES]);
 int device_grab(struct device *dev);
 int device_ungrab(struct device *dev);
 
-int devmon_create();
+int devmon_create(void);
 int devmon_read_device(int fd, struct device *dev);
 void device_set_led(const struct device *dev, int led, int state);
 

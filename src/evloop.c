@@ -27,7 +27,7 @@ static void panic_check(uint8_t code, uint8_t pressed)
 		die("panic sequence detected");
 }
 
-static long get_time_ms()
+static long get_time_ms(void)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);

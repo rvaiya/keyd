@@ -16,7 +16,7 @@ static int listeners[32];
 static size_t nr_listeners = 0;
 static struct keyboard *active_kbd = NULL;
 
-static void free_configs()
+static void free_configs(void)
 {
 	struct config_ent *ent = configs;
 	while (ent) {
@@ -29,13 +29,13 @@ static void free_configs()
 	configs = NULL;
 }
 
-static void cleanup()
+static void cleanup(void)
 {
 	free_configs();
 	free_vkbd(vkbd);
 }
 
-static void clear_vkbd()
+static void clear_vkbd(void)
 {
 	size_t i;
 
@@ -183,7 +183,7 @@ static void on_layer_change(const struct keyboard *kbd, const struct layer *laye
 	}
 }
 
-static void load_configs()
+static void load_configs(void)
 {
 	DIR *dh = opendir(CONFIG_DIR);
 	struct dirent *dirent;
@@ -292,7 +292,7 @@ static void manage_device(struct device *dev)
 	}
 }
 
-static void reload()
+static void reload(void)
 {
 	size_t i;
 
