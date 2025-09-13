@@ -41,7 +41,7 @@
  * corresponding device should be considered invalid by the caller.
  */
 
-static int has_key(uint8_t *keymask, uint8_t keymask_len, uint8_t key)
+static int has_key(uint8_t *keymask, uint8_t keymask_len, uint64_t key)
 {
 	return (keymask[key / 8] >> (key % 8)) & 0x01;
 }
