@@ -611,6 +611,8 @@ static int event_handler(struct event *ev)
 
 int run_daemon(int argc, char *argv[])
 {
+	struct sched_param sp;
+
 	ipcfd = ipc_create_server(SOCKET_PATH);
 	if (ipcfd < 0)
 		die("failed to create %s (another instance already running?)", SOCKET_PATH);
@@ -620,8 +622,19 @@ int run_daemon(int argc, char *argv[])
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
-	if (nice(-20) == -1) {
-		perror("nice");
+	if (sched_getparam(0, &sp)) {
+		perror("sched_getparam");
+		exit(-1);
+	}
+
+	sp.sched_priority = 49;
+	if (sched_setscheduler(0, SCHED_FIFO, &sp)) {
+		perror("sched_setscheduler");
+		exit(-1);
+	}
+
+	if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+		perror("sched_setscheduler");
 		exit(-1);
 	}
 

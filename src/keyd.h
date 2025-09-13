@@ -29,6 +29,8 @@
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
+#include <sched.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #ifdef __FreeBSD__
