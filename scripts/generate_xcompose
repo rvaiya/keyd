@@ -30,13 +30,12 @@ def base36(n):
 
 # Generate the compose file
 
-data = ''
+fh = open('data/keyd.compose', 'w')
 for n, code in enumerate(codes):
-        data += '<Cancel> '
-        data += ' '.join(f'<{c}>' for c in base36(n))
-        data += f' : "{chr(code)}"\n'
-
-open('data/keyd.compose', 'w').write(data)
+        fh.write('<Cancel> ')
+        fh.write(' '.join(f'<{c}>' for c in base36(n)))
+        fh.write(f' : "{chr(code)}"\n')
+fh.close()
 
 # Generate the corresponding src/unicode.c
 
