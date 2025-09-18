@@ -412,10 +412,9 @@ E.g.
 
 	ln -s /usr/share/keyd/keyd.compose ~/.XCompose
 
-**Additionally you will need to be using the default US layout on your
-display server.** Users of non-english layouts are advised to set their layout
-within keyd (see **Layouts**) to avoid conflicts between the display server
-layout and keyd's unicode functionality.
+**Additionally you will need to be using the default German layout on your
+display server.** Users of non-german layouts are advised to use the original
+keyd tool, rather than this German version.
 
 **Note:** You may have to restart your applications for this to take effect.
 
@@ -740,7 +739,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		  and there are no intervening key taps.
 
 	This reduces the visual latency by immediately resolving the key as a letter when
-	typed midword, but also facilitates its use as a layer trigger if it is held for a long 
+	typed midword, but also facilitates its use as a layer trigger if it is held for a long
 	enough period with no intervening symbols.
 
 	Since this is a common usecase, a macro called *lettermod* (defined below) has been
