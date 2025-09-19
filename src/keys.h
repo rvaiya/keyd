@@ -49,7 +49,7 @@ struct modifier {
 #define KEYD_E                 18
 #define KEYD_R                 19
 #define KEYD_T                 20
-#define KEYD_Y                 21
+#define KEYD_Z                 21
 #define KEYD_U                 22
 #define KEYD_I                 23
 #define KEYD_O                 24
@@ -72,7 +72,7 @@ struct modifier {
 #define KEYD_GRAVE             41
 #define KEYD_LEFTSHIFT         42
 #define KEYD_BACKSLASH         43
-#define KEYD_Z                 44
+#define KEYD_Y                 44
 #define KEYD_X                 45
 #define KEYD_C                 46
 #define KEYD_V                 47
