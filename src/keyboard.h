@@ -67,7 +67,7 @@ struct keyboard {
 
 	long last_simple_key_time;
 
-	long timeouts[64];
+	long timeouts[128];
 	size_t nr_timeouts; 
 
 	struct active_chord {
@@ -94,25 +94,31 @@ struct keyboard {
 		} state;
 	} chord;
 
-	struct {
+	struct pending_timeout {
 		uint8_t code;
 		uint8_t dl;
-		long expire;
-		long tap_expiry;
+		uint8_t spontaneous;
 
-		enum {
-			PK_INTERRUPT_ACTION1,
-			PK_INTERRUPT_ACTION2,
-			PK_UNINTERRUPTIBLE,
-			PK_UNINTERRUPTIBLE_TAP_ACTION2,
-		} behaviour;
+		long expiration;
+		long activation_time;
+
+		struct descriptor action1;
+		struct descriptor action2;
+	} pending_timeout;
+
+	struct pending_overload {
+		uint8_t code;
+		uint8_t dl;
+		long expiration;
+
+		int resolve_on_interrupt;
 
 		struct key_event queue[32];
 		size_t queue_sz;
 
 		struct descriptor action1;
 		struct descriptor action2;
-	} pending_key;
+	} pending_overload;
 
 	struct {
 		long activation_time;
@@ -121,6 +127,8 @@ struct keyboard {
 		uint8_t toggled;
 		uint8_t oneshot_depth;
 	} layer_state[MAX_LAYERS];
+
+	struct descriptor last_repeatable_action;
 
 	uint8_t keystate[256];
 

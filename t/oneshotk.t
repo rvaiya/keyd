@@ -1,0 +1,21 @@
+f down
+f up
+x down
+x up
+f down
+x down
+x up
+f up
+
+f down
+shift down
+f up
+x down
+x up
+shift up
+f down
+shift down
+x down
+x up
+f up
+shift up

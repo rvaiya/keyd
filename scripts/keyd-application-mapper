@@ -27,6 +27,8 @@ CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
+KEYD_BIN = os.environ.get('KEYD_BIN', 'keyd')
+
 debug_flag = os.getenv('KEYD_DEBUG')
 
 def dbg(s):
@@ -140,7 +142,7 @@ class KDE():
 
         bus = dbus.SessionBus()
 
-        kwin = bus.get_object('org.kde.KWin', '/Scripting')
+        kwin = KDE.get_kwin(bus)
 
         kwin.unloadScript(f.name)
         num = kwin.loadScript(f.name)
@@ -152,6 +154,24 @@ class KDE():
 
         script = bus.get_object('org.kde.KWin',  script_object)
         script.run()
+
+    @staticmethod
+    def get_kwin(bus):
+        import dbus
+        import time
+
+        # Give KDE time to initialize the dbus service
+        # (allows use in autostart script)
+        last_err = None
+        for _ in range(5):
+            try:
+                return bus.get_object('org.kde.KWin', '/Scripting')
+            except dbus.exceptions.DBusException as e:
+                time.sleep(1)
+                last_err = e
+
+        if last_err is not None:
+            raise last_err
 
     def run(self):
         import dbus.service
@@ -176,7 +196,7 @@ class KDE():
 # so this only works for wlroots based compositors :(.
 
 class Wayland():
-    def __init__(self, interface_name):
+    def __init__(self, *interfaces):
         path = os.getenv("WAYLAND_DISPLAY")
         if path == None:
             raise Exception("WAYLAND_DISPLAY not set (is wayland running?)")
@@ -186,7 +206,8 @@ class Wayland():
 
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect(path)
-        self._bind_interface(interface_name)
+
+        self._bind_interfaces(interfaces)
 
     def send_msg(self, object_id, opcode, payload):
         opcode |= (len(payload)+8) << 16
@@ -208,24 +229,31 @@ class Wayland():
         return b[4:4+struct.unpack('I', b[:4])[0]-1].decode('utf8')
 
     # Will bind the requested interface to object id 4
-    def _bind_interface(self, name):
+    def _bind_interfaces(self, interfaces):
         # bind the registry object to id 2
         self.send_msg(1, 1, b'\x02\x00\x00\x00')
         # solicit a sync message to bookend the registry events
         self.send_msg(1, 0, b'\x03\x00\x00\x00')
+
+        interface_object_number = 4
         while True:
             (obj, event, payload) = self.recv_msg()
             if obj == 2 and event == 0:  # registry.global event
                 wl_name = struct.unpack('I', payload[0:4])[0]
-
                 wl_interface = self.read_string(payload[4:])
 
-                if wl_interface == name:
-                    self.send_msg(2, 0, payload+b'\x04\x00\x00\x00')
-                    return
+                for interface in interfaces:
+                    if wl_interface == interface:
+                        bind_payload = payload + struct.pack('I', interface_object_number)
+                        self.send_msg(2, 0, bind_payload)
+                        setattr(self, interface, interface_object_number)
+                        interface_object_number += 1
 
             if obj == 3:  # sync message
-                raise Exception(f"Could not find interface {name}")
+                for interface in interfaces:
+                    if not hasattr(self, interface):
+                        raise Exception(f"Could not find interface {interface}")
+                return
 
 
 class Wlroots():
@@ -240,47 +268,48 @@ class Wlroots():
         windows = {}
         active_window = None
 
-        while True:
-            (obj, event, payload) = self.wl.recv_msg()
-            if obj == 4 and event == 0:
+        for msg in new_interruptible_generator(self.wl.sock, self.wl.recv_msg):
+            if msg == None:
+                self.on_window_change(active_window['appid'], active_window['title'])
+                continue
+
+            (obj, event, payload) = msg
+            if obj == self.wl.zwlr_foreign_toplevel_manager_v1 and event == 0:
                 # zwlr_foreign_toplevel_manager_v1::toplevel event
                 windows[struct.unpack('I', payload)[0]] = {'title': '', 'appid': ''}
                 continue
+            elif obj in windows:
+                if event == 0:
+                    # zwlr_foreign_toplevel_handle_v1::title event
+                    windows[obj]['title'] = self.wl.read_string(payload)
+                elif event == 1:
+                    # zwlr_foreign_toplevel_handle_v1::app_id event
+                    windows[obj]['appid'] = self.wl.read_string(payload)
+                elif event == 4:
+                    # zwlr_foreign_toplevel_handle_v1::state event
+                    if active_window == windows[obj]:
+                        active_window = None
+                    window_is_active = False
 
-            if obj not in windows:
-                continue
+                    array_size = struct.unpack('I', payload[0:4])[0]
+                    for i in range(0, array_size, 4):
+                        start_offset = i + 4
+                        end_offset = start_offset + 4
+                        state = struct.unpack('I', payload[start_offset:end_offset])[0]
+                        # zwlr_foreign_toplevel_handle_v1::state enum -> activated
+                        if state == 2:
+                            window_is_active = True
 
-            if event == 0:
-                # zwlr_foreign_toplevel_handle_v1::title event
-                windows[obj]['title'] = self.wl.read_string(payload)
-            elif event == 1:
-                # zwlr_foreign_toplevel_handle_v1::app_id event
-                windows[obj]['appid'] = self.wl.read_string(payload)
-            elif event == 4:
-                # zwlr_foreign_toplevel_handle_v1::state event
-                if active_window == windows[obj]:
-                    active_window = None
-                window_is_active = False
-
-                array_size = struct.unpack('I', payload[0:4])[0]
-                for i in range(0, array_size, 4):
-                    start_offset = i + 4
-                    end_offset = start_offset + 4
-                    state = struct.unpack('I', payload[start_offset:end_offset])[0]
-                    # zwlr_foreign_toplevel_handle_v1::state enum -> activated
-                    if state == 2:
-                        window_is_active = True
-
-                if window_is_active:
-                    active_window = windows[obj]
-            elif event == 5 and active_window == windows[obj]:
-                # zwlr_foreign_toplevel_handle_v1::done event
-                self.on_window_change(active_window['appid'], active_window['title'])
-            elif event == 6:
-                # zwlr_foreign_toplevel_handle_v1::closed event
-                closed_window = windows.pop(obj)
-                if closed_window == active_window:
-                    active_window = None
+                    if window_is_active:
+                        active_window = windows[obj]
+                elif event == 5 and active_window == windows[obj]:
+                    # zwlr_foreign_toplevel_handle_v1::done event
+                    self.on_window_change(active_window['appid'], active_window['title'])
+                elif event == 6:
+                    # zwlr_foreign_toplevel_handle_v1::closed event
+                    closed_window = windows.pop(obj)
+                    if closed_window == active_window:
+                        active_window = None
 
 class Cosmic():
     def __init__(self, on_window_change):
@@ -548,7 +577,7 @@ def on_window_change(cls, title):
         print(f'Active window: {cls}|{title}')
 
     bindings = lookup_bindings(cls, title)
-    subprocess.run(['keyd', 'bind', 'reset', *bindings], stdout=subprocess.DEVNULL)
+    subprocess.run([KEYD_BIN, 'bind', 'reset', *bindings], stdout=subprocess.DEVNULL)
 
 
 mon = get_monitor(on_window_change)

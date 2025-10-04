@@ -29,6 +29,8 @@
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
+#include <sched.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #ifdef __FreeBSD__
@@ -87,6 +89,7 @@ struct ipc_message {
 	size_t sz;
 };
 
+int check(int argc, char *argv[]);
 int monitor(int argc, char *argv[]);
 int run_daemon(int argc, char *argv[]);
 
@@ -96,10 +99,12 @@ int evloop(int (*event_handler) (struct event *ev));
 void xwrite(int fd, const void *buf, size_t sz);
 void xread(int fd, void *buf, size_t sz);
 
-int ipc_create_server();
-int ipc_connect();
+int ipc_create_server(void);
+int ipc_connect(void);
 
 extern struct device device_table[MAX_DEVICES];
 extern size_t device_table_sz;
+
+void dbg_print_evdev_details(const char *path);
 
 #endif

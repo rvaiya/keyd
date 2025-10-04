@@ -49,13 +49,14 @@ static int help(int argc, char *argv[])
 	printf("usage: keyd [-v] [-h] [command] [<args>]\n\n"
 	       "Commands:\n"
 	       "    monitor [-t]                   Print key events in real time.\n"
+	       "    check [<config file>...]       Check the supplied config files for errors. If no files are supplied, all .conf files in the config directory will be checked.\n"
 	       "    list-keys                      Print a list of valid key names.\n"
 	       "    reload                         Trigger a reload .\n"
 	       "    listen                         Print layer state changes of the running keyd daemon to stdout.\n"
 	       "    bind <binding> [<binding>...]  Add the supplied bindings to all loaded configs.\n"
 	       "Options:\n"
-	       "    -v, --version      Print the current version and exit.\n"
-	       "    -h, --help         Print help and exit.\n");
+	       "    -v, --version                  Print the current version and exit.\n"
+	       "    -h, --help                     Print help and exit.\n");
 
 	return 0;
 }
@@ -202,7 +203,7 @@ static int layer_listen(int argc, char *argv[])
 	}
 }
 
-static int reload()
+static int reload(int argc, char **argv)
 {
 	ipc_exec(IPC_RELOAD, NULL, 0, 0);
 
@@ -219,6 +220,7 @@ struct {
 	{"help", "-h", "--help", help},
 	{"version", "-v", "--version", version},
 
+	{"check", "-c", "--check", check},
 	/* Keep -e and -m for backward compatibility. TODO: remove these at some point. */
 	{"monitor", "-m", "--monitor", monitor},
 	{"bind", "-e", "--expression", add_bindings},

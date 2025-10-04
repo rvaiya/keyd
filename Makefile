@@ -12,6 +12,7 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-L/usr/local/lib \
 	-Wall \
 	-Wextra \
+	-Wstrict-prototypes \
 	-Wno-unused \
 	-std=c11 \
 	-DSOCKET_PATH=\"$(SOCKET_PATH)\" \
@@ -32,13 +33,13 @@ else
 endif
 
 all:
-	-mkdir bin
+	mkdir -p bin
 	cp scripts/keyd-application-mapper bin/
 	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
-	-mkdir data
+	mkdir -p data
 	./scripts/generate_xcompose
 man:
 	for f in docs/*.scdoc; do \
@@ -48,10 +49,12 @@ man:
 	done
 install:
 
-	@if [ -e /run/systemd/system ]; then \
+	@if [ -e /run/systemd/system -o "$(FORCE_SYSTEMD)" ]; then \
 		sed -e 's#@PREFIX@#$(PREFIX)#' keyd.service.in > keyd.service; \
 		mkdir -p $(DESTDIR)$(PREFIX)/lib/systemd/system/; \
 		install -Dm644 keyd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service; \
+		mkdir -p $(DESTDIR)$(PREFIX)/lib/sysusers.d/; \
+		install -m644 data/sysusers.d $(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf; \
 	else \
 		echo "NOTE: systemd not found, you will need to manually add keyd to your system's init process."; \
 	fi
@@ -78,29 +81,30 @@ install:
 	cp -r data/gnome-* $(DESTDIR)$(PREFIX)/share/keyd
 	install -m644 data/*.1.gz $(DESTDIR)$(PREFIX)/share/man/man1/
 	install -m644 data/keyd.compose $(DESTDIR)$(PREFIX)/share/keyd/
+	install -m644 README.md $(DESTDIR)$(PREFIX)/share/doc/keyd
 
 uninstall:
 	-groupdel keyd
-	rm -rf $(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd \
+	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
 		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
 		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
 		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
 		$(DESTDIR)$(PREFIX)/share/keyd/ \
 		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
 		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service
+		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
-	-rm -rf bin keyd.service src/vkbd/usb-gadget.service
+	rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
 		./$$f; \
 	done
 test-io:
-	-mkdir bin
+	mkdir -p bin
 	$(CC) \
-	-DDATA_DIR= \
+	-DDATA_DIR=\"\" \
 	-o bin/test-io \
 		t/test-io.c \
 		src/keyboard.c \

@@ -19,6 +19,7 @@
 #define err(fmt, ...) snprintf(errstr, sizeof(errstr), fmt, ##__VA_ARGS__);
 
 void _keyd_log(int level, const char *fmt, ...);
+void _vkeyd_log(const char *fmt, va_list ap);
 void die(const char *fmt, ...);
 
 extern int log_level;

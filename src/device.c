@@ -41,38 +41,53 @@
  * corresponding device should be considered invalid by the caller.
  */
 
+static int has_key(uint8_t *keymask, uint8_t keymask_len, uint64_t key)
+{
+	return (keymask[key / 8] >> (key % 8)) & 0x01;
+}
+
 static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *relmask, uint8_t *absmask)
 {
-	const uint32_t keyboard_mask = 1<<KEY_1  | 1<<KEY_2 | 1<<KEY_3 |
-					1<<KEY_4 | 1<<KEY_5 | 1<<KEY_6 |
-					1<<KEY_7 | 1<<KEY_8 | 1<<KEY_9 |
-					1<<KEY_0 | 1<<KEY_Q | 1<<KEY_W |
-					1<<KEY_E | 1<<KEY_R | 1<<KEY_T |
-					1<<KEY_Y;
-
+	size_t num_media_keys = 0;
+	size_t num_keyboard_keys = 0;
 	size_t i;
-	uint32_t mask[BTN_LEFT/32+1] = {0};
+	uint8_t keymask[(KEY_MAX+7)/8];
+
 	uint8_t capabilities = 0;
-	int has_brightness_key, has_volume_key;
+	int has_media_keys = 0;
 
-	if (ioctl(fd, EVIOCGBIT(EV_KEY, (BTN_LEFT/32+1)*4), mask) < 0) {
-		perror("ioctl: ev_key");
-		return 0;
-	}
+	const uint32_t media_keys[] = {
+		KEY_BRIGHTNESSUP,
+		KEY_VOLUMEUP,
+		KEY_TOUCHPAD_TOGGLE,
+		KEY_TOUCHPAD_OFF,
+		KEY_MICMUTE,
+	};
+	const uint32_t keyboard_keys[] = {
+		KEY_1, KEY_2, KEY_3, KEY_4,
+		KEY_5, KEY_6, KEY_7, KEY_8,
+		KEY_9, KEY_0, KEY_Q, KEY_W,
+		KEY_E, KEY_R, KEY_T, KEY_Y,
+	};
 
-	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), relmask) < 0) {
-		perror("ioctl: ev_rel");
+	if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof keymask), keymask) < 0) {
+		perror("ioctl");
 		return 0;
 	}
 
 	if (ioctl(fd, EVIOCGBIT(EV_ABS, 1), absmask) < 0) {
-		perror("ioctl: ev_abs");
+		perror("ioctl");
+		return 0;
+	}
+
+	if (ioctl(fd, EVIOCGBIT(EV_REL, 1), relmask) < 0) {
+		perror("ioctl");
 		return 0;
 	}
 
 	*num_keys = 0;
-	for (i = 0; i < sizeof(mask)/sizeof(mask[0]); i++)
-		*num_keys += __builtin_popcount(mask[i]);
+	for (i = 0; i < ARRAY_SIZE(keymask); i++)
+		*num_keys += __builtin_popcount(keymask[i]);
 
 	if (*relmask || *absmask)
 		capabilities |= CAP_MOUSE;
@@ -81,19 +96,29 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 		capabilities |= CAP_MOUSE_ABS;
 
 	/*
-	 * If the device can emit KEY_BRIGHTNESSUP or KEY_VOLUMEUP, we treat it as a keyboard.
+	 * If the device can certain media keys, we treat it as a keyboard.
 	 *
 	 * This is mainly to accommodate laptops with brightness/volume buttons which create
 	 * a different device node from the main keyboard for some hotkeys.
 	 *
-	 * NOTE: This will subsume anything that can emit a brightness key and may produce
+	 * NOTE: This will subsume anything that can emit these keys and may produce
 	 * false positives which need to be explcitly excluded by the user if they use
 	 * the wildcard id.
 	 */
-	has_brightness_key = mask[KEY_BRIGHTNESSUP/32] & (1 << (KEY_BRIGHTNESSUP % 32));
-	has_volume_key = mask[KEY_VOLUMEUP/32] & (1 << (KEY_VOLUMEUP % 32));
+	for (i = 0; i < ARRAY_SIZE(media_keys); i++) {
+		if (has_key(keymask, sizeof keymask, media_keys[i]))
+			num_media_keys++;
+	}
 
-	if (((mask[0] & keyboard_mask) == keyboard_mask) || has_brightness_key || has_volume_key)
+	for (i = 0; i < ARRAY_SIZE(keyboard_keys); i++) {
+		if (has_key(keymask, sizeof keymask, keyboard_keys[i]))
+			num_keyboard_keys++;
+	}
+
+	if (*num_keys)
+		capabilities |= CAP_KEY;
+
+	if (num_keyboard_keys == ARRAY_SIZE(keyboard_keys) || num_media_keys != 0)
 		capabilities |= CAP_KEYBOARD;
 
 	return capabilities;
@@ -128,10 +153,14 @@ static int device_init(const char *path, struct device *dev)
 	uint8_t absmask;
 	struct input_absinfo absinfo;
 
+	memset(dev, 0, sizeof *dev);
+
 	if ((fd = open(path, O_RDWR | O_NONBLOCK | O_CLOEXEC, 0600)) < 0) {
 		keyd_log("failed to open %s\n", path);
 		return -1;
 	}
+
+	dbg_print_evdev_details(path);
 
 	capabilities = resolve_device_capabilities(fd, &num_keys, &relmask, &absmask);
 
@@ -158,7 +187,7 @@ static int device_init(const char *path, struct device *dev)
 		dev->_maxy = absinfo.maximum;
 	}
 
-	dbg2("capabilities of %s (%s): %x", path, dev->name, capabilities);
+	dbg("capabilities of %s (%s): %x", path, dev->name, capabilities);
 
 	if (capabilities) {
 		struct input_id info;
@@ -252,7 +281,7 @@ int device_scan(struct device devices[MAX_DEVICES])
  * would involve bookkeeping state for each fd, but this is
  * unnecessary for our use.
  */
-int devmon_create()
+int devmon_create(void)
 {
 	static int init = 0;
 	assert(!init);
@@ -414,16 +443,18 @@ struct device_event *device_read_event(struct device *dev)
 
 			break;
 		case REL_X:
-			devev.type = DEV_MOUSE_MOVE;
-			devev.x = ev.value;
-			devev.y = 0;
+			/*
+			 * Queue and emit a single event on SYN to account for
+			 * programs which are particular about input grouping.
+			 */
+			dev->_pending_rel_x += ev.value;
 
+			return NULL;
 			break;
 		case REL_Y:
-			devev.type = DEV_MOUSE_MOVE;
-			devev.y = ev.value;
-			devev.x = 0;
+			dev->_pending_rel_y += ev.value;
 
+			return NULL;
 			break;
 //		case REL_WHEEL_HI_RES:
 //			/* TODO: implement me */
@@ -436,6 +467,18 @@ struct device_event *device_read_event(struct device *dev)
 			return NULL;
 		}
 
+		break;
+	case EV_SYN:
+		if (dev->_pending_rel_x || dev->_pending_rel_y) {
+			devev.type = DEV_MOUSE_MOVE;
+			devev.y = dev->_pending_rel_y;
+			devev.x = dev->_pending_rel_x;
+
+			dev->_pending_rel_y = 0;
+			dev->_pending_rel_x = 0;
+		} else {
+			return NULL;
+		}
 		break;
 	case EV_ABS:
 		switch (ev.code) {
@@ -453,7 +496,7 @@ struct device_event *device_read_event(struct device *dev)
 			break;
 		default:
 			dbg("Unrecognized EV_ABS code: %x", ev.code);
-			break;
+			return NULL;
 		}
 
 		break;
@@ -495,10 +538,14 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_PROG3: ev.code = KEYD_F23; break;
 				case KEY_PROG4: ev.code = KEYD_F24; break;
 
+				case KEY_TOUCHPAD_TOGGLE: ev.code = KEYD_F21; break;
+				case KEY_FAVORITES: ev.code = KEYD_BOOKMARKS; break;
+
 				/* Thinkpad fn shifted f9-f11 */
 				case KEY_NOTIFICATION_CENTER:  ev.code = KEYD_F21; break;
 				case KEY_PICKUP_PHONE:         ev.code = KEYD_F22; break;
 				case KEY_HANGUP_PHONE:         ev.code = KEYD_F23; break;
+				case KEY_LINK_PHONE:           ev.code = KEYD_F23; break;
 
 				/* Misc (think/idea)pad fn keys */
 				case KEY_FN_RIGHT_SHIFT:       ev.code = KEYD_F13; break;
@@ -508,6 +555,14 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_TOUCHPAD_OFF:         ev.code = KEYD_F17; break;
 				case KEY_TOUCHPAD_ON:          ev.code = KEYD_F18; break;
 				case KEY_VENDOR:               ev.code = KEYD_F19; break;
+
+
+				/* Menu keys found below LCD screens on some devices (i.e additional function keys) */
+				case KEY_KBD_LCD_MENU1:	       ev.code = KEYD_F20; break;
+				case KEY_KBD_LCD_MENU2:	       ev.code = KEYD_F21; break;
+				case KEY_KBD_LCD_MENU3:	       ev.code = KEYD_F22; break;
+				case KEY_KBD_LCD_MENU4:	       ev.code = KEYD_F23; break;
+				case KEY_KBD_LCD_MENU5:	       ev.code = KEYD_F24; break;
 
 				/* Misc keys found on various laptops */
 				case KEY_EDITOR:         ev.code = KEYD_F13; break;
@@ -523,6 +578,9 @@ struct device_event *device_read_event(struct device *dev)
 				case KEY_FN:             ev.code = KEYD_FN; break;
 				case KEY_ZOOM:           ev.code = KEYD_ZOOM; break;
 				case KEY_VOICECOMMAND:   ev.code = KEYD_VOICECOMMAND; break;
+
+				/* Copilot key on newer kernels */
+				case KEY_ACCESSIBILITY: ev.code = KEYD_F23; break;
 
 				/* Mouse buttons */
 				case BTN_LEFT:    ev.code = KEYD_LEFT_MOUSE; break;
@@ -546,10 +604,8 @@ struct device_event *device_read_event(struct device *dev)
 				case BTN_9:       ev.code = KEYD_F22; break;
 
 				default:
-					if (!(ev.code >= BTN_DIGI && ev.code <= BTN_TOOL_QUADTAP)) {
-						keyd_log("r{ERROR:} unsupported evdev code: 0x%x\n", ev.code);
-						return NULL;
-					}
+					dbg("unsupported evdev code: 0x%x\n", ev.code);
+					return NULL;
 			}
 		}
 

@@ -11,6 +11,7 @@
 #define CAP_MOUSE	0x1
 #define CAP_MOUSE_ABS	0x2
 #define CAP_KEYBOARD	0x4
+#define CAP_KEY		0x8 // Can emit keys, but is not necessarily a keyboard
 
 #define MAX_DEVICES	64
 
@@ -34,6 +35,9 @@ struct device {
 	uint32_t _maxy;
 	uint32_t _minx;
 	uint32_t _miny;
+
+	uint32_t _pending_rel_x;
+	uint32_t _pending_rel_y;
 
 	/* Reserved for the user. */
 	void *data;
@@ -66,7 +70,7 @@ int device_scan(struct device devices[MAX_DEVICES]);
 int device_grab(struct device *dev);
 int device_ungrab(struct device *dev);
 
-int devmon_create();
+int devmon_create(void);
 int devmon_read_device(int fd, struct device *dev);
 void device_set_led(const struct device *dev, int led, int state);
 

@@ -5,8 +5,11 @@
  */
 #include "log.h"
 #include <time.h>
+#include <pthread.h>
 
 char errstr[2048];
+
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 int log_level = 0;
 int suppress_colours = 0;
@@ -80,6 +83,13 @@ void die(const char *fmt, ...) {
 	exit(-1);
 }
 
+void _vkeyd_log(const char *fmt, va_list ap)
+{
+	pthread_mutex_lock(&mtx);
+	vprintf(colorize(fmt), ap);
+	pthread_mutex_unlock(&mtx);
+}
+
 void _keyd_log(int level, const char *fmt, ...)
 {
 	if (level > log_level)
@@ -87,6 +97,6 @@ void _keyd_log(int level, const char *fmt, ...)
 
 	va_list ap;
 	va_start(ap, fmt);
-	vprintf(colorize(fmt), ap);
+	_vkeyd_log(fmt, ap);
 	va_end(ap);
 }

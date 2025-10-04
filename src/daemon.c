@@ -16,7 +16,7 @@ static int listeners[32];
 static size_t nr_listeners = 0;
 static struct keyboard *active_kbd = NULL;
 
-static void free_configs()
+static void free_configs(void)
 {
 	struct config_ent *ent = configs;
 	while (ent) {
@@ -29,13 +29,13 @@ static void free_configs()
 	configs = NULL;
 }
 
-static void cleanup()
+static void cleanup(void)
 {
 	free_configs();
 	free_vkbd(vkbd);
 }
 
-static void clear_vkbd()
+static void clear_vkbd(void)
 {
 	size_t i;
 
@@ -71,6 +71,11 @@ static void send_key(uint8_t code, uint8_t state)
 			vkbd_send_key(vkbd, code, state);
 			break;
 	}
+}
+
+static void send_key_macro_wrapper(void *ctx, uint8_t code, uint8_t state)
+{
+	send_key(code, state);
 }
 
 static void add_listener(int con)
@@ -178,7 +183,7 @@ static void on_layer_change(const struct keyboard *kbd, const struct layer *laye
 	}
 }
 
-static void load_configs()
+static void load_configs(void)
 {
 	DIR *dh = opendir(CONFIG_DIR);
 	struct dirent *dirent;
@@ -204,7 +209,7 @@ static void load_configs()
 
 			keyd_log("CONFIG: parsing b{%s}\n", path);
 
-			if (!config_parse(&ent->config, path)) {
+			if (config_parse(&ent->config, path) >= 0) {
 				struct output output = {
 					.send_key = send_key,
 					.on_layer_change = on_layer_change,
@@ -241,11 +246,15 @@ static struct config_ent *lookup_config_ent(const char *id, uint8_t flags)
 		ent = ent->next;
 	}
 
-	/* The wildcard should not match mice. */
-	if (rank == 1 && (flags == ID_MOUSE))
+	/* The wildcard should not match mice or trackpads. */
+	if (rank == 1 && !((flags & ID_KEYBOARD) && !(flags & ID_TRACKPAD))) {
 		return NULL;
-	else
+	} else {
+		if (flags & ID_TRACKPAD)
+			keyd_log("y{WARNING}: %s appears to be a trackpad, which is current unsupported. Mouse movement is likely to break(YMMV)\n", id);
+
 		return match;
+	}
 }
 
 static void manage_device(struct device *dev)
@@ -256,9 +265,13 @@ static void manage_device(struct device *dev)
 	if (dev->is_virtual)
 		return;
 
+	if (dev->capabilities & CAP_KEY)
+		flags |= ID_KEY;
 	if (dev->capabilities & CAP_KEYBOARD)
 		flags |= ID_KEYBOARD;
-	if (dev->capabilities & (CAP_MOUSE|CAP_MOUSE_ABS))
+	if (dev->capabilities & CAP_MOUSE_ABS)
+		flags |= ID_TRACKPAD;
+	if (dev->capabilities & CAP_MOUSE)
 		flags |= ID_MOUSE;
 
 	if ((ent = lookup_config_ent(dev->id, flags))) {
@@ -279,7 +292,7 @@ static void manage_device(struct device *dev)
 	}
 }
 
-static void reload()
+static void reload(void)
 {
 	size_t i;
 
@@ -415,7 +428,7 @@ static void handle_client(int con)
 			return;
 		}
 
-		macro_execute(send_key, &macro, msg.timeout);
+		macro_execute(send_key_macro_wrapper, NULL, &macro, msg.timeout);
 		send_success(con);
 
 		break;
@@ -598,7 +611,9 @@ static int event_handler(struct event *ev)
 
 int run_daemon(int argc, char *argv[])
 {
-	ipcfd = ipc_create_server(SOCKET_PATH);
+	struct sched_param sp;
+	ipcfd = ipc_create_server();
+
 	if (ipcfd < 0)
 		die("failed to create %s (another instance already running?)", SOCKET_PATH);
 
@@ -607,8 +622,19 @@ int run_daemon(int argc, char *argv[])
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
-	if (nice(-20) == -1) {
-		perror("nice");
+	if (sched_getparam(0, &sp)) {
+		perror("sched_getparam");
+		exit(-1);
+	}
+
+	sp.sched_priority = 49;
+	if (sched_setscheduler(0, SCHED_FIFO, &sp)) {
+		perror("sched_setscheduler");
+		exit(-1);
+	}
+
+	if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+		perror("mlockall");
 		exit(-1);
 	}
 

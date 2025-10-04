@@ -19,7 +19,7 @@ static void set_tflags(tcflag_t flags, int val)
 	tcsetattr(0, TCSANOW, &tinfo);
 }
 
-static void cleanup()
+static void cleanup(void)
 {
 	/* Drain STDIN (useful for scripting). */
 	set_tflags(ICANON, 0);

@@ -8,7 +8,7 @@
 
 /* TODO (maybe): settle on an API and publish the protocol. */
 
-static void chgid()
+static void chgid(void)
 {
 	struct group *g = getgrnam("keyd");
 
@@ -23,7 +23,7 @@ static void chgid()
 	}
 }
 
-int ipc_connect()
+int ipc_connect(void)
 {
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	struct sockaddr_un addr = {0};
@@ -44,7 +44,7 @@ int ipc_connect()
 	return sd;
 }
 
-int ipc_create_server()
+int ipc_create_server(void)
 {
 	char lockpath[PATH_MAX];
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);

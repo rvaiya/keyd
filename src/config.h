@@ -23,12 +23,15 @@
 #define ID_EXCLUDED	1
 #define ID_MOUSE	2
 #define ID_KEYBOARD	4
+#define ID_TRACKPAD	8
+#define ID_KEY		16
 
 enum op {
 	OP_KEYSEQUENCE = 1,
 
 	OP_ONESHOT,
 	OP_ONESHOTM,
+	OP_ONESHOTK,
 	OP_LAYERM,
 	OP_SWAP,
 	OP_SWAPM,
@@ -42,6 +45,7 @@ enum op {
 	OP_OVERLOAD_IDLE_TIMEOUT,
 	OP_TOGGLE,
 	OP_TOGGLEM,
+	OP_REPEAT,
 
 	OP_MACRO,
 	OP_MACRO2,
@@ -49,6 +53,8 @@ enum op {
 	OP_TIMEOUT,
 
 /* Experimental */
+	OP_SCROLL_TOGGLE_ON,
+	OP_SCROLL_TOGGLE_OFF,
 	OP_SCROLL_TOGGLE,
 	OP_SCROLL,
 };

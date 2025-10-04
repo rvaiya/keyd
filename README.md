@@ -14,7 +14,7 @@ using kernel level input primitives (evdev, uinput).
 
 The config format has undergone several iterations since the first
 release. For those migrating their configs from v1 it is best
-to reread the man page. 
+to reread the [man page](https://raw.githubusercontent.com/rvaiya/keyd/refs/heads/master/docs/keyd.scdoc) (`man keyd`).
 
 See also: [changelog](docs/CHANGELOG.md).
 
@@ -157,7 +157,7 @@ See [usb-gadget.md](src/vkbd/usb-gadget.md) for details.
 
 ## Packages
 
-Third party packages for the some distributions also exist. If you wish to add
+Third-party packages exist for some distributions. If you wish to add
 yours to the list please file a PR. These are kindly maintained by community
 members, no personal responsibility is taken for them.
 
@@ -171,21 +171,19 @@ members, no personal responsibility is taken for them.
 
 ### Debian
 
-Experimental `keyd` and `keyd-application-mapper` packages can be found in the
-CI build artifacts of the [work-in-progress Debian package
-repository](https://salsa.debian.org/rhansen/keyd):
+A keyd package is available in Debian 13 ("trixie") and later.  To install:
 
-  * [amd64 (64-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build)
-  * [i386 (32-bit)](https://salsa.debian.org/rhansen/keyd/-/jobs/artifacts/debian/latest/browse/debian/output?job=build%20i386)
-
-Any Debian Developer who is willing to review the debianization effort and
-sponsor its upload is encouraged to contact
-[@rhansen](https://github.com/rhansen) (also see the [Debian ITP
-bug](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1060023)).
+```shell
+sudo apt install keyd
+```
 
 ### Fedora
 
 [COPR](https://copr.fedorainfracloud.org/coprs/alternateved/keyd/) package maintained by [@alternateved](https://github.com/alternateved).
+
+### Gentoo
+
+[GURU](https://gitweb.gentoo.org/repo/proj/guru.git/tree/app-misc/keyd) package maintained by [jack@pngu.org](mailto:jack@pngu.org).
 
 ### openSUSE
 [opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
@@ -194,12 +192,21 @@ Easy install with `sudo zypper in keyd`.
 
 ### Ubuntu
 
-Experimental `keyd` and `keyd-application-mapper` packages can be found in the
-[`ppa:keyd-team/ppa`
+A keyd package is available in Ubuntu 25.04 ("plucky") and later.  To install:
+
+```shell
+sudo apt install keyd
+```
+
+In addition, the latest Debian package backported to various Ubuntu releases can
+be found in the [`ppa:keyd-team/ppa`
 archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
 
-If you wish to help maintain this PPA, please contact
-[@rhansen](https://github.com/rhansen).
+### Void Linux
+
+[xbps](https://github.com/void-linux/void-packages/tree/master/srcpkgs/keyd) package maintained by [@Barbaross](https://gitlab.com/Barbaross).
+
+Easy install with `sudo xbps-install -Su keyd`.
 
 # Example 1
 
@@ -265,6 +272,30 @@ the letter A you can now simply tap shift and then a instead of having to hold
 it. Finally it remaps insert to S-insert (paste on X11).
 
 # FAQS
+
+## Why is my trackpad is interfering with input after enabling keyd?
+
+libinput, a higher level input component used by most wayland and X11 setups,
+includes a feature called 'disable-while-typing' that disables the trackpad
+when typing.
+
+In order to achieve this, it needs to distinguish between internal and external
+keyboards, which it does by hard coding a rules for specific hardware
+('quirks'). Since keyd creates a virtual device which subsumes both external
+and integrated keyboards, you will need to instruct libinput to regard the keyd
+virtual device as internal.
+
+This can be achieved by adding the following to `/etc/libinput/local-overrides.quirks` (which may need to be created):
+
+```
+[Serial Keyboards]
+
+MatchUdevType=keyboard
+MatchName=keyd*keyboard
+AttrKeyboardIntegration=internal
+```
+
+Credit to @mark-herbert42 and @canadaduane for the original solution.
 
 ## What about xmodmap/setxkbmap/*?
 

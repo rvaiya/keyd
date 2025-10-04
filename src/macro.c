@@ -82,11 +82,13 @@ int macro_parse(char *s, struct macro *macro)
 	#undef ADD_ENTRY
 }
 
-void macro_execute(void (*output)(uint8_t, uint8_t),
+long macro_execute(void (*output)(void *ctx, uint8_t, uint8_t),
+		   void *ctx,
 		   const struct macro *macro, size_t timeout)
 {
 	size_t i;
 	int hold_start = -1;
+	long time = 0;
 
 	for (i = 0; i < macro->sz; i++) {
 		const struct macro_entry *ent = &macro->entries[i];
@@ -101,7 +103,7 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			if (hold_start == -1)
 				hold_start = i;
 
-			output(ent->data, 1);
+			output(ctx, ent->data, 1);
 
 			break;
 		case MACRO_RELEASE:
@@ -110,7 +112,7 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 
 				for (j = hold_start; j < i; j++) {
 					const struct macro_entry *ent = &macro->entries[j];
-					output(ent->data, 0);
+					output(ctx, ent->data, 0);
 				}
 
 				hold_start = -1;
@@ -122,8 +124,8 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 			unicode_get_sequence(idx, codes);
 
 			for (j = 0; j < 4; j++) {
-				output(codes[j], 1);
-				output(codes[j], 0);
+				output(ctx, codes[j], 1);
+				output(ctx, codes[j], 0);
 			}
 
 			break;
@@ -136,31 +138,36 @@ void macro_execute(void (*output)(uint8_t, uint8_t),
 				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)
-					output(code, 1);
+					output(ctx, code, 1);
 			}
 
 			if (mods && timeout)
 				usleep(timeout);
 
-			output(code, 1);
-			output(code, 0);
+			output(ctx, code, 1);
+			output(ctx, code, 0);
 
 			for (j = 0; j < ARRAY_SIZE(modifiers); j++) {
 				uint8_t code = modifiers[j].key;
 				uint8_t mask = modifiers[j].mask;
 
 				if (mods & mask)
-					output(code, 0);
+					output(ctx, code, 0);
 			}
 
 
 			break;
 		case MACRO_TIMEOUT:
 			usleep(ent->data * 1E3);
+			time += ent->data;
 			break;
 		}
 
-		if (timeout)
+		if (timeout) {
 			usleep(timeout);
+			time += timeout/1E3;
+		}
 	}
+
+	return time;
 }

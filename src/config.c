@@ -24,11 +24,42 @@
 #include "string.h"
 #include "unicode.h"
 
-#define MAX_FILE_SZ 65536
-#define MAX_LINE_LEN 256
+#define MAX_LINES 4096
+#define MAX_FILE_SIZE 65536
+#define MAX_INCLUDES 128
 
-#undef warn
-#define warn(fmt, ...) keyd_log("\ty{WARNING:} "fmt"\n", ##__VA_ARGS__)
+struct srcmap_entry {
+	const char *path;
+	size_t line;
+};
+
+struct srcmap {
+	char paths[MAX_INCLUDES+1][PATH_MAX];
+	size_t num_paths;
+
+	struct srcmap_entry entries[MAX_LINES];
+};
+
+static size_t current_line = 0;
+static const char *current_file = NULL;
+
+static size_t nr_warnings = 0;
+
+static void config_warn(const char *fmt, ...)
+{
+	va_list ap;
+	char buf[1024];
+
+	if (current_file)
+		snprintf(buf, sizeof buf, "\ty{WARNING:} b{%s}:r{%zd}: %s\n", current_file, current_line + 1, fmt);
+	else
+		snprintf(buf, sizeof buf, "\ty{WARNING:} %s\n", fmt);
+
+	nr_warnings++;
+	va_start(ap, fmt);
+	_vkeyd_log(buf, ap);
+	va_end(ap);
+}
 
 static struct {
 	const char *name;
@@ -42,6 +73,7 @@ static struct {
 		ARG_LAYOUT,
 		ARG_TIMEOUT,
 		ARG_SENSITIVITY,
+		ARG_KEYSEQUENCE_DESCRIPTOR,
 		ARG_DESCRIPTOR,
 	} args[MAX_DESCRIPTOR_ARGS];
 } actions[] =  {
@@ -55,6 +87,7 @@ static struct {
 	{ "togglem", 	NULL,	OP_TOGGLEM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "layerm", 	NULL,	OP_LAYERM,	{ ARG_LAYER, ARG_MACRO } },
 	{ "oneshotm", 	NULL,	OP_ONESHOTM,	{ ARG_LAYER, ARG_MACRO } },
+	{ "oneshotk", 	NULL,	OP_ONESHOTK,	{ ARG_LAYER, ARG_KEYSEQUENCE_DESCRIPTOR } },
 
 	{ "layer", 	NULL,	OP_LAYER,	{ ARG_LAYER } },
 
@@ -68,7 +101,11 @@ static struct {
 	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
 
+	{ "repeat", 	NULL,	OP_REPEAT,	{} },
+
 	/* Experimental */
+	{ "scrollon", 	NULL,	OP_SCROLL_TOGGLE_ON,		{ARG_SENSITIVITY} },
+	{ "scrolloff", 	NULL,	OP_SCROLL_TOGGLE_OFF,		{} },
 	{ "scrollt", 	NULL,	OP_SCROLL_TOGGLE,		{ARG_SENSITIVITY} },
 	{ "scroll", 	NULL,	OP_SCROLL,			{ARG_SENSITIVITY} },
 
@@ -79,106 +116,147 @@ static struct {
 	{ "swap2", 	"swapm",	OP_SWAPM,			{ ARG_LAYER, ARG_MACRO } },
 };
 
-
-static const char *resolve_include_path(const char *path, const char *include_path)
+static int exists_and_is_relative(const char *parent_dir, const char *path)
 {
-	static char resolved_path[PATH_MAX];
-	char tmp[PATH_MAX];
-	const char *dir;
+	char p1[PATH_MAX];
+	char p2[PATH_MAX];
 
-	if (strstr(include_path, ".")) {
-		warn("%s: included files may not have a file extension", include_path);
-		return NULL;
-	}
+	if (!realpath(parent_dir, p1))
+		return 0;
 
-	strcpy(tmp, path);
-	dir = dirname(tmp);
-	snprintf(resolved_path, sizeof resolved_path, "%s/%s", dir, include_path);
+	if (!realpath(path, p2))
+		return 0;
 
-	if (!access(resolved_path, F_OK))
-		return resolved_path;
-
-	snprintf(resolved_path, sizeof resolved_path, DATA_DIR"/%s", include_path);
-
-	if (!access(resolved_path, F_OK))
-		return resolved_path;
-
-	return NULL;
+	return !strncmp(p2, p1, strlen(p1));
 }
 
-static char *read_file(const char *path)
+static int resolve_include_path(const char *config_path, const char *include_path, char *resolved_path)
 {
-	const char include_prefix[] = "include ";
+	size_t len;
+	size_t ret;
+	char config_dir[PATH_MAX-1];
 
-	static char buf[MAX_FILE_SZ];
-	char line[MAX_LINE_LEN+1];
-	int sz = 0;
+	snprintf(config_dir, sizeof config_dir, "%s", config_path);
+	if (!dirname(config_dir))
+		return -1;
 
-	FILE *fh = fopen(path, "r");
-	if (!fh) {
-		err("failed to open %s", path);
-		return NULL;
+	assert(strlen(config_dir) + strlen(include_path) + 2 < PATH_MAX);
+
+	len = strlen(config_dir);
+	strcpy(resolved_path, config_dir);
+	resolved_path[len] = '/';
+	strcpy(resolved_path + len + 1, include_path);
+
+	if (exists_and_is_relative(config_dir, resolved_path))
+		return 0;
+
+	snprintf(resolved_path, PATH_MAX, DATA_DIR"/%s", include_path);
+	return !exists_and_is_relative(DATA_DIR, resolved_path);
+}
+
+static void append_line(char *buf, size_t buf_sz, size_t *off, const char *line)
+{
+	size_t len = strlen(line);
+	assert(*off + len + 2 < buf_sz);
+
+	memcpy(buf + *off, line, len);
+	buf[*off + len] = '\n';
+	buf[*off + len + 1] = 0;
+
+	*off += len + 1;
+}
+
+static const char *read_line(FILE *fh)
+{
+	static char line[4096];
+	size_t n = 0;
+	int c;
+
+	while (1) {
+		c = fgetc(fh);
+		if (c == -1 || c == '\n')
+			break;
+
+		assert(n < (sizeof(line)-1));
+		line[n++] = c;
 	}
 
-	while (fgets(line, sizeof line, fh)) {
-		int len = strlen(line);
+	if (n == 0 && c == -1)
+		return NULL;
 
-		if (line[len-1] != '\n') {
-			if (len >= MAX_LINE_LEN) {
-				err("maximum line length exceed (%d)", MAX_LINE_LEN);
-				goto fail;
+	line[n] = 0;
+	return line;
+}
+
+static char *read_config_file(const char *path, struct srcmap *srcmap)
+{
+	FILE *fh;
+	const char *line;
+
+	const char include_prefix[] = "include ";
+	const size_t include_prefix_len = sizeof(include_prefix) - 1;
+
+	size_t off = 0;
+	static char output[MAX_FILE_SIZE];
+
+	size_t config_line_num = 0;
+	size_t output_line_num = 0;
+
+	if (!(fh = fopen(path, "r")))
+		return NULL;
+
+	srcmap->num_paths = 1;
+	snprintf(srcmap->paths[0], sizeof srcmap->paths[0], "%s", path);
+
+	while ((line = read_line(fh))) {
+		current_line = config_line_num;
+		current_file = path;
+
+		if (!strncmp(line, include_prefix, include_prefix_len)) {
+			char *include_path;
+
+			assert(srcmap->num_paths < ARRAY_SIZE(srcmap->paths));
+
+			include_path = srcmap->paths[srcmap->num_paths];
+			if (!resolve_include_path(path, line + include_prefix_len, include_path)) {
+				FILE *fh;
+				size_t include_line_num = 0;
+
+				if (!(fh = fopen(include_path, "r"))) {
+					config_warn("failed to open %s", include_path);
+					continue;
+				}
+
+				srcmap->num_paths++;
+				while ((line = read_line(fh))) {
+					append_line(output, sizeof output, &off, line);
+
+					assert(output_line_num < ARRAY_SIZE(srcmap->entries));
+					srcmap->entries[output_line_num].path = include_path;
+					srcmap->entries[output_line_num].line = include_line_num++;
+
+					output_line_num++;
+				}
+
+				fclose(fh);
 			} else {
-				line[len++] = '\n';
-			}
-		}
-
-		if ((len+sz) > MAX_FILE_SZ) {
-			err("maximum file size exceed (%d)", MAX_FILE_SZ);
-			goto fail;
-		}
-
-		if (strstr(line, include_prefix) == line) {
-			int fd;
-			const char *resolved_path;
-			char *include_path = line+sizeof(include_prefix)-1;
-
-			line[len-1] = 0;
-
-			while (include_path[0] == ' ')
-				include_path++;
-
-			resolved_path = resolve_include_path(path, include_path);
-
-			if (!resolved_path) {
-				warn("failed to resolve include path: %s", include_path);
-				continue;
-			}
-
-			fd = open(resolved_path, O_RDONLY);
-
-			if (fd < 0) {
-				warn("failed to include %s", include_path);
-				perror("open");
-			} else {
-				int n;
-				while ((n = read(fd, buf+sz, sizeof(buf)-sz)) > 0)
-					sz += n;
-				close(fd);
+				config_warn("failed to resolve include path %s", line + include_prefix_len);
 			}
 		} else {
-			strcpy(buf+sz, line);
-			sz += len;
+			append_line(output, sizeof output, &off, line);
+
+			assert(output_line_num < ARRAY_SIZE(srcmap->entries));
+			srcmap->entries[output_line_num].line = config_line_num;
+			srcmap->entries[output_line_num].path = srcmap->paths[0];
+
+			output_line_num++;
 		}
+
+		config_line_num++;
 	}
 
 	fclose(fh);
-
-	buf[sz] = 0;
-	return buf;
-
-fail:
-	fclose(fh);
-	return NULL;
+	return output;
 }
 
 
@@ -348,7 +426,7 @@ static int new_layer(char *s, const struct config *config, struct layer *layer)
 			layer->mods = mods;
 	} else {
 		if (type)
-			warn("\"%s\" is not a valid layer type, ignoring\n", type);
+			config_warn("\"%s\" is not a valid layer type, ignoring", type);
 
 		layer->type = LT_NORMAL;
 		layer->mods = 0;
@@ -566,7 +644,7 @@ static int parse_descriptor(char *s,
 		}
 
 		if (layer) {
-			warn("You should use b{layer(%s)} instead of assigning to b{%s} directly.", layer, KEY_NAME(code));
+			config_warn("You should use b{layer(%s)} instead of assigning to b{%s} directly.", layer, KEY_NAME(code));
 			d->op = OP_LAYER;
 			d->args[0].idx = config_get_layer_index(config, layer);
 
@@ -614,10 +692,9 @@ static int parse_descriptor(char *s,
 		return 0;
 	} else if (!parse_fn(s, &fn, args, &nargs)) {
 		int i;
+		char buf[1024];
 
 		if (!strcmp(fn, "lettermod")) {
-			char buf[1024];
-
 			if (nargs != 4) {
 				err("%s requires 4 arguments", fn);
 				return -1;
@@ -638,7 +715,7 @@ static int parse_descriptor(char *s,
 				int j;
 
 				if (actions[i].preferred_name)
-					warn("%s is deprecated (renamed to %s).", actions[i].name, actions[i].preferred_name);
+					config_warn("%s is deprecated (renamed to %s).", actions[i].name, actions[i].preferred_name);
 
 				d->op = actions[i].op;
 
@@ -682,12 +759,18 @@ static int parse_descriptor(char *s,
 						}
 
 						break;
+					case ARG_KEYSEQUENCE_DESCRIPTOR:
 					case ARG_DESCRIPTOR:
 						if (parse_descriptor(argstr, &desc, config))
 							return -1;
 
 						if (config->nr_descriptors >= ARRAY_SIZE(config->descriptors)) {
 							err("maximum descriptors exceeded");
+							return -1;
+						}
+
+						if (type == ARG_KEYSEQUENCE_DESCRIPTOR && desc.op != OP_KEYSEQUENCE) {
+							err("%s is not a valid keysequence", argstr);
 							return -1;
 						}
 
@@ -758,7 +841,7 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 		else if (!strcmp(ent->key, "overload_tap_timeout"))
 			config->overload_tap_timeout = atoi(ent->val);
 		else
-			warn("line %zd: %s is not a valid global option", ent->lnum, ent->key);
+			config_warn("%s is not a valid global option", ent->key);
 	}
 }
 
@@ -780,7 +863,7 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
 		} else if (strstr(s, "k:") == s) {
 			assert(config->nr_ids < ARRAY_SIZE(config->ids));
-			config->ids[config->nr_ids].flags = ID_KEYBOARD;
+			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_KEY;
 
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+2);
 		} else if (strstr(s, "-") == s) {
@@ -790,11 +873,11 @@ static void parse_id_section(struct config *config, struct ini_section *section)
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s+1);
 		} else if (strlen(s) < sizeof(config->ids[config->nr_ids].id)-1) {
 			assert(config->nr_ids < ARRAY_SIZE(config->ids));
-			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_MOUSE;
+			config->ids[config->nr_ids].flags = ID_KEYBOARD | ID_KEY | ID_MOUSE;
 
 			snprintf(config->ids[config->nr_ids++].id, sizeof(config->ids[0].id), "%s", s);
 		} else {
-			warn("%s is not a valid device id", s);
+			config_warn("%s is not a valid device id", s);
 		}
 	}
 }
@@ -812,7 +895,7 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 			ssize_t len = strlen(name);
 
 			if (len >= (ssize_t)sizeof(config->aliases[0])) {
-				warn("%s exceeds the maximum alias length (%ld)", name, sizeof(config->aliases[0])-1);
+				config_warn("%s exceeds the maximum alias length (%ld)", name, sizeof(config->aliases[0])-1);
 			} else {
 				uint8_t alias_code;
 
@@ -827,19 +910,25 @@ static void parse_alias_section(struct config *config, struct ini_section *secti
 				strcpy(config->aliases[code], name);
 			}
 		} else {
-			warn("failed to define alias %s, %s is not a valid keycode", name, ent->key);
+			config_warn("failed to define alias %s, %s is not a valid keycode", name, ent->key);
 		}
 	}
 }
 
-
-static int config_parse_string(struct config *config, char *content)
+// Returns 0 on success, or else the number of warnings issued.
+static int do_parse(struct config *config, char *content, const struct srcmap *srcmap)
 {
 	size_t i;
 	struct ini *ini;
 
-	if (!(ini = ini_parse_string(content, NULL)))
-		return -1;
+	current_file = NULL;
+	current_line = 0;
+	nr_warnings = 0;
+
+	if (!(ini = ini_parse_string(content, NULL))) {
+		config_warn("Invalid config file (missing [ids] section)");
+		return 1;
+	}
 
 	/* First pass: create all layers based on section headers.  */
 	for (i = 0; i < ini->nr_sections; i++) {
@@ -853,7 +942,7 @@ static int config_parse_string(struct config *config, char *content)
 			parse_global_section(config, section);
 		} else {
 			if (config_add_layer(config, section->name) < 0)
-				warn("%s", errstr);
+				config_warn("%s", errstr);
 		}
 	}
 
@@ -874,23 +963,32 @@ static int config_parse_string(struct config *config, char *content)
 			char entry[MAX_EXP_LEN];
 			struct ini_entry *ent = &section->entries[j];
 
+			if (srcmap) {
+				current_file = srcmap->entries[ent->lnum - 1].path;
+				current_line = srcmap->entries[ent->lnum - 1].line;
+			} else {
+				current_file = "";
+				current_line = ent->lnum - 1;
+			}
+
 			if (!ent->val) {
-				warn("invalid binding on line %zd", ent->lnum);
+				config_warn("invalid binding");
 				continue;
 			}
 
 			snprintf(entry, sizeof entry, "%s.%s = %s", layername, ent->key, ent->val);
 
 			if (config_add_entry(config, entry) < 0)
-				keyd_log("\tr{ERROR:} line m{%zd}: %s\n", ent->lnum, errstr);
+				config_warn("%s", errstr);
 		}
 	}
 
-	return 0;
+	return nr_warnings;
 }
 
 static void config_init(struct config *config)
 {
+	size_t nw;
 	size_t i;
 
 	memset(config, 0, sizeof *config);
@@ -924,7 +1022,8 @@ static void config_init(struct config *config)
 	"[alt:A]\n"
 	"[altgr:G]\n";
 
-	config_parse_string(config, default_config);
+	nw = do_parse(config, default_config, NULL);
+	assert(nw == 0);
 
 	/* In ms */
 	config->chord_interkey_timeout = 50;
@@ -935,16 +1034,23 @@ static void config_init(struct config *config)
 	config->macro_repeat_timeout = 50;
 }
 
+/*
+ * Returns:
+ * 	0 on success (no warning)
+ * 	n > 0 on partial success (where n is the number of issued warnings)
+ * 	< 0 on complete failure
+ */
 int config_parse(struct config *config, const char *path)
 {
 	char *content;
+	struct srcmap srcmap;
 
-	if (!(content = read_file(path)))
+	if (!(content = read_config_file(path, &srcmap)))
 		return -1;
 
 	config_init(config);
 	snprintf(config->path, sizeof(config->path), "%s", path);
-	return config_parse_string(config, content);
+	return do_parse(config, content, &srcmap);
 }
 
 int config_check_match(struct config *config, const char *id, uint8_t flags)
