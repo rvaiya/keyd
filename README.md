@@ -125,7 +125,7 @@ explicitly blacklist these.
 
 	`usermod -aG keyd <user>`
 
-- Populate `~/.config/keyd/app.conf`:
+- Populate `$XDG_CONFIG_HOME/keyd/app.conf` (default: `~/.config/keyd/app.conf`):
 
 E.G
 
