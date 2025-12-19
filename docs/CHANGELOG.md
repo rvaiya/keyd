@@ -1,3 +1,18 @@
+# v2.6.0
+
+ - Added check to allow easier config linting
+ - Added support for scroll remapping
+ - Improved application support for numerous DEs (cosmic, Gnome 49, etc..)
+ - listen now eagerly terminates if piped into another process
+ - overloadi now accounts for shifted symbols (shifted symbols will reset the timeout)
+ - Various fixes to application support for for wlroots based compositors
+ - Increased the permitted number of nested actions
+ - Accommodate broken editors which don't add terminating newlines to the config file (e.g helix)
+ - Added new layouts/layout bug fixes
+ - Improved hardware support
+ - Improved compatibility with older kernels
+ - Various other improvements and bugfixes
+
 # v2.5.0
 
  - Allow 64 character layer names
