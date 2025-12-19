@@ -16,11 +16,11 @@ keyd-application-mapper - remap keys when window focus changes
 	purpose of setting mappings for that window in the config file.
 
 *-d, --daemonize*
-	Daemonize, write output to _~/.config/keyd/app.log_ instead of stdout.
+	Daemonize, write output to _$XDG_STATE_HOME/keyd/app.log_ instead of stdout.
 
 # DESCRIPTION
 
-A script which reads _~/.config/keyd/app.conf_ and applies the supplied
+A script which reads _$XDG_CONFIG_HOME/keyd/app.conf_ and applies the supplied
 bindings whenever a window with a matching class comes into focus.
 
 You can think of each section as a set of application specific masks applied

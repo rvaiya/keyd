@@ -23,9 +23,13 @@ from fnmatch import fnmatch
 # Consider reimplmenting in perl or C.
 # Produce more useful error messages :P.
 
-CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
-LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
-LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
+XDG_CONFIG_HOME = os.getenv('XDG_CONFIG_HOME', os.path.join(os.getenv('HOME'), '.config'))
+XDG_STATE_HOME = os.getenv('XDG_STATE_HOME', os.path.join(os.getenv('HOME'), '.local', 'state'))
+XDG_RUNTIME_DIR = os.getenv('XDG_RUNTIME_DIR', XDG_STATE_HOME)
+
+CONFIG_PATH = os.path.join(XDG_CONFIG_HOME, 'keyd', 'app.conf')
+LOCKFILE = os.path.join(XDG_RUNTIME_DIR, 'keyd', 'app.lock')
+LOGFILE = os.path.join(XDG_STATE_HOME, 'keyd', 'app.log')
 
 KEYD_BIN = os.environ.get('KEYD_BIN', 'keyd')
 
@@ -513,6 +517,7 @@ def get_monitor(on_window_change):
 
 def lock():
     global lockfh
+    os.makedirs(os.path.dirname(LOCKFILE), exist_ok=True)
     lockfh = open(LOCKFILE, 'w')
     try:
         fcntl.flock(lockfh, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -522,6 +527,7 @@ def lock():
 def daemonize():
     print(f'Daemonizing, log output will be stored in {LOGFILE}...')
 
+    os.makedirs(os.path.dirname(LOGFILE), exist_ok=True)
     fh = open(LOGFILE, 'w')
 
     os.close(1)
@@ -538,7 +544,7 @@ opt.add_argument('-d', '--daemonize', default=False, action='store_true', help='
 args = opt.parse_args()
 
 if not os.path.exists(CONFIG_PATH):
-    die('could not find app.conf, make sure it is in ~/.config/keyd/app.conf')
+    die(f'could not find app.conf, make sure it is in {CONFIG_PATH}')
 
 config = parse_config(CONFIG_PATH)
 lock()
