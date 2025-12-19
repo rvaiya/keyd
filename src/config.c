@@ -381,6 +381,8 @@ static int set_layer_entry(const struct config *config,
 static int new_layer(char *s, const struct config *config, struct layer *layer)
 {
 	uint8_t mods;
+	uint8_t keycodes[MAX_LAYER_KEYCODES];
+	size_t nr_keycodes;
 	char *name;
 	char *type;
 
@@ -421,9 +423,11 @@ static int new_layer(char *s, const struct config *config, struct layer *layer)
 
 	} else if (type && !strcmp(type, "layout")) {
 			layer->type = LT_LAYOUT;
-	} else if (type && !parse_modset(type, &mods)) {
+	} else if (type && !parse_modset_and_keycodes(type, &mods, keycodes, &nr_keycodes, 0, ARRAY_SIZE(keycodes))) {
 			layer->type = LT_NORMAL;
 			layer->mods = mods;
+			layer->nr_keycodes = nr_keycodes;
+			memcpy(layer->keycodes, keycodes, nr_keycodes * sizeof(uint8_t));
 	} else {
 		if (type)
 			config_warn("\"%s\" is not a valid layer type, ignoring", type);

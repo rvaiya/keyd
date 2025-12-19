@@ -11,6 +11,7 @@
 
 #define MAX_LAYER_NAME_LEN	64
 #define MAX_DESCRIPTOR_ARGS	3
+#define MAX_LAYER_KEYCODES	8
 
 #define MAX_LAYERS		32
 #define MAX_EXP_LEN		512
@@ -100,6 +101,8 @@ struct layer {
 	} type;
 
 	uint8_t mods;
+	uint8_t keycodes[MAX_LAYER_KEYCODES];
+	size_t nr_keycodes;
 	struct descriptor keymap[256];
 
 	struct chord chords[64];
