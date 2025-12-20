@@ -5,7 +5,7 @@
  - Improved application support for numerous DEs (cosmic, Gnome 49, etc..)
  - listen now eagerly terminates if piped into another process
  - overloadi now accounts for shifted symbols (shifted symbols will reset the timeout)
- - Various fixes to application support for for wlroots based compositors
+ - Various fixes to application support for wlroots-based compositors
  - Increased the permitted number of nested actions
  - Accommodate broken editors which don't add terminating newlines to the config file (e.g helix)
  - Added new layouts/layout bug fixes
