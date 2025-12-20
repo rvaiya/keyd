@@ -273,7 +273,7 @@ it. Finally it remaps insert to S-insert (paste on X11).
 
 # FAQS
 
-## Why is my trackpad is interfering with input after enabling keyd?
+## Why is my trackpad interfering with input after enabling keyd?
 
 libinput, a higher level input component used by most wayland and X11 setups,
 includes a feature called 'disable-while-typing' that disables the trackpad
