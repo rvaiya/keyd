@@ -11,7 +11,7 @@ keyd(1)
 # COMMANDS
 
 *monitor [-t]*
-	Print key events. If -t is supplied, also prints time since the last event in ms. Useful for discovering key names/device ids and debugging.
+	Print key events. If -t is supplied, also prints time since the last event in ms. Useful for discovering key names/device ids and debugging. Device ids are printed as _%04x:%04x:%08x_, where the first two fields are hex vendor/product ids and the last field distinguishes devices that share the same vendor/product.
 
 *listen*
 	Print layer state changes of the running keyd daemon to stdout. Useful for scripting.
@@ -116,8 +116,11 @@ Will match all keyboards which *do not*(2) have the id _0123:4567_, while:
 ```
 
 will exclusively match any devices which do. Device ids can be obtained from
-the monitor command (see _COMMANDS_). Note that a device id may only be
-listed in a single config file.
+the monitor command (see _COMMANDS_). The id identifies a specific input
+device node and has the form _%04x:%04x:%08x_, where the first two fields are
+hex vendor/product ids and the last field is a derived suffix used to
+distinguish devices that share the same vendor/product. Note that a device id
+may only be listed in a single config file.
 
 Each subsequent section of the file corresponds to a _layer_ (with the exception
 of _[global]_ (see _GLOBALS_).
