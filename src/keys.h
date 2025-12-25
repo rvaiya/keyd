@@ -10,13 +10,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define MOD_ISO_LEVEL3	0x20
 #define MOD_ALT_GR	0x10
 #define MOD_CTRL	0x8
 #define MOD_SHIFT	0x4
 #define MOD_SUPER	0x2
 #define MOD_ALT		0x1
 
-#define MAX_MOD 5
+#define MAX_MOD 6
 
 struct keycode_table_ent {
 	const char *name;
@@ -112,7 +113,7 @@ struct modifier {
 #define KEYD_KP3               81
 #define KEYD_KP0               82
 #define KEYD_KPDOT             83
-#define KEYD_IS_LEVEL3_SHIFT   84
+#define KEYD_ISO_LEVEL3_SHIFT  84
 #define KEYD_ZENKAKUHANKAKU    85
 #define KEYD_102ND             86
 #define KEYD_F11               87
