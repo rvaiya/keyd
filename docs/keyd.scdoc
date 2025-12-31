@@ -752,7 +752,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
-	If no key events occur within _<timeout> ms_, execute <action1>, otherwise
+	If no key events occur within _<timeout> ms_, execute <action2>, otherwise
 	execute <action1>.
 
 	E.g.
