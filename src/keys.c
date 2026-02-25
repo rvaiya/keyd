@@ -8,11 +8,12 @@
 #include "keys.h"
 
 const struct modifier modifiers[MAX_MOD] = {
-	{MOD_ALT, KEYD_LEFTALT},
-	{MOD_ALT_GR, KEYD_RIGHTALT},
-	{MOD_SHIFT, KEYD_LEFTSHIFT},
-	{MOD_SUPER, KEYD_LEFTMETA},
-	{MOD_CTRL, KEYD_LEFTCTRL},
+	{MOD_ALT,        KEYD_LEFTALT},
+	{MOD_ISO_LEVEL3, KEYD_ISO_LEVEL3_SHIFT},
+	{MOD_ALT_GR,     KEYD_RIGHTALT},
+	{MOD_SHIFT,      KEYD_LEFTSHIFT},
+	{MOD_SUPER,      KEYD_LEFTMETA},
+	{MOD_CTRL,       KEYD_LEFTCTRL},
 };
 
 const struct keycode_table_ent keycode_table[256] = {
@@ -45,7 +46,7 @@ const struct keycode_table_ent keycode_table[256] = {
 	[KEYD_RIGHTBRACE] = { "]", "rightbrace", "}" },
 	[KEYD_ENTER] = { "enter", NULL, NULL },
 	[KEYD_LEFTCTRL] = { "leftcontrol", "", NULL },
-	[KEYD_IS_LEVEL3_SHIFT] = { "iso-level3-shift", NULL, NULL }, //Oddly missing from input-event-codes.h, appears to be used as altgr in an english keymap on X
+	[KEYD_ISO_LEVEL3_SHIFT] = { "iso-level3-shift", NULL, NULL }, //Oddly missing from input-event-codes.h, appears to be used as altgr in an english keymap on X
 	[KEYD_A] = { "a", NULL, "A" },
 	[KEYD_S] = { "s", NULL, "S" },
 	[KEYD_D] = { "d", NULL, "D" },
@@ -326,6 +327,9 @@ int parse_modset(const char *s, uint8_t *mods)
 			break;
 		case 'G':
 			*mods |= MOD_ALT_GR;
+			break;
+		case 'I':
+			*mods |= MOD_ISO_LEVEL3;
 			break;
 		default:
 			return -1;

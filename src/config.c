@@ -636,11 +636,12 @@ static int parse_descriptor(char *s,
 		const char *layer = NULL;
 
 		switch (code) {
-			case KEYD_LEFTSHIFT:   layer = "shift"; break;
-			case KEYD_LEFTCTRL:    layer = "control"; break;
-			case KEYD_LEFTMETA:    layer = "meta"; break;
-			case KEYD_LEFTALT:     layer = "alt"; break;
-			case KEYD_RIGHTALT:    layer = "altgr"; break;
+			case KEYD_LEFTSHIFT:        layer = "shift";            break;
+			case KEYD_LEFTCTRL:         layer = "control";          break;
+			case KEYD_LEFTMETA:         layer = "meta";             break;
+			case KEYD_LEFTALT:          layer = "alt";              break;
+			case KEYD_RIGHTALT:         layer = "altgr";            break;
+			case KEYD_ISO_LEVEL3_SHIFT: layer = "iso-level3-shift"; break;
 		}
 
 		if (layer) {
@@ -1015,12 +1016,14 @@ static void config_init(struct config *config)
 	"altgr = layer(altgr)\n"
 	"meta = layer(meta)\n"
 	"control = layer(control)\n"
+	"iso-level3-shift = layer(iso-level3-shift)\n"
 
 	"[control:C]\n"
 	"[shift:S]\n"
 	"[meta:M]\n"
 	"[alt:A]\n"
-	"[altgr:G]\n";
+	"[altgr:G]\n"
+	"[iso-level3-shift:I]\n";
 
 	nw = do_parse(config, default_config, NULL);
 	assert(nw == 0);
