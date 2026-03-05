@@ -33,8 +33,6 @@ static int ipc_exec(int type, const char *data, size_t sz, uint32_t timeout)
 	}
 
 	return msg.type == IPC_FAIL;
-
-	return type == IPC_FAIL;
 }
 
 static int version(int argc, char *argv[])
