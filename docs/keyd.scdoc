@@ -722,7 +722,7 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 
 *overloadi(<action 1>, <action 2>, <idle timeout>)*
 	Activate <action 1> if the last non-action (i.e symbol) key was struck less
-	than <timeout> milliseconds ago, otherwise activate <action 2>.
+	than <idle timeout> milliseconds ago, otherwise activate <action 2>.
 
 	This can be used in combination with other overload timeouts and is particularly
 	useful for overloading letter keys (often called 'homerow mods').
@@ -752,8 +752,8 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
 
 *timeout(<action 1>, <timeout>, <action 2>)*
-	If no key events occur within _<timeout> ms_, execute <action1>, otherwise
-	execute <action1>.
+	If no key events occur within _<timeout> ms_, execute <action 2>, otherwise
+	execute <action 1>.
 
 	E.g.
 
