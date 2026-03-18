@@ -572,7 +572,7 @@ static int event_handler(struct event *ev)
 		} else if (ev->dev->is_virtual && ev->devev->type == DEV_LED) {
 			size_t i;
 
-			/* 
+			/*
 			 * Propagate LED events received by the virtual device from userspace
 			 * to all grabbed devices.
 			 *
@@ -621,7 +621,7 @@ int run_daemon(int argc, char *argv[])
 
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
-
+#ifdef __USE_GNU
 	if (sched_getparam(0, &sp)) {
 		perror("sched_getparam");
 		exit(-1);
@@ -632,6 +632,7 @@ int run_daemon(int argc, char *argv[])
 		perror("sched_setscheduler");
 		exit(-1);
 	}
+#endif
 
 	if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
 		perror("mlockall");
