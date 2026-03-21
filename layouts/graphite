@@ -1,4 +1,6 @@
 [graphite:layout]
+- = [
+= = ]
 q = b
 w = l
 e = d
@@ -32,6 +34,8 @@ m = p
 shift = layer(graphite_shift)
 
 [graphite_shift:S]
+- = {
+= = }
 q = B
 w = L
 e = D
@@ -42,8 +46,8 @@ u = F
 i = O
 o = U
 p = J
-- = :
-= = +
+[ = :
+] = +
 a = N
 s = R
 d = T
@@ -52,8 +56,8 @@ h = Y
 j = H
 k = A
 l = E
-i = I
-, = ?
+; = I
+' = ?
 z = Q
 x = X
 c = M
@@ -61,6 +65,6 @@ v = C
 b = V
 n = K
 m = P
-, = <
+, = >
 . = "
 / = <
