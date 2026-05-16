@@ -333,25 +333,57 @@ class Wlroots():
 
 class Cosmic():
     def __init__(self, on_window_change):
-        self.wl = Wayland('zcosmic_toplevel_info_v1')
+        self.wl = Wayland('ext_foreign_toplevel_list_v1', 'zcosmic_toplevel_info_v1')
         self.on_window_change = on_window_change
 
     def init(self):
         pass
 
     def run(self):
+        ext_list_id   = self.wl.ext_foreign_toplevel_list_v1
+        cosmic_info_id = self.wl.zcosmic_toplevel_info_v1
+        # ext_handle_id -> cosmic_handle_id
+        ext_to_cosmic = {}
+        # cosmic_handle_id -> {title, appid, active}
         windows = {}
+
         while True:
             (obj, event, payload) = self.wl.recv_msg()
-            if obj not in windows:
-                windows[obj]={}
 
-            if event == 2:
-                windows[obj]['title'] = self.wl.read_string(payload)
-            if event == 3:
-                windows[obj]['appid'] = self.wl.read_string(payload)
-            if event == 8  and payload[0] > 0 and payload[4] == 2:
-                self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
+            if obj == ext_list_id:
+                if event == 0:  # ext_foreign_toplevel_list_v1::toplevel — new ext handle
+                    ext_handle_id = struct.unpack('I', payload)[0]
+                    cosmic_handle_id = self.wl.alloc_id()
+                    self.wl.send_msg(cosmic_info_id, 1, struct.pack('II', cosmic_handle_id, ext_handle_id))
+                    windows[cosmic_handle_id] = {'title': '', 'appid': '', 'active': False}
+                    ext_to_cosmic[ext_handle_id] = cosmic_handle_id
+                continue
+
+            # ext_foreign_toplevel_handle_v1 events — title and appid live here
+            if obj in ext_to_cosmic:
+                w = windows[ext_to_cosmic[obj]]
+                if event == 2:    # title
+                    w['title'] = self.wl.read_string(payload)
+                elif event == 3:  # app_id
+                    w['appid'] = self.wl.read_string(payload)
+                elif event == 0:  # closed
+                    cosmic_id = ext_to_cosmic.pop(obj)
+                    windows.pop(cosmic_id, None)
+                continue
+
+            # zcosmic_toplevel_handle_v1 events — state (activation) lives here
+            if obj not in windows:
+                continue
+
+            if event == 8 and len(payload) >= 4:
+                array_size = struct.unpack('I', payload[0:4])[0]
+                activated = any(
+                    struct.unpack('I', payload[4+i:8+i])[0] == 2
+                    for i in range(0, array_size, 4)
+                )
+                windows[obj]['active'] = activated
+                if activated:
+                    self.on_window_change(windows[obj]['appid'], windows[obj]['title'])
 
 class XMonitor():
     def __init__(self, on_window_change):
