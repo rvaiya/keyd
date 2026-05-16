@@ -23,7 +23,7 @@ from fnmatch import fnmatch
 # Consider reimplmenting in perl or C.
 # Produce more useful error messages :P.
 
-CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
+CONFIG_PATH = os.getenv('KEYD_APP_CONF', os.getenv('HOME')+'/.config/keyd/app.conf')
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
