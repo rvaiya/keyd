@@ -50,7 +50,9 @@ export default class KeydExtension extends Extension {
 
 		Main.layoutManager.connectObject(
 			'system-modal-opened', () => {
-				send(`system-modal	${global.stage.get_title()}\n`);
+				const win = global.display.focus_window;
+				const title = win ? win.get_title() : '';
+				send(`system-modal	${title}\n`);
 			},
 			this
 		);
