@@ -710,6 +710,39 @@ static int parse_descriptor(char *s,
 			}
 		}
 
+		if (!strcmp(fn, "oneshot")) {
+			int j;
+
+			if (nargs < 1 || nargs > MAX_DESCRIPTOR_ARGS) {
+				err("oneshot requires 1 to %d arguments", MAX_DESCRIPTOR_ARGS);
+				return -1;
+			}
+
+			d->op = OP_ONESHOT;
+
+			for (j = 0; j < MAX_DESCRIPTOR_ARGS; j++)
+				d->args[j].idx = -1;
+
+			for (j = 0; j < (int)nargs; j++) {
+				int16_t li;
+
+				if (!strcmp(args[j], "main")) {
+					err("the main layer cannot be used in oneshot");
+					return -1;
+				}
+
+				li = config_get_layer_index(config, args[j]);
+				if (li == -1 || config->layers[li].type == LT_LAYOUT) {
+					err("%s is not a valid layer", args[j]);
+					return -1;
+				}
+
+				d->args[j].idx = li;
+			}
+
+			return 0;
+		}
+
 		for (i = 0; i < ARRAY_SIZE(actions); i++) {
 			if (!strcmp(actions[i].name, fn)) {
 				int j;
