@@ -33,9 +33,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
 	#include <dev/evdev/input.h>
-#else
+#elif !defined(__APPLE__)
 	#include <linux/input.h>
 #endif
 

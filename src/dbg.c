@@ -1,5 +1,11 @@
 #include "keyd.h"
 
+#ifdef __APPLE__
+
+void dbg_print_evdev_details(const char *path) { (void)path; }
+
+#else /* !__APPLE__ — Linux/FreeBSD only below */
+
 static size_t dbg_print_device_bits(int fd, const char *name, int type, int max, char *out, size_t out_sz)
 {
 	size_t i;
@@ -69,3 +75,5 @@ void dbg_print_evdev_details(const char *path)
 	_keyd_log(2, "r{DEBUG}: %s", out);
 	close(fd);
 }
+
+#endif /* !__APPLE__ */

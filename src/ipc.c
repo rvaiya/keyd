@@ -10,6 +10,8 @@
 
 static void chgid(void)
 {
+#ifndef __APPLE__
+	/* On macOS there is no "keyd" system group; socket is in /tmp. */
 	struct group *g = getgrnam("keyd");
 
 	if (!g) {
@@ -21,6 +23,7 @@ static void chgid(void)
 			exit(-1);
 		}
 	}
+#endif
 }
 
 int ipc_connect(void)

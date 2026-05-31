@@ -622,6 +622,9 @@ int run_daemon(int argc, char *argv[])
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
+#ifndef __APPLE__
+	/* Real-time scheduling and memory locking require special entitlements
+	 * on macOS and are skipped; they remain on Linux for latency. */
 	if (sched_getparam(0, &sp)) {
 		perror("sched_getparam");
 		exit(-1);
@@ -637,6 +640,7 @@ int run_daemon(int argc, char *argv[])
 		perror("mlockall");
 		exit(-1);
 	}
+#endif /* !__APPLE__ */
 
 	evloop_add_fd(ipcfd);
 

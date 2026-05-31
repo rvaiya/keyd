@@ -1,12 +1,21 @@
 .PHONY: all clean install uninstall debug man compose test-harness
 VERSION=2.6.0
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
-VKBD=uinput
 PREFIX?=/usr/local
 
 CONFIG_DIR?=/etc/keyd
-SOCKET_PATH=/var/run/keyd.socket
+platform=$(shell uname -s)
 
+# Platform-specific socket path: /var/run requires root on macOS, /tmp is
+# world-writable and sufficient for single-user desktop use.
+ifeq ($(platform), Darwin)
+	SOCKET_PATH=/tmp/keyd.socket
+else
+	SOCKET_PATH=/var/run/keyd.socket
+endif
+
+# CFLAGS is a simply-expanded variable (:=) so $(SOCKET_PATH) is captured now,
+# after the platform override above.
 CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-I/usr/local/include \
 	-L/usr/local/lib \
@@ -23,19 +32,32 @@ CFLAGS:=-DVERSION=\"v$(VERSION)\ \($(COMMIT)\)\" \
 	-Werror=format-security \
 	$(CFLAGS)
 
-platform=$(shell uname -s)
+# Core sources shared across all platforms (no Linux/macOS-specific I/O).
+CORE_SRCS = src/keyd.c src/daemon.c src/keyboard.c src/config.c src/keys.c \
+            src/ipc.c src/macro.c src/unicode.c src/log.c src/string.c \
+            src/ini.c src/check.c src/monitor.c src/util.c src/dbg.c
 
-ifeq ($(platform), Linux)
-	COMPAT_FILES=
+ifeq ($(platform), Darwin)
+	VKBD=macos
+	PLATFORM_SRCS = src/macos/input.c src/macos/keycodes.c
+	PLATFORM_LDFLAGS = -framework CoreGraphics -framework ApplicationServices
+	CFLAGS += -DPLATFORM_MACOS
+else ifeq ($(platform), Linux)
+	VKBD=uinput
+	PLATFORM_SRCS = src/device.c src/evloop.c
+	PLATFORM_LDFLAGS =
 else
-	LDFLAGS+=-linotify
-	COMPAT_FILES=
+	# FreeBSD or other — keep the old behaviour
+	VKBD=uinput
+	PLATFORM_SRCS = src/device.c src/evloop.c
+	PLATFORM_LDFLAGS = -linotify
 endif
 
 all:
 	mkdir -p bin
 	cp scripts/keyd-application-mapper bin/
-	$(CC) $(CFLAGS) -O3 $(COMPAT_FILES) src/*.c src/vkbd/$(VKBD).c -lpthread -o bin/keyd $(LDFLAGS)
+	$(CC) $(CFLAGS) -O3 $(CORE_SRCS) $(PLATFORM_SRCS) src/vkbd/$(VKBD).c \
+	    -lpthread -o bin/keyd $(PLATFORM_LDFLAGS) $(LDFLAGS)
 debug:
 	CFLAGS="-g -fsanitize=address -Wunused" $(MAKE)
 compose:
