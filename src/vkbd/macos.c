@@ -9,12 +9,19 @@
  * kCGEventSourceUserData field so that our own CGEventTap (in macos/input.c)
  * can recognise and pass them through instead of suppressing them.
  *
+ * Key repeat: CGEventPost is one-shot (unlike uinput on Linux which has
+ * built-in kernel repeat).  A background thread fires kCGEventKeyDown with
+ * kCGKeyboardEventAutorepeat=1 at the system repeat delay/interval to
+ * replicate the uinput behaviour.
+ *
  * Link with: -framework CoreGraphics -framework ApplicationServices
  */
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <ApplicationServices/ApplicationServices.h>
 
@@ -27,10 +34,116 @@ struct vkbd {
 	int _dummy; /* CGEventPost needs no persistent device handle */
 };
 
+/* -------------------------------------------------------------------------
+ * Software key repeat
+ *
+ * CGEventPost injected events do not auto-repeat; we simulate it here.
+ * Only one key repeats at a time (the most recently pressed non-modifier).
+ * ---------------------------------------------------------------------- */
+
+static pthread_t       s_repeat_tid;
+static pthread_mutex_t s_repeat_mtx  = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  s_repeat_cond = PTHREAD_COND_INITIALIZER;
+static uint16_t        s_repeat_key  = 0;
+static int             s_repeat_armed = 0; /* 1 when a key is held for repeat */
+static int             s_repeat_gen  = 0;  /* bumped on every arm/cancel */
+
+static int is_modifier_cgkey(uint16_t cgkey)
+{
+	switch (cgkey) {
+	case 0x38: case 0x3C: /* left/right shift */
+	case 0x3B: case 0x3E: /* left/right control */
+	case 0x3A: case 0x3D: /* left/right option */
+	case 0x37: case 0x36: /* left/right command */
+	case 0x3F:            /* fn */
+	case 0x39:            /* caps lock */
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+/* Read the system key-repeat settings (units of 1/60 s → ms). */
+static void get_repeat_settings(long *delay_ms, long *interval_ms)
+{
+	Boolean ok;
+	CFIndex v;
+
+	v = CFPreferencesGetAppIntegerValue(CFSTR("InitialKeyRepeat"),
+	    kCFPreferencesAnyApplication, &ok);
+	*delay_ms = (ok && v > 0) ? v * 1000 / 60 : 500;
+
+	v = CFPreferencesGetAppIntegerValue(CFSTR("KeyRepeat"),
+	    kCFPreferencesAnyApplication, &ok);
+	*interval_ms = (ok && v > 0) ? v * 1000 / 60 : 33;
+}
+
+static void sleep_ms(long ms)
+{
+	struct timespec ts = { ms / 1000, (ms % 1000) * 1000000L };
+	nanosleep(&ts, NULL);
+}
+
+static void post_key_repeat(uint16_t cgkey)
+{
+	CGEventRef ev = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)cgkey, true);
+	if (!ev)
+		return;
+	CGEventSetIntegerValueField(ev, kCGKeyboardEventAutorepeat, 1);
+	CGEventSetIntegerValueField(ev, kCGEventSourceUserData, KEYD_EVENT_MARKER);
+	CGEventPost(kCGHIDEventTap, ev);
+	CFRelease(ev);
+}
+
+static void *repeat_thread_fn(void *arg)
+{
+	long delay_ms, interval_ms;
+	(void)arg;
+	get_repeat_settings(&delay_ms, &interval_ms);
+
+	for (;;) {
+		int gen;
+		uint16_t key;
+
+		pthread_mutex_lock(&s_repeat_mtx);
+		while (!s_repeat_armed)
+			pthread_cond_wait(&s_repeat_cond, &s_repeat_mtx);
+		key = s_repeat_key;
+		gen = s_repeat_gen;
+		pthread_mutex_unlock(&s_repeat_mtx);
+
+		sleep_ms(delay_ms);
+
+		pthread_mutex_lock(&s_repeat_mtx);
+		int cancelled = (s_repeat_gen != gen);
+		pthread_mutex_unlock(&s_repeat_mtx);
+		if (cancelled)
+			continue;
+
+		while (1) {
+			pthread_mutex_lock(&s_repeat_mtx);
+			cancelled = (s_repeat_gen != gen);
+			pthread_mutex_unlock(&s_repeat_mtx);
+			if (cancelled)
+				break;
+
+			post_key_repeat(key);
+			sleep_ms(interval_ms);
+		}
+	}
+	return NULL;
+}
+
 struct vkbd *vkbd_init(const char *name)
 {
 	(void)name;
 	struct vkbd *v = calloc(1, sizeof *v);
+
+	pthread_t tid;
+	pthread_create(&tid, NULL, repeat_thread_fn, NULL);
+	pthread_detach(tid);
+	s_repeat_tid = tid;
+
 	return v;
 }
 
@@ -107,6 +220,21 @@ void vkbd_send_key(const struct vkbd *vkbd, uint8_t code, int state)
 	}
 
 	post_key(cgkey, state);
+
+	/* Arm or cancel the software repeat timer for non-modifier keys. */
+	if (!is_modifier_cgkey(cgkey)) {
+		pthread_mutex_lock(&s_repeat_mtx);
+		if (state) {
+			s_repeat_key   = cgkey;
+			s_repeat_armed = 1;
+			s_repeat_gen++;
+			pthread_cond_signal(&s_repeat_cond);
+		} else if (s_repeat_key == cgkey && s_repeat_armed) {
+			s_repeat_armed = 0;
+			s_repeat_gen++;
+		}
+		pthread_mutex_unlock(&s_repeat_mtx);
+	}
 }
 
 /* -------------------------------------------------------------------------
