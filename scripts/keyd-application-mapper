@@ -23,7 +23,7 @@ from fnmatch import fnmatch
 # Consider reimplmenting in perl or C.
 # Produce more useful error messages :P.
 
-CONFIG_PATH = os.getenv('HOME')+'/.config/keyd/app.conf'
+CONFIG_PATH = os.getenv('KEYD_APP_CONF', os.getenv('HOME')+'/.config/keyd/app.conf')
 LOCKFILE = os.getenv('HOME')+'/.config/keyd/app.lock'
 LOGFILE = os.getenv('HOME')+'/.config/keyd/app.log'
 
@@ -207,6 +207,7 @@ class Wayland():
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect(path)
 
+        self._pending = []
         self._bind_interfaces(interfaces)
 
     def send_msg(self, object_id, opcode, payload):
@@ -215,15 +216,26 @@ class Wayland():
         self.sock.sendall(struct.pack(b'II', object_id, opcode))
         self.sock.sendall(payload)
 
-    def recv_msg(self):
-        (object_id, evcode) = struct.unpack('II', self.sock.recv(8))
+    def recvall(self, n):
+        data = b''
+        while len(data) < n:
+            chunk = self.sock.recv(n - len(data))
+            if not chunk:
+                raise ConnectionError('wayland socket closed')
+            data += chunk
+        return data
 
+    def _recv_raw(self):
+        (object_id, evcode) = struct.unpack('II', self.recvall(8))
         size = evcode >> 16
         evcode = evcode & 0xFFFF
-
-        data = self.sock.recv(size-8)
-
+        data = self.recvall(size-8)
         return (object_id, evcode, data)
+
+    def recv_msg(self):
+        if self._pending:
+            return self._pending.pop(0)
+        return self._recv_raw()
 
     def read_string(self, b):
         return b[4:4+struct.unpack('I', b[:4])[0]-1].decode('utf8')
@@ -237,7 +249,7 @@ class Wayland():
 
         interface_object_number = 4
         while True:
-            (obj, event, payload) = self.recv_msg()
+            (obj, event, payload) = self._recv_raw()
             if obj == 2 and event == 0:  # registry.global event
                 wl_name = struct.unpack('I', payload[0:4])[0]
                 wl_interface = self.read_string(payload[4:])
@@ -249,11 +261,19 @@ class Wayland():
                         setattr(self, interface, interface_object_number)
                         interface_object_number += 1
 
-            if obj == 3:  # sync message
+            elif obj == 3:  # sync message
                 for interface in interfaces:
                     if not hasattr(self, interface):
                         raise Exception(f"Could not find interface {interface}")
+                self._next_id = interface_object_number
                 return
+            else:
+                self._pending.append((obj, event, payload))
+
+    def alloc_id(self):
+        obj_id = self._next_id
+        self._next_id += 1
+        return obj_id
 
 
 class Wlroots():
@@ -313,25 +333,57 @@ class Wlroots():
 
 class Cosmic():
     def __init__(self, on_window_change):
-        self.wl = Wayland('zcosmic_toplevel_info_v1')
+        self.wl = Wayland('ext_foreign_toplevel_list_v1', 'zcosmic_toplevel_info_v1')
         self.on_window_change = on_window_change
 
     def init(self):
         pass
 
     def run(self):
+        ext_list_id   = self.wl.ext_foreign_toplevel_list_v1
+        cosmic_info_id = self.wl.zcosmic_toplevel_info_v1
+        # ext_handle_id -> cosmic_handle_id
+        ext_to_cosmic = {}
+        # cosmic_handle_id -> {title, appid, active}
         windows = {}
+
         while True:
             (obj, event, payload) = self.wl.recv_msg()
-            if obj not in windows:
-                windows[obj]={}
 
-            if event == 2:
-                windows[obj]['title'] = self.wl.read_string(payload)
-            if event == 3:
-                windows[obj]['appid'] = self.wl.read_string(payload)
-            if event == 8  and payload[0] > 0 and payload[4] == 2:
-                self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
+            if obj == ext_list_id:
+                if event == 0:  # ext_foreign_toplevel_list_v1::toplevel — new ext handle
+                    ext_handle_id = struct.unpack('I', payload)[0]
+                    cosmic_handle_id = self.wl.alloc_id()
+                    self.wl.send_msg(cosmic_info_id, 1, struct.pack('II', cosmic_handle_id, ext_handle_id))
+                    windows[cosmic_handle_id] = {'title': '', 'appid': '', 'active': False}
+                    ext_to_cosmic[ext_handle_id] = cosmic_handle_id
+                continue
+
+            # ext_foreign_toplevel_handle_v1 events — title and appid live here
+            if obj in ext_to_cosmic:
+                w = windows[ext_to_cosmic[obj]]
+                if event == 2:    # title
+                    w['title'] = self.wl.read_string(payload)
+                elif event == 3:  # app_id
+                    w['appid'] = self.wl.read_string(payload)
+                elif event == 0:  # closed
+                    cosmic_id = ext_to_cosmic.pop(obj)
+                    windows.pop(cosmic_id, None)
+                continue
+
+            # zcosmic_toplevel_handle_v1 events — state (activation) lives here
+            if obj not in windows:
+                continue
+
+            if event == 8 and len(payload) >= 4:
+                array_size = struct.unpack('I', payload[0:4])[0]
+                activated = any(
+                    struct.unpack('I', payload[4+i:8+i])[0] == 2
+                    for i in range(0, array_size, 4)
+                )
+                windows[obj]['active'] = activated
+                if activated:
+                    self.on_window_change(windows[obj]['appid'], windows[obj]['title'])
 
 class XMonitor():
     def __init__(self, on_window_change):
