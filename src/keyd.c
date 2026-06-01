@@ -51,7 +51,7 @@ static int help(int argc, char *argv[])
 	       "    monitor [-t]                   Print key events in real time.\n"
 	       "    check [<config file>...]       Check the supplied config files for errors. If no files are supplied, all .conf files in the config directory will be checked.\n"
 	       "    list-keys                      Print a list of valid key names.\n"
-	       "    reload                         Trigger a reload .\n"
+	       "    reload                         Trigger a reload.\n"
 	       "    listen                         Print layer state changes of the running keyd daemon to stdout.\n"
 	       "    bind <binding> [<binding>...]  Add the supplied bindings to all loaded configs.\n"
 	       "Options:\n"
