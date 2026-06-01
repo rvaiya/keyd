@@ -622,14 +622,9 @@ int run_daemon(int argc, char *argv[])
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(stderr, NULL, _IOLBF, 0);
 
-	if (sched_getparam(0, &sp)) {
-		perror("sched_getparam");
-		exit(-1);
-	}
-
 	sp.sched_priority = 49;
-	if (sched_setscheduler(0, SCHED_FIFO, &sp)) {
-		perror("sched_setscheduler");
+	if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp)) {
+		perror("pthread_setschedparam");
 		exit(-1);
 	}
 
