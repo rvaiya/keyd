@@ -382,6 +382,7 @@ class XMonitor():
         _NET_WM_STATE = self.dpy.intern_atom('_NET_WM_STATE', False)
         _NET_WM_STATE_ABOVE = self.dpy.intern_atom('_NET_WM_STATE_ABOVE', False)
         _NET_WM_WINDOW_TYPE_NOTIFICATION = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE_NOTIFICATION', False)
+        _NET_WM_WINDOW_TYPE_NORMAL = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE_NORMAL', False)
         _NET_WM_WINDOW_TYPE = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE', False)
 
         def get_floating_window():
@@ -394,9 +395,16 @@ class XMonitor():
 
                 if v and v.value and v.value[0] == _NET_WM_STATE_ABOVE:
                     types = w.get_full_property(_NET_WM_WINDOW_TYPE, Xlib.Xatom.ATOM)
+                    wm_class = w.get_wm_class()
+
+                    # Ignore normal windows
+                    if types and _NET_WM_WINDOW_TYPE_NORMAL in types.value:
+                        dbg(f'skipping normal window: {wm_class}')
+                        continue
 
                     # Ignore persistent notification windows like dunst
                     if not types or _NET_WM_WINDOW_TYPE_NOTIFICATION not in types.value:
+                        dbg(f'get_floating_window found: {wm_class}')
                         return w
 
             return None
