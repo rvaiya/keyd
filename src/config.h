@@ -50,6 +50,7 @@ enum op {
 	OP_MACRO,
 	OP_MACRO2,
 	OP_COMMAND,
+	OP_COMMAND2,
 	OP_TIMEOUT,
 
 /* Experimental */
@@ -142,6 +143,8 @@ struct config {
 	long macro_sequence_timeout;
 	long macro_repeat_timeout;
 	long oneshot_timeout;
+	long command_timeout;
+	long command_repeat_timeout;
 
 	long overload_tap_timeout;
 

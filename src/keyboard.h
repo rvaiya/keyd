@@ -55,13 +55,16 @@ struct keyboard {
 	uint8_t inhibit_modifier_guard;
 
 	struct macro *active_macro;
+	const char *active_command;
 	int active_macro_layer;
 	int overload_last_layer_code;
 
 	long macro_timeout;
 	long oneshot_timeout;
+	long command_timeout;
 
 	long macro_repeat_interval;
+	long command_repeat_interval;
 
 	long overload_start_time;
 
