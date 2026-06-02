@@ -7,6 +7,7 @@
 #include "keyd.h"
 
 static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long time);
+static void send_key_to_output(struct keyboard *kbd, uint8_t code);
 
 /*
  * Here be tiny dragons.
@@ -61,12 +62,10 @@ static void reset_keystate(struct keyboard *kbd)
 	size_t i;
 
 	for (i = 0; i < 256; i++) {
-		if (kbd->keystate[i]) {
-			kbd->output.send_key(i, 0);
-			kbd->keystate[i] = 0;
-		}
+		kbd->control_keystate[i] = 0;
+		kbd->layer_keystate[i] = 0;
+		send_key_to_output(kbd, i);
 	}
-
 }
 
 static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
@@ -76,6 +75,15 @@ static void send_key(struct keyboard *kbd, uint8_t code, uint8_t pressed)
 
 	if (pressed)
 		kbd->last_pressed_output_code = code;
+
+	kbd->control_keystate[code] = pressed;
+
+	send_key_to_output(kbd, code);
+}
+
+static void send_key_to_output(struct keyboard *kbd, uint8_t code)
+{
+	uint8_t pressed = kbd->control_keystate[code] || kbd->layer_keystate[code];
 
 	if (kbd->keystate[code] != pressed) {
 		kbd->keystate[code] = pressed;
@@ -131,6 +139,29 @@ static void set_mods(struct keyboard *kbd, uint8_t mods)
 	}
 }
 
+static int is_modifier_key(uint8_t keycode)
+{
+	for (size_t i = 0; i < ARRAY_SIZE(modifiers); i++) {
+		if (keycode == modifiers[i].key) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void set_layer_keycodes(struct keyboard *kbd, const uint8_t *keycodesp)
+{
+	for (size_t keycode = 0; keycode < 256; keycode++) {
+		if (is_modifier_key(keycode)) {
+			continue;
+		}
+
+		int pressed = keycodesp[keycode];
+		kbd->layer_keystate[keycode] = pressed;
+		send_key_to_output(kbd, keycode);
+	}
+}
+
 // Returns the resultant mod mask.
 static uint8_t update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t mods)
 {
@@ -138,6 +169,8 @@ static uint8_t update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t
 	struct layer *excluded_layer = excluded_layer_idx == -1 ?
 					NULL :
 					&kbd->config.layers[excluded_layer_idx];
+
+	uint8_t keycodes[256] = {0};
 
 	for (i = 0; i < kbd->config.nr_layers; i++) {
 		struct layer *layer = &kbd->config.layers[i];
@@ -156,11 +189,18 @@ static uint8_t update_mods(struct keyboard *kbd, int excluded_layer_idx, uint8_t
 					excluded = 1;
 		}
 
-		if (!excluded)
+		if (!excluded) {
 			mods |= layer->mods;
+
+			for (size_t j = 0; j < layer->nr_keycodes; j++) {
+				uint8_t keycode = layer->keycodes[j];
+				keycodes[keycode] = 1;
+			}
+		}
 	}
 
 	set_mods(kbd, mods);
+	set_layer_keycodes(kbd, keycodes);
 
 	return mods;
 }

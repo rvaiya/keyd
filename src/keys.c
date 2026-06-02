@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "keys.h"
+#include "config.h"
+#include "keyd.h"
+#include "string.h"
 
 const struct modifier modifiers[MAX_MOD] = {
 	{MOD_ALT, KEYD_LEFTALT},
@@ -308,106 +311,137 @@ const char *modstring(uint8_t mods)
 
 int parse_modset(const char *s, uint8_t *mods)
 {
-	*mods = 0;
-
-	while (*s) {
-		switch (*s) {
-		case 'C':
-			*mods |= MOD_CTRL;
-			break;
-		case 'M':
-			*mods |= MOD_SUPER;
-			break;
-		case 'A':
-			*mods |= MOD_ALT;
-			break;
-		case 'S':
-			*mods |= MOD_SHIFT;
-			break;
-		case 'G':
-			*mods |= MOD_ALT_GR;
-			break;
-		default:
-			return -1;
-			break;
-		}
-
-		if (s[1] == 0)
-			return 0;
-		else if (s[1] != '-')
-			return -1;
-
-		s += 2;
+	if (!*s) {
+		return -1;
 	}
-
-	return 0;
+	return parse_modset_and_keycodes(s, mods, NULL, NULL, 0, 0);
 }
 
 int parse_key_sequence(const char *s, uint8_t *codep, uint8_t *modsp)
 {
-	const char *c = s;
-	size_t i;
-
-	if (!*s)
+	if (!*s) {
 		return -1;
+	}
+	return parse_modset_and_keycodes(s, modsp, codep, NULL, 1, 1);
+}
+
+int parse_modset_and_keycodes(const char *s, uint8_t *modsp, uint8_t *keycodesp, size_t *nr_keycodesp, size_t min_keycodes, size_t max_keycodes)
+{
+	const char *c = s;
 
 	uint8_t mods = 0;
+	uint8_t keycodes[MAX_LAYER_KEYCODES];
+	size_t keycode_i = 0;
 
-	while (c[1] == '-') {
-		switch (*c) {
+	if (max_keycodes > ARRAY_SIZE(keycodes)) {
+		max_keycodes = ARRAY_SIZE(keycodes);
+	}
+
+	if (modsp && *c != '\0') {
+		while (c[1] == '-' || c[1] == '\0') {
+			uint8_t mod = 0;
+			if (parse_mod(*c, &mod)) {
+				break;
+			}
+			mods |= mod;
+
+			if (c[1] == '\0') {
+				c += 1;
+				break;
+			}
+
+			c += 2;
+		}
+	}
+
+	if (keycodesp) {
+		for (; keycode_i < max_keycodes && *c != '\0'; keycode_i++) {
+
+			uint8_t mod = 0;
+			uint8_t keycode = 0;
+			int found_keycode = 0;
+
+			const char *token_end = str_token_end(c + 1, '-');
+			size_t token_len = token_end - c;
+
+			for (size_t i = 0; i < 256; i++) {
+				const struct keycode_table_ent *ent = &keycode_table[i];
+
+				if (ent->name) {
+					if (ent->shifted_name &&
+						str_matches_token(ent->shifted_name, c, token_len)) {
+
+						mods = MOD_SHIFT;
+						keycode = i;
+						found_keycode = 1;
+						break;
+					} else if (str_matches_token(ent->name, c, token_len) ||
+						(ent->alt_name && str_matches_token(ent->alt_name, c, token_len))) {
+
+						keycode = i;
+						found_keycode = 1;
+						break;
+					}
+				}
+			}
+
+			if (!found_keycode) {
+				return -1;
+			}
+
+			mods |= mod;
+			keycodes[keycode_i] = keycode;
+
+			c = token_end;
+			if (*c != '\0') {
+				c += 1;
+			}
+		}
+
+		if (keycode_i < min_keycodes) {
+			return -1;
+		}
+	}
+
+	if (*c != '\0') {
+		return -1;
+	}
+
+	if (modsp)
+		*modsp = mods;
+
+	if (keycodesp)
+		memcpy(keycodesp, keycodes, keycode_i * sizeof(uint8_t));
+
+	if (nr_keycodesp)
+		*nr_keycodesp = keycode_i;
+
+	return 0;
+}
+
+int parse_mod(char c, uint8_t *modp)
+{
+	uint8_t mod = 0;
+	switch (c) {
 		case 'C':
-			mods |= MOD_CTRL;
+			mod = MOD_CTRL;
 			break;
 		case 'M':
-			mods |= MOD_SUPER;
+			mod = MOD_SUPER;
 			break;
 		case 'A':
-			mods |= MOD_ALT;
+			mod = MOD_ALT;
 			break;
 		case 'S':
-			mods |= MOD_SHIFT;
+			mod = MOD_SHIFT;
 			break;
 		case 'G':
-			mods |= MOD_ALT_GR;
+			mod = MOD_ALT_GR;
 			break;
 		default:
 			return -1;
-			break;
-		}
-
-		c += 2;
 	}
 
-	for (i = 0; i < 256; i++) {
-		const struct keycode_table_ent *ent = &keycode_table[i];
-
-		if (ent->name) {
-			if (ent->shifted_name &&
-			    !strcmp(ent->shifted_name, c)) {
-
-				mods |= MOD_SHIFT;
-
-				if (modsp)
-					*modsp = mods;
-
-				if (codep)
-					*codep = i;
-
-				return 0;
-			} else if (!strcmp(ent->name, c) ||
-				   (ent->alt_name && !strcmp(ent->alt_name, c))) {
-
-				if (modsp)
-					*modsp = mods;
-
-				if (codep)
-					*codep = i;
-
-				return 0;
-			}
-		}
-	}
-
-	return -1;
+	*modp = mod;
+	return 0;
 }
-

@@ -14,4 +14,6 @@ int utf8_strlen(const char *s);
 
 int is_timeval(const char *s);
 size_t str_escape(char *s);
+int str_matches_token(const char *s, const char *token_start, size_t token_len);
+const char *str_token_end(const char *s, char delim);
 #endif

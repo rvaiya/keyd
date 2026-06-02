@@ -132,6 +132,9 @@ struct keyboard {
 
 	uint8_t keystate[256];
 
+	uint8_t control_keystate[256];
+	uint8_t layer_keystate[256];
+
 	struct {
 		int x;
 		int y;

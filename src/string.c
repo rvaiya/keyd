@@ -4,6 +4,8 @@
  * © 2019 Raheman Vaiya (see also: LICENSE).
  */
 #include <assert.h>
+#include <stddef.h>
+#include <string.h>
 
 #include "string.h"
 
@@ -106,3 +108,16 @@ size_t str_escape(char *s)
 	return n;
 }
 
+int str_matches_token(const char *s, const char *token_start, size_t token_len)
+{
+	return !strncmp(s, token_start, token_len) && !s[token_len];
+}
+
+const char *str_token_end(const char *s, char delim)
+{
+	const char *token_end = strchr(s, delim);
+	if (!token_end) {
+		token_end = s + strlen(s);
+	}
+	return token_end;
+}
