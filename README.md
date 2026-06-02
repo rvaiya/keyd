@@ -297,6 +297,18 @@ AttrKeyboardIntegration=internal
 
 Credit to @mark-herbert42 and @canadaduane for the original solution.
 
+## Why does overload() ignore mouse click / scroll events?
+
+keyd ignores non-keyboard devices by default, so it does not see the mouse
+button events. To avoid firing the tap action after a mouse event, either
+list your mouse id explicitly in the `[ids]` section, or add
+`overload_tap_timeout = 200` in the `[global]` section.
+
+_Mouse support is experimental_ (`man keyd`). You may need to configure mouse
+settings such as sensitivity on
+[_keyd's virtual pointer_](https://github.com/rvaiya/keyd/issues/191#issuecomment-1149227122)
+after enabling keyd mouse support.
+
 ## What about xmodmap/setxkbmap/*?
 
 xmodmap and friends are display server level tools with limited functionality.
