@@ -62,6 +62,7 @@ static uint8_t resolve_device_capabilities(int fd, uint32_t *num_keys, uint8_t *
 		KEY_TOUCHPAD_TOGGLE,
 		KEY_TOUCHPAD_OFF,
 		KEY_MICMUTE,
+		KEY_POWER,
 	};
 	const uint32_t keyboard_keys[] = {
 		KEY_1, KEY_2, KEY_3, KEY_4,
