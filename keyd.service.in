@@ -4,6 +4,7 @@ Description=key remapping daemon
 [Service]
 Type=simple
 ExecStart=@PREFIX@/bin/keyd
+ExecReload=@PREFIX@/bin/keyd reload
 
 [Install]
 WantedBy=multi-user.target
