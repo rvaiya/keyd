@@ -1,5 +1,6 @@
 [Unit]
 Description=usb gadget setup
+Documentation=man:keyd(1)
 Requires=systemd-modules-load.service,keyd.service
 Before=keyd.service
 After=systemd-modules-load.service
