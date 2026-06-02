@@ -27,7 +27,7 @@ See also: [changelog](docs/CHANGELOG.md).
 
 # Features
 
-keyd has several unique features many of which are traditionally only
+keyd has several unique features, many of which are traditionally only
 found in custom keyboard firmware like [QMK](https://github.com/qmk/qmk_firmware)
 as well as some which are unique to keyd.
 
@@ -267,13 +267,13 @@ following config:
 	insert = S-insert
 
 This overloads the capslock key to function as both escape (when tapped) and
-control (when held) and remaps all modifiers to 'oneshot' keys. Thus to produce
+control (when held) and remaps all modifiers to 'oneshot' keys. Thus, to produce
 the letter A you can now simply tap shift and then a instead of having to hold
 it. Finally it remaps insert to S-insert (paste on X11).
 
 # FAQS
 
-## Why is my trackpad is interfering with input after enabling keyd?
+## Why is my trackpad interfering with input after enabling keyd?
 
 libinput, a higher level input component used by most wayland and X11 setups,
 includes a feature called 'disable-while-typing' that disables the trackpad
@@ -302,7 +302,7 @@ Credit to @mark-herbert42 and @canadaduane for the original solution.
 xmodmap and friends are display server level tools with limited functionality.
 keyd is a system level solution which implements advanced features like
 layering and [oneshot](https://docs.qmk.fm/#/one_shot_keys)
-modifiers.  While some X tools offer similar functionality I am not aware of
+modifiers. While some X tools offer similar functionality I am not aware of
 anything that is as flexible as keyd.
 
 ## What about [kmonad](https://github.com/kmonad/kmonad)?
