@@ -9,3 +9,4 @@ bin/
 __pycache__
 test.log
 keyd.service
+src/vkbd/usb-gadget.service

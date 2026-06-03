@@ -1,0 +1,26 @@
+root tab_size=8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.c]
+indent_size = 8
+indent_style = tab
+
+[*.h]
+indent_size = 8
+indent_style = tab
+
+[*.mk]
+indent_style = tab
+
+[*.sh]
+indent_size = 4
+indent_style = space
+
+[*.py]
+indent_size = 4
+indent_style = space
+
+[*.{md,txt}]
+indent_size = 4
+indent_style = space
