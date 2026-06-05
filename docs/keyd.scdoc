@@ -638,9 +638,17 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 *layer(<layer>)*
 	Activate the given layer for the duration of the keypress.
 
-*oneshot(<layer>)*
+*oneshot(<layer>[, <layer2>, <layer3>])*
 
-	If tapped, activate the supplied layer for the duration of the next keypress.
+	If tapped, activate the supplied layer(s) for the duration of the next
+	keypress. Up to three layers may be specified, and all are activated
+	simultaneously. This is useful for one-shot modifier combos:
+
+```
+	[main]
+
+	capslock = oneshot(ctrl, shift)
+```
 
 *swap(<layer>)*
 	Swap the currently active layer with the supplied one. If the current

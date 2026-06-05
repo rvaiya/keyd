@@ -1,4 +1,4 @@
-.PHONY: all clean install uninstall debug man compose test-harness
+.PHONY: all clean install uninstall debug man compose test-harness test test-io help
 VERSION=2.6.0
 COMMIT=$(shell git describe --no-match --always --abbrev=7 --dirty)
 VKBD=uinput
@@ -86,33 +86,60 @@ install:
 uninstall:
 	-groupdel keyd
 	rm -rf $(DESTDIR)$(PREFIX)/bin/keyd \
-		$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
-		$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
-		$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
-		$(DESTDIR)$(PREFIX)/share/keyd/ \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
-		$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
-		$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
-		$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
+			$(DESTDIR)$(PREFIX)/bin/keyd-application-mapper \
+			$(DESTDIR)$(PREFIX)/share/doc/keyd/ \
+			$(DESTDIR)$(PREFIX)/share/man/man1/keyd*.gz \
+			$(DESTDIR)$(PREFIX)/share/keyd/ \
+			$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd-usb-gadget.service \
+			$(DESTDIR)$(PREFIX)/bin/keyd-usb-gadget.sh \
+			$(DESTDIR)$(PREFIX)/lib/systemd/system/keyd.service \
+			$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyd.conf
 clean:
 	rm -rf bin keyd.service src/vkbd/usb-gadget.service
 test:
 	@cd t; \
 	for f in *.sh; do \
-		./$$f; \
+			./$$f; \
 	done
 test-io:
 	mkdir -p bin
 	$(CC) \
-	-DDATA_DIR=\"\" \
-	-o bin/test-io \
-		t/test-io.c \
-		src/keyboard.c \
-		src/string.c \
-		src/macro.c \
-		src/config.c \
-		src/log.c \
-		src/ini.c \
-		src/keys.c  \
-		src/unicode.c && \
+		-DDATA_DIR=\"\" \
+		-o bin/test-io \
+			t/test-io.c \
+			src/keyboard.c \
+			src/string.c \
+			src/macro.c \
+			src/config.c \
+			src/log.c \
+			src/ini.c \
+			src/keys.c    \
+			src/unicode.c && \
 	./bin/test-io t/test.conf t/*.t
+
+help:
+	@echo "Usage: make <target> [VAR=value ...]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all       Compile keyd binary (default VKBD=uinput)"
+	@echo "  debug     Compile with ASAN + debug symbols"
+	@echo "  man       Build man pages from .scdoc sources (requires scdoc)"
+	@echo "  compose   Generate X compose table (data/keyd.compose)"
+	@echo "  test      Run integration test suite (requires root)"
+	@echo "  test-io   Run unit tests (keyboard logic, no root needed)"
+	@echo "  install   Install to PREFIX [=/usr/local]"
+	@echo "  uninstall Remove installed files"
+	@echo "  clean     Remove build artifacts (bin/, keyd.service)"
+	@echo ""
+	@echo "Variables:"
+	@echo "  PREFIX       Install prefix (default: /usr/local)"
+	@echo "  CONFIG_DIR   Config directory (default: /etc/keyd)"
+	@echo "  VKBD         Virtual keyboard backend (default: uinput)"
+	@echo "               Alternatives: stdout, usb-gadget"
+	@echo "  SOCKET_PATH  IPC socket path (default: /var/run/keyd.socket)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make VKBD=usb-gadget && sudo make install VKBD=usb-gadget"
+	@echo "  make test-io > /dev/null 2>&1; echo $?"
+
+# End of file

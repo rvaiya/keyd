@@ -682,14 +682,24 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		break;
 	case OP_ONESHOTM:
 	case OP_ONESHOTK:
-	case OP_ONESHOT:
-		idx = d->args[0].idx;
+	case OP_ONESHOT: {
+		int j;
 
 		if (pressed) {
 			if (d->op == OP_ONESHOTK)
 				process_descriptor(kbd, code, &kbd->config.descriptors[d->args[1].idx], dl, 1, time);
 
-			activate_layer(kbd, code, idx);
+			if (d->op == OP_ONESHOT) {
+				for (j = 0; j < MAX_DESCRIPTOR_ARGS; j++) {
+					idx = d->args[j].idx;
+					if (idx == -1)
+						break;
+					activate_layer(kbd, code, idx);
+				}
+			} else {
+				activate_layer(kbd, code, d->args[0].idx);
+			}
+
 			update_mods(kbd, dl, 0);
 			kbd->oneshot_latch = 1;
 		} else {
@@ -697,18 +707,39 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 				process_descriptor(kbd, code, &kbd->config.descriptors[d->args[1].idx], dl, 0, time);
 
 			if (kbd->oneshot_latch) {
-				kbd->layer_state[idx].oneshot_depth++;
+				if (d->op == OP_ONESHOT) {
+					for (j = 0; j < MAX_DESCRIPTOR_ARGS; j++) {
+						idx = d->args[j].idx;
+						if (idx == -1)
+							break;
+						kbd->layer_state[idx].oneshot_depth++;
+					}
+				} else {
+					kbd->layer_state[d->args[0].idx].oneshot_depth++;
+				}
+
 				if (kbd->config.oneshot_timeout) {
 					kbd->oneshot_timeout = time + kbd->config.oneshot_timeout;
 					schedule_timeout(kbd, kbd->oneshot_timeout);
 				}
 			} else {
-				deactivate_layer(kbd, idx);
+				if (d->op == OP_ONESHOT) {
+					for (j = 0; j < MAX_DESCRIPTOR_ARGS; j++) {
+						idx = d->args[j].idx;
+						if (idx == -1)
+							break;
+						deactivate_layer(kbd, idx);
+					}
+				} else {
+					deactivate_layer(kbd, d->args[0].idx);
+				}
+
 				update_mods(kbd, -1, 0);
 			}
 		}
 
 		break;
+	}
 	case OP_MACRO2:
 	case OP_MACRO:
 		if (pressed) {
