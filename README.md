@@ -80,6 +80,10 @@ between releases. Releases are [tagged](https://github.com/rvaiya/keyd/tags), an
     make && sudo make install
     sudo systemctl enable --now keyd
 
+## Homebrew (macOS/Linux)
+
+    brew install keyd
+
 # Quickstart
 
 1. Install and start keyd (e.g `sudo systemctl enable keyd --now`)
