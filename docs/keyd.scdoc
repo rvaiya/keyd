@@ -487,6 +487,8 @@ Allows the user to define a set of universal bindings in /etc/keyd/common
 without having to explicitly account for the transposed meta and alt keys within
 the included config snippet.
 
+For parenthesis inside functions the alias 'S-9' and 'S-0' can be used, since parenthesis are used in the structure of the function in the config file. Alternativley 'kpleftparen' or 'kprightparen' can be used.
+
 ## File Inclusion
 
 Config files may include other files located within the config directory using
