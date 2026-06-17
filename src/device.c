@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/inotify.h>
+#include <limits.h>
 
 /*
  * Abstract away evdev and inotify.
@@ -253,13 +254,24 @@ int device_scan(struct device devices[MAX_DEVICES])
 		exit(-1);
 	}
 
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+
+	size_t stack_size = 128 * 1024;
+#ifdef PTHREAD_STACK_MIN
+	if (stack_size < PTHREAD_STACK_MIN) {
+		stack_size = PTHREAD_STACK_MIN;
+	}
+#endif
+	pthread_attr_setstacksize(&attr, stack_size);
+
 	while((ent = readdir(dh))) {
 		if (ent->d_type != DT_DIR && !strncmp(ent->d_name, "event", 5)) {
 			assert(n < MAX_DEVICES);
 			struct device_worker *w = &workers[n++];
 
 			snprintf(w->path, sizeof(w->path), "/dev/input/%s", ent->d_name);
-			pthread_create(&w->tid, NULL, device_scan_worker, w);
+			pthread_create(&w->tid, &attr, device_scan_worker, w);
 		}
 	}
 
