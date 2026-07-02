@@ -21,7 +21,7 @@ See also: [changelog](docs/CHANGELOG.md).
 # Goals
 
   - Speed       (a hand tuned input loop written in C that takes <<1ms)
-  - Simplicity  (a [config format](#sample-config) that is intuitive)
+  - Simplicity  (a [config format](#examples) that is intuitive)
   - Consistency (modifiers that [play nicely with layers](https://github.com/rvaiya/keyd/blob/6dc2d5c4ea76802fd192b143bdd53b1787fd6deb/docs/keyd.scdoc#L128) by default)
   - Modularity  (a UNIXy core extensible through the use of an [IPC](https://github.com/rvaiya/keyd/blob/90973686723522c2e44d8e90bb3508a6da625a20/docs/keyd.scdoc#L391) mechanism)
 
@@ -208,7 +208,11 @@ archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
 
 Easy install with `sudo xbps-install -Su keyd`.
 
-# Example 1
+# Examples
+
+More examples in [examples](https://github.com/rvaiya/keyd/tree/master/examples)
+
+## Example 1
 
 	[ids]
 
@@ -225,7 +229,7 @@ Easy install with `sudo xbps-install -Su keyd`.
 	f = /
 	...
 
-# Example 2
+## Example 2
 
 This overrides specific alt combinations macOS users might
 be more familiar with, while keeping the rest intact.
