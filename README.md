@@ -185,7 +185,16 @@ sudo apt install keyd
 
 [GURU](https://gitweb.gentoo.org/repo/proj/guru.git/tree/app-misc/keyd) package maintained by [jack@pngu.org](mailto:jack@pngu.org).
 
+### Homebrew
+
+A keyd package is [available in Homebrew](https://formulae.brew.sh/formula/keyd).  To install:
+
+```shell
+brew install keyd
+```
+
 ### openSUSE
+
 [opensuse](https://software.opensuse.org//download.html?project=hardware&package=keyd) package maintained by [@bubbleguuum](https://github.com/bubbleguuum).
 
 Easy install with `sudo zypper in keyd`.
@@ -198,9 +207,8 @@ A keyd package is available in Ubuntu 25.04 ("plucky") and later.  To install:
 sudo apt install keyd
 ```
 
-In addition, the latest Debian package backported to various Ubuntu releases can
-be found in the [`ppa:keyd-team/ppa`
-archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
+In addition, the latest Debian package backported to various Ubuntu releases can be found in the
+[`ppa:keyd-team/ppa` archive](https://launchpad.net/~keyd-team/+archive/ubuntu/ppa).
 
 ### Void Linux
 
