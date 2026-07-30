@@ -50,6 +50,10 @@ to be matched, and may optionally contain unix style wildcards (\*). For example
 _[gnome|\*find\*]_ will match any window with a class of _gnome_ and a title
 containing the substring _find_.
 
+_<class exp>_ may also contain multiple comma-separated patterns to match against
+multiple applications (e.g _[chromium,firefox*]_). A section matches when any of
+the comma-separated class patterns match.
+
 E.G:
 
 ```
@@ -63,9 +67,9 @@ E.G:
 
 	alt.1  = macro(Inside space st)
 
-	[chromium]
+	[chromium,firefox*,google-chrome|*Homepage*]
 
-	control.1 = macro(Inside space chrome!)
+	control.1 = macro(Browsing homepage!)
 	alt.] = C-tab
 	alt.[ = C-S-tab
 	alt.t = C-t

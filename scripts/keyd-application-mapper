@@ -72,14 +72,16 @@ def parse_config(path):
             a = line[1:-1].split('|')
 
             if len(a) < 2:
-                cls = a[0]
+                classes = a[0].split(',')
                 title = '*'
             else:
-                cls = a[0]
+                classes = a[0].split(',')
                 title = a[1]
 
             bindings = []
-            config.append((cls, title, bindings))
+            for cls in classes:
+                cls = cls.strip()
+                config.append((cls, title, bindings))
         elif line == '':
             continue
         elif line.startswith('#'):
