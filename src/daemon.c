@@ -27,6 +27,7 @@ static void free_configs(void)
 	}
 
 	configs = NULL;
+	active_kbd = NULL;
 }
 
 static void cleanup(void)
