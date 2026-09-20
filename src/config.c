@@ -97,6 +97,7 @@ static struct {
 
 	{ "overloadi",	NULL,	OP_OVERLOAD_IDLE_TIMEOUT, { ARG_DESCRIPTOR, ARG_DESCRIPTOR, ARG_TIMEOUT } },
 	{ "timeout", 	NULL,	OP_TIMEOUT,	{ ARG_DESCRIPTOR, ARG_TIMEOUT, ARG_DESCRIPTOR } },
+	{ "taphold3",	NULL,	OP_TAPHOLD3,	{ ARG_DESCRIPTOR, ARG_DESCRIPTOR, ARG_DESCRIPTOR } },
 
 	{ "macro2", 	NULL,	OP_MACRO2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_MACRO } },
 	{ "setlayout", 	NULL,	OP_LAYOUT,	{ ARG_LAYOUT } },
@@ -829,6 +830,10 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->oneshot_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_hold_timeout"))
 			config->chord_hold_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "taphold3_hold_timeout"))
+			config->taphold3_hold_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "taphold3_double_timeout"))
+			config->taphold3_double_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_timeout"))
 			config->chord_interkey_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "default_layout"))
@@ -1027,6 +1032,8 @@ static void config_init(struct config *config)
 
 	/* In ms */
 	config->chord_interkey_timeout = 50;
+	config->taphold3_hold_timeout = 200;
+	config->taphold3_double_timeout = 200;
 	config->chord_hold_timeout = 0;
 	config->oneshot_timeout = 0;
 

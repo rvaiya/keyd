@@ -583,6 +583,14 @@ any of the following options:
 	activation after the supplied number of milliseconds.
 	(default: 0)
 
+	*taphold3_hold_timeout:* The length of time a *taphold3* key
+	must be held before its hold action is used.
+	(default: 200)
+
+	*taphold3_double_timeout:* The maximum time between two presses
+	of the same *taphold3* key for them to count as a double tap.
+	(default: 200)
+
 	*disable_modifier_guard:* By default, keyd will inject additional
 	control keypresses where necessary in order to prevent programs from
 	seeing additional modifier taps (E.g alt in firefox). If set, this
@@ -750,6 +758,36 @@ A key may optionally be bound to an _action_ which accepts zero or more argument
 	An alias for:
 
 		*overloadi(<key>, overloadt2(<layer>, <key>, <hold timeout>), <idle timeout>)*
+
+*taphold3(<tap>, <hold>, <double tap>)*
+	Distinguishes three gestures on a single key: a tap, a hold, and a
+	double tap.
+
+	A press within _taphold3_double_timeout_ ms of the previous press of the
+	*same* key executes <double tap>. Otherwise the key behaves like
+	*timeout(<tap>, taphold3_hold_timeout, <hold>)*, executing <hold> if it is
+	held for longer than _taphold3_hold_timeout_ ms and <tap> if it is
+	released before then.
+
+	Both timeouts are set in the *[global]* section and default to 200ms.
+
+	E.g.
+
+	taphold3(down, pagedown, C-end)
+
+	Taps as _down_, held acts as _pagedown_, and a quick second tap sends
+	_control+end_.
+
+	Notes:
+
+		- A double tap is resolved on the press, so a quick second press
+		  that is then held is still a double tap, not a hold.
+		- After a double tap the pairing resets, so a third rapid tap
+		  begins a fresh pair rather than repeating <double tap>.
+		- This cannot be expressed by composing *overloadi* with *timeout*:
+		  *overloadi* resolves on the key press while *timeout* needs the
+		  release to tell a tap from a hold, so nesting them starves one
+		  gesture or the other.
 
 *timeout(<action 1>, <timeout>, <action 2>)*
 	If no key events occur within _<timeout> ms_, execute <action1>, otherwise

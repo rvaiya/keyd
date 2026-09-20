@@ -756,6 +756,64 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		}
 
 		break;
+	case OP_TAPHOLD3:
+		/*
+		 * tap / hold / double-tap on a single key.
+		 *
+		 * Composing the existing actions cannot express this: overloadi
+		 * resolves on key-down while timeout needs the release to tell a
+		 * tap from a hold, so whichever is nested inside the other is
+		 * starved. Doing both here avoids dispatching one timing action
+		 * into another.
+		 *
+		 * A double tap is keyed on the previous press of THIS key rather
+		 * than on the last unmodified key emitted (which is how overloadi
+		 * does it). That avoids a quick press of some neighbouring key
+		 * counting as the first half of a double tap, and avoids treating
+		 * the very first press as a double tap because the timestamp is
+		 * still zero.
+		 */
+		pt = &kbd->pending_timeout;
+
+		if (pressed) {
+			int is_double = kbd->taphold3_last_code == code &&
+				(time - kbd->taphold3_last_time) <
+					kbd->config.taphold3_double_timeout;
+
+			kbd->taphold3_last_code = code;
+			kbd->taphold3_last_time = time;
+
+			if (is_double) {
+				/* Reset so a third tap starts a fresh pair. */
+				kbd->taphold3_last_code = 0;
+				struct descriptor action =
+					kbd->config.descriptors[d->args[2].idx];
+
+				cache_set(kbd, code, &(struct cache_entry){
+					.code = code,
+					.dl = dl,
+					.d = action,
+				});
+
+				process_descriptor(kbd, code, &action, dl, 1, time);
+				break;
+			}
+
+			pt->code = code;
+			pt->dl = dl;
+
+			pt->action1 = kbd->config.descriptors[d->args[0].idx];
+			pt->expiration = time + kbd->config.taphold3_hold_timeout;
+			pt->action2 = kbd->config.descriptors[d->args[1].idx];
+
+			pt->activation_time = time;
+			pt->spontaneous = 0;
+
+			schedule_timeout(kbd, pt->expiration);
+		} else if (time == kbd->pending_timeout.activation_time) {
+			pt->spontaneous = 1;
+		}
+		break;
 	case OP_TIMEOUT:
 		pt = &kbd->pending_timeout;
 
