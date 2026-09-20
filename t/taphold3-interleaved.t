@@ -1,3 +1,4 @@
+500ms
 y down
 1ms
 y up

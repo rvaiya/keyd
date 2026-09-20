@@ -1,3 +1,4 @@
+500ms
 v down
 1ms
 v up

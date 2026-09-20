@@ -776,9 +776,18 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 		pt = &kbd->pending_timeout;
 
 		if (pressed) {
+			long elapsed = time - kbd->taphold3_last_time;
+
+			/*
+			 * elapsed can be negative if the clock moves backwards
+			 * (and does so in the test harness, which resets time
+			 * per file while keeping the keyboard). Treat that as
+			 * "not a double tap" rather than letting the comparison
+			 * succeed trivially.
+			 */
 			int is_double = kbd->taphold3_last_code == code &&
-				(time - kbd->taphold3_last_time) <
-					kbd->config.taphold3_double_timeout;
+				elapsed >= 0 &&
+				elapsed < kbd->config.taphold3_double_timeout;
 
 			kbd->taphold3_last_code = code;
 			kbd->taphold3_last_time = time;
