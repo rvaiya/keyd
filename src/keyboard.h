@@ -67,6 +67,10 @@ struct keyboard {
 
 	long last_simple_key_time;
 
+	/* Previous press of a taphold3 key, for double-tap detection. */
+	uint8_t taphold3_last_code;
+	long taphold3_last_time;
+
 	long timeouts[128];
 	size_t nr_timeouts; 
 

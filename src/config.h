@@ -51,6 +51,7 @@ enum op {
 	OP_MACRO2,
 	OP_COMMAND,
 	OP_TIMEOUT,
+	OP_TAPHOLD3,
 
 /* Experimental */
 	OP_SCROLL_TOGGLE_ON,
@@ -147,6 +148,9 @@ struct config {
 
 	long chord_interkey_timeout;
 	long chord_hold_timeout;
+
+	long taphold3_hold_timeout;
+	long taphold3_double_timeout;
 
 	uint8_t layer_indicator;
 	uint8_t disable_modifier_guard;
