@@ -116,29 +116,15 @@ static struct {
 	{ "swap2", 	"swapm",	OP_SWAPM,			{ ARG_LAYER, ARG_MACRO } },
 };
 
-static int exists_and_is_relative(const char *parent_dir, const char *path)
+static FILE *read_include_file(const char *config_path, const char *include_path, char *resolved_path)
 {
-	char p1[PATH_MAX];
-	char p2[PATH_MAX];
-
-	if (!realpath(parent_dir, p1))
-		return 0;
-
-	if (!realpath(path, p2))
-		return 0;
-
-	return !strncmp(p2, p1, strlen(p1));
-}
-
-static int resolve_include_path(const char *config_path, const char *include_path, char *resolved_path)
-{
+	FILE *fh;
 	size_t len;
-	size_t ret;
 	char config_dir[PATH_MAX-1];
 
 	snprintf(config_dir, sizeof config_dir, "%s", config_path);
 	if (!dirname(config_dir))
-		return -1;
+		return NULL;
 
 	assert(strlen(config_dir) + strlen(include_path) + 2 < PATH_MAX);
 
@@ -147,11 +133,11 @@ static int resolve_include_path(const char *config_path, const char *include_pat
 	resolved_path[len] = '/';
 	strcpy(resolved_path + len + 1, include_path);
 
-	if (exists_and_is_relative(config_dir, resolved_path))
-		return 0;
+	if ((fh = fopen(resolved_path, "r")))
+		return fh;
 
 	snprintf(resolved_path, PATH_MAX, DATA_DIR"/%s", include_path);
-	return !exists_and_is_relative(DATA_DIR, resolved_path);
+	return fopen(resolved_path, "r");
 }
 
 static void append_line(char *buf, size_t buf_sz, size_t *off, const char *line)
@@ -214,21 +200,16 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 
 		if (!strncmp(line, include_prefix, include_prefix_len)) {
 			char *include_path;
+			FILE *ifh;
 
 			assert(srcmap->num_paths < ARRAY_SIZE(srcmap->paths));
 
 			include_path = srcmap->paths[srcmap->num_paths];
-			if (!resolve_include_path(path, line + include_prefix_len, include_path)) {
-				FILE *fh;
+			if ((ifh = read_include_file(path, line + include_prefix_len, include_path))) {
 				size_t include_line_num = 0;
 
-				if (!(fh = fopen(include_path, "r"))) {
-					config_warn("failed to open %s", include_path);
-					continue;
-				}
-
 				srcmap->num_paths++;
-				while ((line = read_line(fh))) {
+				while ((line = read_line(ifh))) {
 					append_line(output, sizeof output, &off, line);
 
 					assert(output_line_num < ARRAY_SIZE(srcmap->entries));
@@ -238,9 +219,9 @@ static char *read_config_file(const char *path, struct srcmap *srcmap)
 					output_line_num++;
 				}
 
-				fclose(fh);
+				fclose(ifh);
 			} else {
-				config_warn("failed to resolve include path %s", line + include_prefix_len);
+				config_warn("failed to open include path %s", line + include_prefix_len);
 			}
 		} else {
 			append_line(output, sizeof output, &off, line);
