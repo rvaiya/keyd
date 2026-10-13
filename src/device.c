@@ -166,13 +166,13 @@ static int device_init(const char *path, struct device *dev)
 
 	if (ioctl(fd, EVIOCGNAME(sizeof(dev->name)), dev->name) == -1) {
 		keyd_log("ERROR: could not fetch device name of %s\n", dev->path);
-		return -1;
+		goto err;
 	}
 
 	if (capabilities & CAP_MOUSE_ABS) {
 		if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) < 0) {
 			perror("ioctl");
-			return -1;
+			goto err;
 		}
 
 		dev->_minx = absinfo.minimum;
@@ -180,7 +180,7 @@ static int device_init(const char *path, struct device *dev)
 
 		if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0) {
 			perror("ioctl");
-			return -1;
+			goto err;
 		}
 
 		dev->_miny = absinfo.minimum;
@@ -194,7 +194,7 @@ static int device_init(const char *path, struct device *dev)
 
 		if (ioctl(fd, EVIOCGID, &info) == -1) {
 			perror("ioctl EVIOCGID");
-			return -1;
+			goto err;
 		}
 
 		strncpy(dev->path, path, sizeof(dev->path)-1);
@@ -218,10 +218,11 @@ static int device_init(const char *path, struct device *dev)
 		dev->is_virtual = info.vendor == 0x0FAC;
 		return 0;
 	} else {
-		close(fd);
-		return -1;
+		goto err;
 	}
 
+err:
+	close(fd);
 	return -1;
 }
 
@@ -421,6 +422,8 @@ struct device_event *device_read_event(struct device *dev)
 		if (errno == EAGAIN) {
 			return NULL;
 		} else {
+			// Close the file descriptor before orphaning it.
+			close(dev->fd);
 			dev->fd = -1;
 			devev.type = DEV_REMOVED;
 			return &devev;
