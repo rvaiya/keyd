@@ -50,6 +50,22 @@ to be matched, and may optionally contain unix style wildcards (\*). For example
 _[gnome|\*find\*]_ will match any window with a class of _gnome_ and a title
 containing the substring _find_.
 
+Note that both are matched against *normalised* strings, not against the raw
+values reported by the compositor. In the class, every run of characters outside
+ASCII letters and digits becomes a single hyphen. In the title, every run of
+non-word characters or underscores becomes a single hyphen. Leading and trailing
+hyphens are stripped and both strings are lowercased (see *normalize\_class()*
+and *normalize\_title()* in the script). A section that matches nothing is
+silently ignored: no warning is printed and the global bindings stay in effect.
+
+For example, the Hyprland window class _steam\_app\_230410_ normalises to
+_steam-app-230410_:
+
+```
+	Wrong: [steam_app_230410]   # raw class, never matches
+	Right: [steam-app-230410]   # normalised
+```
+
 E.G:
 
 ```
