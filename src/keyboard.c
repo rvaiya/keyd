@@ -1142,7 +1142,7 @@ int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, lon
 		action = kbd->pending_overload.action2;
 	else if (code == kbd->pending_overload.code)
 		action = kbd->pending_overload.action1;
-	else if (kbd->pending_overload.resolve_on_interrupt && !pressed)
+	else if (kbd->pending_overload.resolve_on_interrupt && code && !pressed)
 		action = kbd->pending_overload.action2;
 	else
 		action.op = 0;
