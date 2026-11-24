@@ -142,6 +142,7 @@ struct config {
 	long macro_sequence_timeout;
 	long macro_repeat_timeout;
 	long oneshot_timeout;
+	long overload_roll_timeout;
 
 	long overload_tap_timeout;
 
