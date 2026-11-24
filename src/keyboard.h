@@ -110,6 +110,7 @@ struct keyboard {
 		uint8_t code;
 		uint8_t dl;
 		long expiration;
+		long activation_time;
 
 		int resolve_on_interrupt;
 

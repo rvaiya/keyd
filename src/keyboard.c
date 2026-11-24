@@ -601,6 +601,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
 			kbd->pending_overload.action2.op = OP_LAYER;
 			kbd->pending_overload.action2.args[0].idx = layer;
 			kbd->pending_overload.expiration = time + d->args[2].timeout;
+			kbd->pending_overload.activation_time = time;
 
 			schedule_timeout(kbd, kbd->pending_overload.expiration);
 		}
@@ -1107,6 +1108,7 @@ int handle_pending_timeout(struct keyboard *kbd, uint8_t event_code, int pressed
 int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, long time)
 {
 	struct descriptor action;
+	int roll = 0;
 
 	if (!kbd->pending_overload.code)
 		return 0;
@@ -1134,6 +1136,9 @@ int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, lon
 		ev->pressed = pressed;
 		ev->timestamp = time;
 
+		dbg("overload %d: queued key %d %s at +%ldms", kbd->pending_overload.code, code,
+		    pressed ? "down" : "up", time - kbd->pending_overload.activation_time);
+
 		kbd->pending_overload.queue_sz++;
 	}
 
@@ -1142,12 +1147,30 @@ int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, lon
 		action = kbd->pending_overload.action2;
 	else if (code == kbd->pending_overload.code)
 		action = kbd->pending_overload.action1;
-	else if (kbd->pending_overload.resolve_on_interrupt && !pressed)
+	else if (kbd->pending_overload.resolve_on_interrupt && code && !pressed) {
 		action = kbd->pending_overload.action2;
-	else
+
+		/*
+		 * A key struck within overload_roll_timeout of the overload key is a
+		 * roll (e.g. the thumb landed a hair early), not a deliberate
+		 * layer use: tap the overload key, but after the rolled keys so
+		 * the order is the one that was intended.
+		 */
+		if (kbd->config.overload_roll_timeout &&
+		    kbd->pending_overload.queue_sz &&
+		    kbd->pending_overload.queue[0].pressed &&
+		    kbd->pending_overload.queue[0].timestamp - kbd->pending_overload.activation_time <= kbd->config.overload_roll_timeout) {
+			action = kbd->pending_overload.action1;
+			roll = 1;
+		}
+	} else
 		action.op = 0;
 
 	if (action.op) {
+		dbg("overload %d: resolved at +%ldms as %s%s", kbd->pending_overload.code,
+		    time - kbd->pending_overload.activation_time,
+		    action.op == OP_LAYER ? "hold" : "tap", roll ? " (roll, rolled keys first)" : "");
+
 		/* Create a copy of the queue on the stack to
 		   allow for recursive pending key processing. */
 		struct key_event queue[ARRAY_SIZE(kbd->pending_overload.queue)];
@@ -1166,10 +1189,15 @@ int handle_pending_overload(struct keyboard *kbd, uint8_t code, int pressed, lon
 			.dl = dl,
 			.layer = 0,
 		});
-		process_descriptor(kbd, code, &action, dl, 1, time);
+		if (roll) {
+			kbd_process_events(kbd, queue, queue_sz);
+			process_descriptor(kbd, code, &action, dl, 1, time);
+		} else {
+			process_descriptor(kbd, code, &action, dl, 1, time);
 
-		/* Flush queued events */
-		kbd_process_events(kbd, queue, queue_sz);
+			/* Flush queued events */
+			kbd_process_events(kbd, queue, queue_sz);
+		}
 	}
 
 	return 1;
