@@ -827,6 +827,8 @@ static void parse_global_section(struct config *config, struct ini_section *sect
 			config->disable_modifier_guard = atoi(ent->val);
 		else if (!strcmp(ent->key, "oneshot_timeout"))
 			config->oneshot_timeout = atoi(ent->val);
+		else if (!strcmp(ent->key, "debounce_timeout"))
+			config->debounce_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_hold_timeout"))
 			config->chord_hold_timeout = atoi(ent->val);
 		else if (!strcmp(ent->key, "chord_timeout"))
@@ -1029,6 +1031,7 @@ static void config_init(struct config *config)
 	config->chord_interkey_timeout = 50;
 	config->chord_hold_timeout = 0;
 	config->oneshot_timeout = 0;
+	config->debounce_timeout = 0;
 
 	config->macro_timeout = 600;
 	config->macro_repeat_timeout = 50;

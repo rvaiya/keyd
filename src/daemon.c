@@ -514,7 +514,27 @@ static int event_handler(struct event *ev)
 			active_kbd = ev->dev->data;
 			switch (ev->devev->type) {
 			size_t i;
-			case DEV_KEY:
+			case DEV_KEY: {
+				static long last_release[256];
+				static uint8_t debounced[256];
+				const long debounce = kbd->config.debounce_timeout;
+				const uint8_t c = ev->devev->code;
+
+				if (debounce) {
+					if (ev->devev->pressed) {
+						if (last_release[c] && ev->timestamp - last_release[c] < debounce) {
+							dbg("debounce: dropped %s down %ldms after up", KEY_NAME(c), ev->timestamp - last_release[c]);
+							debounced[c] = 1;
+							break;
+						}
+					} else if (debounced[c]) {
+						debounced[c] = 0;
+						break;
+					} else {
+						last_release[c] = ev->timestamp;
+					}
+				}
+
 				dbg("input %s %s", KEY_NAME(ev->devev->code), ev->devev->pressed ? "down" : "up");
 
 				kev.code = ev->devev->code;
@@ -523,6 +543,7 @@ static int event_handler(struct event *ev)
 
 				timeout = kbd_process_events(kbd, &kev, 1);
 				break;
+			}
 			case DEV_MOUSE_MOVE:
 				if (kbd->scroll.active) {
 					if (kbd->scroll.sensitivity == 0)
